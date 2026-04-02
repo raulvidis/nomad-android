@@ -1,8 +1,6 @@
 package com.nomad.android.ui.navigation
 
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -13,36 +11,35 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import androidx.navigation.compose.rememberNavController
+import com.nomad.android.ui.chat.ChatScreen
+import com.nomad.android.ui.dashboard.DashboardScreen
+import com.nomad.android.ui.emergency.EmergencyScreen
+import com.nomad.android.ui.knowledge.KnowledgeScreen
 
 @Composable
 fun NomadNavHost(
     navController: NavHostController,
     modifier: Modifier = Modifier,
 ) {
-    Scaffold(modifier = modifier) { innerPadding ->
-        NavHost(
-            navController = navController,
-            startDestination = Routes.DASHBOARD,
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding),
-        ) {
-            composable(Routes.DASHBOARD) {
-                PipBoyPlaceholder("DASHBOARD")
-            }
-            composable(Routes.MAPS) {
-                PipBoyPlaceholder("MAPS")
-            }
-            composable(Routes.KNOWLEDGE) {
-                PipBoyPlaceholder("KNOWLEDGE")
-            }
-            composable(Routes.CHAT) {
-                PipBoyPlaceholder("CHAT")
-            }
-            composable(Routes.EMERGENCY) {
-                PipBoyPlaceholder("EMERGENCY")
-            }
+    NavHost(
+        navController = navController,
+        startDestination = Routes.DASHBOARD,
+        modifier = modifier.fillMaxSize(),
+    ) {
+        composable(Routes.DASHBOARD) {
+            DashboardScreen(navController = navController)
+        }
+        composable(Routes.MAPS) {
+            PipBoyPlaceholder("MAPS")
+        }
+        composable(Routes.KNOWLEDGE) {
+            KnowledgeScreen()
+        }
+        composable(Routes.CHAT) {
+            ChatScreen()
+        }
+        composable(Routes.EMERGENCY) {
+            EmergencyScreen()
         }
     }
 }
