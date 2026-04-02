@@ -6,4 +6,5 @@ object Routes {
     const val KNOWLEDGE = "knowledge"
     const val CHAT = "chat"
     const val EMERGENCY = "emergency"
+    const val SETTINGS = "settings"
 }

@@ -15,6 +15,8 @@ import com.nomad.android.ui.chat.ChatScreen
 import com.nomad.android.ui.dashboard.DashboardScreen
 import com.nomad.android.ui.emergency.EmergencyScreen
 import com.nomad.android.ui.knowledge.KnowledgeScreen
+import com.nomad.android.ui.maps.MapsScreen
+import com.nomad.android.ui.settings.SettingsScreen
 
 @Composable
 fun NomadNavHost(
@@ -30,7 +32,7 @@ fun NomadNavHost(
             DashboardScreen(navController = navController)
         }
         composable(Routes.MAPS) {
-            PipBoyPlaceholder("MAPS")
+            MapsScreen()
         }
         composable(Routes.KNOWLEDGE) {
             KnowledgeScreen()
@@ -40,6 +42,9 @@ fun NomadNavHost(
         }
         composable(Routes.EMERGENCY) {
             EmergencyScreen()
+        }
+        composable(Routes.SETTINGS) {
+            SettingsScreen()
         }
     }
 }

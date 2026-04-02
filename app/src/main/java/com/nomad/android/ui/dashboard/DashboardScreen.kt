@@ -172,6 +172,34 @@ fun DashboardScreen(navController: NavHostController) {
                 )
             }
         }
+
+        PipBoyCard(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = null,
+                    onClick = { navController.navigate(Routes.SETTINGS) },
+                ),
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                PipBoyText(
+                    text = "SYSTEM SETTINGS",
+                    style = TextStyle(fontSize = 14.sp, fontFamily = FontFamily.Monospace),
+                    color = PipBoyAmber,
+                )
+                Text(
+                    text = "[ENTER] >",
+                    color = PipBoyGreen,
+                    fontFamily = FontFamily.Monospace,
+                    fontSize = 14.sp,
+                )
+            }
+        }
     }
 }
 
