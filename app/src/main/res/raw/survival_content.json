@@ -1,0 +1,12 @@
+[
+  {"id":"first_aid_01","category":"first_aid","title":"CPR - Cardiopulmonary Resuscitation","content":"Step-by-step CPR instructions...","steps":["Check for responsiveness","Call emergency services","Begin chest compressions...","Give rescue breaths...","Continue cycle"]},
+  {"id":"first_aid_02","category":"first_aid","title":"Treating Severe Bleeding","content":"How to control severe bleeding...","steps":["Apply direct pressure","Elevate wound","Apply bandage","Seek medical help"]},
+  {"id":"survival_01","category":"survival","title":"Water Purification","content":"Methods for purifying water in the wild...","steps":["Boiling (rolling boil for 1 minute)","Chemical treatment (iodine/chlorine)","Solar disinfection","Filtration"]},
+  {"id":"survival_02","category":"survival","title":"Building Emergency Shelter","content":"How to build basic shelters...","steps":["Find suitable location","Gather materials","Construct framework","Add insulation","Weatherproof"]},
+  {"id":"survival_03","category":"survival","title":"Fire Starting Methods","content":"Multiple ways to start a fire...","steps":["Friction methods","Spark-based methods","Solar methods","Chemical methods"]},
+  {"id":"survival_04","category":"survival","title":"SOS Signals","content":"International distress signals...","steps":["Three of anything (fires, whistle blasts)","Ground-to-air signals","Mirror signals","Signal fire"]},
+  {"id":"survival_05","category":"survival","title":"Navigation Without Compass","content":"Celestial and natural navigation...","steps":["North Star method","Sun shadow method","Moss on trees","Wind patterns"]},
+  {"id":"survival_06","category":"survival","title":"Knot Tying Essentials","content":"8 essential knots for survival...","steps":["Bowline","Clove hitch","Figure-eight","Taut-line hitch","Square knot","Sheet bend","Timber hitch","Prusik knot"]},
+  {"id":"survival_07","category":"survival","title":"Edible Plants Identification","content":"Common edible plants and safety rules...","steps":["Universal edibility test","Avoid: white berries, milky sap","Safe: dandelion, cattail, pine","Always cook when in doubt"]},
+  {"id":"survival_08","category":"survival","title":"Water Sources and Collection","content":"Finding and collecting water...","steps":["Dew collection","Solar still","Transpiration bag","Rain catchment","Animal tracking"]}
+]
