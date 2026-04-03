@@ -31,4 +31,7 @@ interface ContentPackDao {
 
     @Delete
     suspend fun delete(contentPack: ContentPackEntity)
+
+    @Query("DELETE FROM content_packs WHERE id = :id")
+    suspend fun deleteById(id: String)
 }

@@ -1,8 +1,10 @@
 package com.nomad.android.ui.settings
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -22,13 +24,13 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.nomad.android.ui.theme.PipBoyAmber
-import com.nomad.android.ui.theme.PipBoyButton
-import com.nomad.android.ui.theme.PipBoyCard
-import com.nomad.android.ui.theme.PipBoyDivider
-import com.nomad.android.ui.theme.PipBoyGreen
-import com.nomad.android.ui.theme.PipBoyGreenDim
-import com.nomad.android.ui.theme.PipBoyProgressBar
+import com.nomad.android.ui.components.PipBoyAmber
+import com.nomad.android.ui.components.PipBoyButton
+import com.nomad.android.ui.components.PipBoyCard
+import com.nomad.android.ui.components.PipBoyDivider
+import com.nomad.android.ui.components.PipBoyGreen
+import com.nomad.android.ui.components.PipBoyGreenDim
+import com.nomad.android.ui.components.PipBoyProgressBar
 
 @Composable
 fun SettingsScreen() {
@@ -38,6 +40,7 @@ fun SettingsScreen() {
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .background(Color(0xFF0C0C0C))
             .padding(16.dp)
     ) {
         Text(
@@ -107,13 +110,9 @@ fun SettingsScreen() {
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.End
             ) {
-                PipBoyButton(onClick = { }) {
-                    Text("DOWNLOAD", fontFamily = FontFamily.Monospace, fontSize = 10.sp)
-                }
+                PipBoyButton(text = "DOWNLOAD", onClick = { })
                 Spacer(modifier = Modifier.width(8.dp))
-                PipBoyButton(onClick = { }) {
-                    Text("DELETE", fontFamily = FontFamily.Monospace, fontSize = 10.sp)
-                }
+                PipBoyButton(text = "DELETE", onClick = { })
             }
         }
 

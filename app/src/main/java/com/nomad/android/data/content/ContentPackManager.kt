@@ -37,7 +37,7 @@ class ContentPackManager(
         ContentPack("books", "Classic Books Pack", "books", 2147483648L, "Project Gutenberg top 1000", PackStatus.AVAILABLE),
     )
 
-    suspend fun downloadPack(packId: String): Flow<Float> = flow {
+    fun downloadPack(packId: String): Flow<Float> = flow {
         // TODO: Implement with WorkManager
         emit(0f)
         emit(1f)

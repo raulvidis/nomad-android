@@ -1,5 +1,6 @@
 package com.nomad.android.ui.maps
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -19,16 +20,17 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.nomad.android.ui.theme.PipBoyButton
-import com.nomad.android.ui.theme.PipBoyDivider
-import com.nomad.android.ui.theme.PipBoyGreen
-import com.nomad.android.ui.theme.PipBoyGreenDim
+import com.nomad.android.ui.components.PipBoyButton
+import com.nomad.android.ui.components.PipBoyDivider
+import com.nomad.android.ui.components.PipBoyGreen
+import com.nomad.android.ui.components.PipBoyGreenDim
 
 @Composable
 fun MapsScreen() {
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .background(Color(0xFF0C0C0C))
             .padding(16.dp)
     ) {
         Text(
@@ -77,13 +79,7 @@ fun MapsScreen() {
             horizontalArrangement = Arrangement.SpaceEvenly
         ) {
             listOf("BASEMAP", "POI", "TOPO", "EMERGENCY").forEach { label ->
-                PipBoyButton(onClick = { }, modifier = Modifier.padding(4.dp)) {
-                    Text(
-                        text = label,
-                        fontFamily = FontFamily.Monospace,
-                        fontSize = 10.sp
-                    )
-                }
+                PipBoyButton(text = label, onClick = { }, modifier = Modifier.padding(4.dp))
             }
         }
 
