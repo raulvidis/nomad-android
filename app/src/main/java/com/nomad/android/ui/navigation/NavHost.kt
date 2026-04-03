@@ -1,13 +1,7 @@
 package com.nomad.android.ui.navigation
 
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -26,7 +20,7 @@ fun NomadNavHost(
     NavHost(
         navController = navController,
         startDestination = Routes.DASHBOARD,
-        modifier = modifier.fillMaxSize(),
+        modifier = modifier,
     ) {
         composable(Routes.DASHBOARD) {
             DashboardScreen(navController = navController)
@@ -45,7 +39,6 @@ fun NomadNavHost(
         }
         composable(Routes.SETTINGS) {
             SettingsScreen()
-        }
         }
     }
 }
