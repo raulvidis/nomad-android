@@ -81,7 +81,8 @@ fun PipBoyButton(
         PipBoyButtonVariant.DISABLED -> Color.Transparent
     }
 
-    var isPressed by remember { mutableStateOf(false) }
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
 
     val backgroundColor = if (isPressed && resolvedVariant != PipBoyButtonVariant.DISABLED) {
         pressedFillColor
@@ -102,7 +103,7 @@ fun PipBoyButton(
             .clickable(
                 enabled = enabled,
                 indication = null,
-                interactionSource = remember { MutableInteractionSource() },
+                interactionSource = interactionSource,
                 onClick = onClick,
             )
             .padding(horizontal = 16.dp, vertical = 10.dp),

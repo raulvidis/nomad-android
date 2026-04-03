@@ -18,7 +18,9 @@ object AIModule {
     @Singleton
     fun provideAIEngine(@ApplicationContext context: Context): AIEngine {
         val activityManager = context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
-        val totalRamMB = activityManager.memoryClass.toLong()
+        val memoryInfo = ActivityManager.MemoryInfo()
+        activityManager.getMemoryInfo(memoryInfo)
+        val totalRamMB = memoryInfo.totalMem / (1024 * 1024)
 
         return when {
             AICoreEngine.isSupported(context) -> AICoreEngine(context)

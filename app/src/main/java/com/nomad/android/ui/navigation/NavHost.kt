@@ -46,17 +46,6 @@ fun NomadNavHost(
         composable(Routes.SETTINGS) {
             SettingsScreen()
         }
+        }
     }
-}
-
-@Composable
-private fun PipBoyPlaceholder(screenName: String) {
-    Text(
-        text = screenName,
-        color = Color(0xFF14FE17),
-        fontFamily = FontFamily.Monospace,
-        fontSize = 24.sp,
-        textAlign = TextAlign.Center,
-        modifier = Modifier.fillMaxSize(),
-    )
 }
