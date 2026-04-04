@@ -37,12 +37,6 @@ object RepositoryModule {
 
     @Provides
     @Singleton
-    fun provideKiwixManager(
-        @ApplicationContext context: Context
-    ): KiwixManager = KiwixManager(context)
-
-    @Provides
-    @Singleton
     fun provideChatRepository(
         chatMessageDao: com.nomad.android.data.local.dao.ChatMessageDao
     ): ChatRepository = ChatRepository(chatMessageDao)
