@@ -251,39 +251,7 @@ private fun TypingIndicator() {
         )
     }
 }
-    }
 
-    val dots = ".".repeat(dotCount)
-
-    Row(
-        modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        PipBoyText(
-            text = "PROCESSING$dots",
-            color = PipBoyAmber,
-            glow = true,
-            style = TextStyle(fontSize = 12.sp, fontFamily = FontFamily.Monospace),
-        )
-    }
-}
-
-@Composable
-private fun ContextFilterRow(
-    filters: List<String>,
-    selectedFilter: String,
-    onFilterSelected: (String) -> Unit,
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 8.dp),
-        horizontalArrangement = Arrangement.spacedBy(6.dp),
-    ) {
-        filters.forEach { label ->
-            val isSelected = label == selectedFilter
-            val borderColor = if (isSelected) PipBoyGreen else PipBoyGreenDim
-            val bgColor = if (isSelected) PipBoyGreen.copy(alpha = 0.15f) else PipBoySurface
             val textColor = if (isSelected) PipBoyGreen else PipBoyGreenDim
 
             Box(
