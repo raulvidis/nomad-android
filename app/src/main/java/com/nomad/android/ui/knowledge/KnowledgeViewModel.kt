@@ -46,7 +46,7 @@ class KnowledgeViewModel @Inject constructor(
         loadArticles()
     }
 
-    private fun loadArticles() {
+    fun loadArticles() {
         _uiState.update { it.copy(isLoading = true, error = null) }
 
         viewModelScope.launch {

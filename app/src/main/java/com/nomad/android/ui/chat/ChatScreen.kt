@@ -1,9 +1,5 @@
 package com.nomad.android.ui.chat
 
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -23,6 +19,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -232,18 +229,31 @@ private fun MessageBubble(isUser: Boolean, text: String) {
 
 @Composable
 private fun TypingIndicator() {
-    val infiniteTransition = rememberInfiniteTransition(label = "typing")
-    val dotCount by infiniteTransition.animateInt(
-        initialValue = 1,
-        targetValue = 4,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 1200),
-            repeatMode = RepeatMode.Restart,
-        ),
-        label = "dotCount",
-    )
+    var dotCount by remember { mutableStateOf(1) }
+    LaunchedEffect(Unit) {
+        while (true) {
+            kotlinx.coroutines.delay(400)
+            dotCount = ((dotCount) % 3) + 1
+        }
+    }
 
-    val dots = ".".repeat(((dotCount - 1) % 3) + 1)
+    val dots = ".".repeat(dotCount)
+
+    Row(
+        modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        PipBoyText(
+            text = "PROCESSING$dots",
+            color = PipBoyAmber,
+            glow = true,
+            style = TextStyle(fontSize = 12.sp, fontFamily = FontFamily.Monospace),
+        )
+    }
+}
+    }
+
+    val dots = ".".repeat(dotCount)
 
     Row(
         modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),

@@ -42,7 +42,7 @@ fun MapsScreen(
 
     when {
         uiState.isLoading -> PipBoyLoadingScreen("LOADING CARTOGRAPHY...")
-        uiState.error != null -> PipBoyErrorScreen(uiState.error) { viewModel.loadMapData() }
+        uiState.error != null -> PipBoyErrorScreen(message = uiState.error ?: "Unknown error", onRetry = { viewModel.loadMapData() })
         !uiState.data.isMapInitialized -> PipBoyEmptyScreen(
             message = "Map module not initialized",
             action = "INITIALIZE",

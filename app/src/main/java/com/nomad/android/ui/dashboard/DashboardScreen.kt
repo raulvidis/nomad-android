@@ -57,7 +57,7 @@ fun DashboardScreen(
 
     when {
         uiState.isLoading -> PipBoyLoadingScreen("SCANNING SYSTEMS...")
-        uiState.error != null -> PipBoyErrorScreen(uiState.error) { viewModel.refreshStatus() }
+        uiState.error != null -> PipBoyErrorScreen(message = uiState.error ?: "Unknown error", onRetry = { viewModel.refreshStatus() })
         else -> DashboardContent(
             data = uiState.data,
             navController = navController,

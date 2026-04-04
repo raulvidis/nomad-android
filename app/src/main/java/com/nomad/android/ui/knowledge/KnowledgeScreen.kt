@@ -52,7 +52,7 @@ fun KnowledgeScreen(
 
     when {
         uiState.isLoading -> PipBoyLoadingScreen("INDEXING ARCHIVES...")
-        uiState.error != null -> PipBoyErrorScreen(uiState.error) { viewModel.loadArticles() }
+        uiState.error != null -> PipBoyErrorScreen(message = uiState.error ?: "Unknown error", onRetry = { viewModel.loadArticles() })
         uiState.data.articles.isEmpty() -> PipBoyEmptyScreen(
             message = "No articles in this category. Download content packs in Settings."
         )
