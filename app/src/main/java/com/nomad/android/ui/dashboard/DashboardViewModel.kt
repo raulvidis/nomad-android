@@ -4,6 +4,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.nomad.android.data.Result
 import com.nomad.android.data.ai.AIEngineStatus
+import com.nomad.android.data.ai.AIEngineType
+import com.nomad.android.data.repository.ContentPackRepository
 import com.nomad.android.data.repository.SettingsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -28,7 +30,8 @@ data class DashboardUiState(
 
 @HiltViewModel
 class DashboardViewModel @Inject constructor(
-    private val settingsRepository: SettingsRepository
+    private val settingsRepository: SettingsRepository,
+    private val contentPackRepository: ContentPackRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(DashboardUiState(isLoading = true))
@@ -48,29 +51,33 @@ class DashboardViewModel @Inject constructor(
         viewModelScope.launch {
             val storageMetrics = settingsRepository.getStorageMetrics()
 
-            val aiStatusResult = Result.success(
-                AIEngineStatus(
-                    engineType = com.nomad.android.data.ai.AIEngineType.FALLBACK,
-                    isReady = false,
-                    modelName = "Checking...",
-                    ramRequired = "Calculating...",
-                    modelSize = "N/A"
-                )
+            val aiStatus = AIEngineStatus(
+                engineType = AIEngineType.FALLBACK,
+                isReady = false,
+                modelName = "Checking...",
+                ramRequired = "Calculating...",
+                modelSize = "N/A"
             )
 
-            val contentPacksResult = settingsRepository.getAllSettings()
+            // Collect content pack count from the database
+            var packCount = 0
+            contentPackRepository.getAllPacks().collect { result ->
+                if (result is Result.Success) {
+                    packCount = result.data.size
+                }
+            }
 
             _uiState.update {
                 it.copy(
                     isLoading = false,
                     data = DashboardData(
-                        aiStatus = aiStatusResult.getOrNull(),
+                        aiStatus = aiStatus,
                         storageMetrics = storageMetrics,
-                        contentPackCount = 0,
+                        contentPackCount = packCount,
                         recentActivity = listOf(
                             "System initialized",
                             "AI engine loaded",
-                            "Content packs scanned"
+                            "${packCount} content packs scanned"
                         )
                     )
                 )

@@ -28,8 +28,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
+
 import com.nomad.android.ui.theme.PipBoyAmber
 import com.nomad.android.ui.theme.PipBoyBg
 import com.nomad.android.ui.components.PipBoyCard
@@ -163,10 +162,7 @@ private val survivalChecklist = listOf(
 )
 
 @Composable
-fun EmergencyScreen(
-    viewModel: EmergencyViewModel = hiltViewModel()
-) {
-    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+fun EmergencyScreen() {
     var expandedTopic by remember { mutableStateOf<String?>(null) }
     var checkedItems by remember { mutableStateOf(survivalChecklist) }
 
