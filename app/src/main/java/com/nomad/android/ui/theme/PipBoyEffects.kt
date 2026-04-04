@@ -62,12 +62,12 @@ import kotlin.math.sin
 import kotlin.random.Random
 import androidx.compose.animation.core.*
 
-private val PipBoyGreen = Color(0xFF14F195)
-private val PipBoyGreenDim = Color(0xFF0A7A4C)
-private val PipBoyAmber = Color(0xFFFFB000)
-private val PipBoyDanger = Color(0xFFFF3333)
-private val PipBoyBackground = Color(0xFF0C0C0C)
-private val PipBoySurface = Color(0xFF1A1A1A)
+private val PipBoyGreen = com.nomad.android.ui.theme.PipBoyGreen
+private val PipBoyGreenDim = com.nomad.android.ui.theme.PipBoyGreenDim
+private val PipBoyAmber = com.nomad.android.ui.theme.PipBoyAmber
+private val PipBoyDanger = com.nomad.android.ui.theme.PipBoyDanger
+private val PipBoyBackground = com.nomad.android.ui.theme.PipBoyBg
+private val PipBoySurface = com.nomad.android.ui.theme.PipBoySurface
 
 fun Modifier.scanlineOverlay(): Modifier = this.then(
     Modifier.drawBehind {
@@ -95,15 +95,21 @@ fun Modifier.phosphorGlow(): Modifier = this.then(
     }
 )
 
-fun Modifier.crtFlicker(): Modifier {
-    return this.then(
-        Modifier.graphicsLayer {
-            val time = System.currentTimeMillis() / 1000f
-            val flicker = 0.95f + 0.05f * (0.5f + 0.5f * sin(time * 3.7f * sin(time * 0.3f)))
-            alpha = flicker
-        }
-    )
-}
+fun Modifier.crtFlicker(): Modifier = this.then(
+    Modifier.composed {
+        val infiniteTransition = rememberInfiniteTransition(label = "crtFlicker")
+        val alpha by infiniteTransition.animateFloat(
+            initialValue = 0.95f,
+            targetValue = 1.0f,
+            animationSpec = infiniteRepeatable(
+                animation = tween(durationMillis = 150),
+                repeatMode = RepeatMode.Reverse
+            ),
+            label = "flickerAlpha"
+        )
+        Modifier.graphicsLayer { this.alpha = alpha }
+    }
+)
 
 @Composable
 fun CrtScreen(
@@ -130,10 +136,11 @@ fun PipBoyStatusBar(
     val dateFormat = remember { SimpleDateFormat("MM.dd.yyyy HH:mm", Locale.US) }
     var currentTime by remember { mutableStateOf(dateFormat.format(Date())) }
     LaunchedEffect(Unit) {
-        while (true) {
+        while (isActive) {
             kotlinx.coroutines.delay(60_000L)
             currentTime = dateFormat.format(Date())
         }
+    }
     }
 
     Row(

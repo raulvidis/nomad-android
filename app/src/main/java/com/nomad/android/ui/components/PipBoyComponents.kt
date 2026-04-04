@@ -40,13 +40,12 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-
-val PipBoyGreen = Color(0xFF14F195)
-val PipBoyGreenDim = Color(0xFF0A7A4C)
-val PipBoyAmber = Color(0xFFFFB000)
-val PipBoyDanger = Color(0xFFFF3333)
-val PipBoyBg = Color(0xFF0C0C0C)
-val PipBoySurface = Color(0xFF1A1A1A)
+import com.nomad.android.ui.theme.PipBoyGreen
+import com.nomad.android.ui.theme.PipBoyGreenDim
+import com.nomad.android.ui.theme.PipBoyAmber
+import com.nomad.android.ui.theme.PipBoyDanger
+import com.nomad.android.ui.theme.PipBoyBg
+import com.nomad.android.ui.theme.PipBoySurface
 
 enum class PipBoyButtonVariant { NORMAL, DANGER, AMBER, DISABLED }
 

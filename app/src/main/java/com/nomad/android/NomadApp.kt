@@ -1,36 +1,29 @@
 package com.nomad.android
 
-import android.app.Application
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import com.nomad.android.ui.navigation.NomadNavHost
 import com.nomad.android.ui.onboarding.OnboardingScreen
+import com.nomad.android.ui.onboarding.OnboardingViewModel
 import com.nomad.android.ui.theme.CrtScreen
 import com.nomad.android.ui.theme.NomadTheme
-import com.nomad.android.ui.theme.PipBoyBottomNav
-import com.nomad.android.ui.theme.PipBoyStatusBar
-import dagger.hilt.android.HiltAndroidApp
-
-@HiltAndroidApp
-class NomadApp : Application()
 
 @Composable
 fun NomadApp() {
-    var onboardingComplete by rememberSaveable { mutableStateOf(false) }
+    val onboardingViewModel: OnboardingViewModel = viewModel()
+    val isOnboardingComplete by onboardingViewModel.isOnboardingComplete.collectAsState(initial = false)
 
-    if (!onboardingComplete) {
+    if (!isOnboardingComplete) {
         NomadTheme {
             CrtScreen {
                 OnboardingScreen(
-                    onComplete = { onboardingComplete = true }
+                    viewModel = onboardingViewModel
                 )
             }
         }
@@ -42,9 +35,9 @@ fun NomadApp() {
         NomadTheme {
             CrtScreen {
                 Column(modifier = Modifier.fillMaxSize()) {
-                    PipBoyStatusBar()
-                    NomadNavHost(navController = navController, modifier = Modifier.weight(1f))
-                    PipBoyBottomNav(navController = navController, currentRoute = currentRoute)
+                    com.nomad.android.ui.theme.PipBoyStatusBar()
+                    com.nomad.android.ui.navigation.NomadNavHost(navController = navController, modifier = Modifier.weight(1f))
+                    com.nomad.android.ui.theme.PipBoyBottomNav(navController = navController, currentRoute = currentRoute)
                 }
             }
         }
