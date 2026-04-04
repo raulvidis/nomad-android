@@ -50,7 +50,7 @@ class OnboardingViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(OnboardingUiState(isLoading = true))
     val uiState: StateFlow<OnboardingUiState> = _uiState.asStateFlow()
 
-    val isOnboardingComplete: StateFlow<Boolean> = settingsRepository.isOnboardingComplete
+    val isOnboardingComplete: Flow<Boolean> = settingsRepository.isOnboardingComplete
 
     init {
         scanHardware()

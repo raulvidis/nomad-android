@@ -36,7 +36,7 @@ class MapsViewModel @Inject constructor(
         loadMapData()
     }
 
-    private fun loadMapData() {
+    fun loadMapData() {
         _uiState.update { it.copy(isLoading = true, error = null) }
 
         viewModelScope.launch {

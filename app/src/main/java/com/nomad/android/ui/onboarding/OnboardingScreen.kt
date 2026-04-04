@@ -58,7 +58,7 @@ fun OnboardingScreen(
     onComplete: () -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val isComplete by viewModel.isOnboardingComplete.collectAsStateWithLifecycle(initial = false)
+    val isComplete by viewModel.isOnboardingComplete.collectAsStateWithLifecycle(initialValue = false)
 
     if (isComplete) {
         onComplete()

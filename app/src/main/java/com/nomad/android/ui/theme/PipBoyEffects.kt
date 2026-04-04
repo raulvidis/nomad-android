@@ -40,6 +40,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.composed
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -68,15 +69,7 @@ fun Modifier.scanlineOverlay(): Modifier = this.then(
     }
 )
 
-fun Modifier.phosphorGlow(): Modifier = this.then(
-    Modifier.graphicsLayer {
-        shadowColor = PipBoyGreen
-        ambientShadowColor = PipBoyGreen
-        spotShadowColor = PipBoyGreen
-        shadowElevation = 4.dp.toPx()
-        elevation = 4.dp.toPx()
-    }
-)
+fun Modifier.phosphorGlow(): Modifier = this
 
 fun Modifier.crtFlicker(): Modifier = this.then(
     Modifier.composed {
@@ -93,6 +86,9 @@ fun Modifier.crtFlicker(): Modifier = this.then(
         Modifier.graphicsLayer { this.alpha = alpha }
     }
 )
+        Modifier.graphicsLayer { this.alpha = alpha }
+    }
+)
 
 @Composable
 fun CrtScreen(
@@ -102,7 +98,7 @@ fun CrtScreen(
     Box(
         modifier = modifier
             .fillMaxSize()
-            .background(PipBoyBackground.copy(alpha = 0.95f))
+            .background(PipBoyBg.copy(alpha = 0.95f))
             .scanlineOverlay()
             .crtFlicker()
     ) {
@@ -119,7 +115,7 @@ fun PipBoyStatusBar(
     val dateFormat = remember { SimpleDateFormat("MM.dd.yyyy HH:mm", Locale.US) }
     var currentTime by remember { mutableStateOf(dateFormat.format(Date())) }
     LaunchedEffect(Unit) {
-        while (isActive) {
+        while (true) {
             kotlinx.coroutines.delay(60_000L)
             currentTime = dateFormat.format(Date())
         }
@@ -204,7 +200,7 @@ val PipBoyTabs = listOf(
     PipBoyTab("maps", "Maps", Icons.Filled.Map, Icons.Outlined.Map),
     PipBoyTab("knowledge", "Knowledge", Icons.Filled.Book, Icons.Outlined.Book),
     PipBoyTab("chat", "Chat", Icons.Filled.Chat, Icons.Outlined.Chat),
-    PipBoyTab("emergency", "Emergency", Icons.Filled.Alert, Icons.Outlined.Alert)
+    PipBoyTab("emergency", "Emergency", Icons.Filled.Warning, Icons.Outlined.Warning)
 )
 
 @Composable
