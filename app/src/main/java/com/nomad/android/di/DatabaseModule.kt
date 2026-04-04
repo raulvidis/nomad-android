@@ -37,9 +37,3 @@ object DatabaseModule {
     @Provides fun provideSearchHistoryDao(db: NomadDatabase) = db.searchHistoryDao()
     @Provides fun provideSettingsDao(db: NomadDatabase) = db.settingsDao()
 }
-
-    @Provides fun provideContentPackDao(db: NomadDatabase) = db.contentPackDao()
-    @Provides fun provideChatMessageDao(db: NomadDatabase) = db.chatMessageDao()
-    @Provides fun provideSearchHistoryDao(db: NomadDatabase) = db.searchHistoryDao()
-    @Provides fun provideSettingsDao(db: NomadDatabase) = db.settingsDao()
-}
