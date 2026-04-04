@@ -3,10 +3,10 @@ package com.nomad.android.di
 import android.content.Context
 import com.nomad.android.data.content.ContentPackManager
 import com.nomad.android.data.content.KiwixManager
-import ChatMessageDao
+import com.nomad.android.data.local.dao.ChatMessageDao
 import com.nomad.android.data.local.dao.ContentPackDao
-import SearchHistoryDao
-import SettingsDao
+import com.nomad.android.data.local.dao.SearchHistoryDao
+import com.nomad.android.data.local.dao.SettingsDao
 import com.nomad.android.data.repository.ChatRepository
 import com.nomad.android.data.repository.ContentPackRepository
 import com.nomad.android.data.repository.MapsRepository
