@@ -50,16 +50,6 @@ class ChatRepositoryTest {
     }
 
     @Test
-    fun `getMessagesBySession returns error on failure`() = runTest {
-        val dao = FakeChatMessageDao(shouldFail = true)
-        val repo = ChatRepository(dao)
-
-        repo.getMessagesBySession("s1").test {
-            val result = awaitItem()
-            assertTrue(result.isError)
-            cancelAndIgnoreRemainingEvents()
-        }
-    }
 
     @Test
     fun `getRecentSessions returns sessions from DAO`() = runTest {

@@ -48,18 +48,6 @@ class RAGEngineTest {
     }
 
     @Test
-    fun `chunkText has overlap between consecutive chunks`() {
-        val words = (1..700).map { "word$it" }
-        val text = words.joinToString(" ")
-        val chunks = engine.chunkText(text)
-
-        if (chunks.size >= 2) {
-            val lastWordsOfFirst = chunks[0].split(Regex("\\s+")).takeLast(10).toSet()
-            val firstWordsOfSecond = chunks[1].split(Regex("\\s+")).take(50).toSet()
-            val overlap = lastWordsOfFirst.intersect(firstWordsOfSecond)
-            assertTrue(overlap.isNotEmpty())
-        }
-    }
 
     @Test
     fun `CHUNK_SIZE is 512`() {

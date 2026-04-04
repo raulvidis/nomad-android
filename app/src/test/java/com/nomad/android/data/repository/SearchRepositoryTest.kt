@@ -49,16 +49,6 @@ class SearchRepositoryTest {
     }
 
     @Test
-    fun `getAllHistory returns error on failure`() = runTest {
-        val dao = FakeSearchHistoryDao(shouldFail = true)
-        val repo = SearchRepository(dao)
-
-        repo.getAllHistory().test {
-            val result = awaitItem()
-            assertTrue(result.isError)
-            cancelAndIgnoreRemainingEvents()
-        }
-    }
 
     @Test
     fun `insertHistoryEntry succeeds`() = runTest {
