@@ -3,6 +3,10 @@ package com.nomad.android.di
 import android.content.Context
 import com.nomad.android.data.content.ContentPackManager
 import com.nomad.android.data.content.KiwixManager
+import ChatMessageDao
+import com.nomad.android.data.local.dao.ContentPackDao
+import SearchHistoryDao
+import SettingsDao
 import com.nomad.android.data.repository.ChatRepository
 import com.nomad.android.data.repository.ContentPackRepository
 import com.nomad.android.data.repository.MapsRepository
@@ -36,7 +40,7 @@ object RepositoryModule {
     @Provides
     @Singleton
     fun provideChatRepository(
-        chatMessageDao: com.nomad.android.data.local.dao.ChatMessageDao
+        chatMessageDao: ChatMessageDao
     ): ChatRepository = ChatRepository(chatMessageDao)
 
     @Provides
@@ -50,13 +54,13 @@ object RepositoryModule {
     @Provides
     @Singleton
     fun provideSearchRepository(
-        searchHistoryDao: com.nomad.android.data.local.dao.SearchHistoryDao
+        searchHistoryDao: SearchHistoryDao
     ): SearchRepository = SearchRepository(searchHistoryDao)
 
     @Provides
     @Singleton
     fun provideSettingsRepository(
-        settingsDao: com.nomad.android.data.local.dao.SettingsDao,
+        settingsDao: SettingsDao,
         contentPackDao: ContentPackDao,
         @ApplicationContext context: Context
     ): SettingsRepository = SettingsRepository(settingsDao, contentPackDao, context)
