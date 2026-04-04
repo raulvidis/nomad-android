@@ -149,7 +149,7 @@ private fun DeviceScanStep(onAdvance: () -> Unit) {
     val specs = listOf(
         "RAM: 8192 MB [OK]" to 500L,
         "STORAGE: 32.0 GB AVAILABLE [OK]" to 400L,
-        "AI CAPABILITY: AICORE DETECTED [OK]" to 600L,
+        "AI CAPABILITY: LITERT-LM SUPPORTED [OK]" to 600L,
         "GPU: ADRENO 750 [OK]" to 350L,
         "NPU: AVAILABLE [OK]" to 300L
     )

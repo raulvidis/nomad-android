@@ -87,7 +87,7 @@ class ContentPackRepository @Inject constructor(
             }
         }
         emit(1f)
-    }.catch { emit(Result.error<Unit>("Download failed", it).exceptionOrNull()?.let { e -> throw e } ?: throw RuntimeException("Download failed")) }
+    }.catch { throw it }
 
     fun getPackFile(packId: String): File? {
         val file = File(contentPacksDir, packId)

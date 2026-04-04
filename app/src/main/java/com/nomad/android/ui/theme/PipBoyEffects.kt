@@ -1,6 +1,5 @@
 package com.nomad.android.ui.theme
 
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -40,15 +39,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
@@ -58,16 +50,7 @@ import androidx.navigation.NavGraph.Companion.findStartDestination
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
-import kotlin.math.sin
-import kotlin.random.Random
 import androidx.compose.animation.core.*
-
-private val PipBoyGreen = com.nomad.android.ui.theme.PipBoyGreen
-private val PipBoyGreenDim = com.nomad.android.ui.theme.PipBoyGreenDim
-private val PipBoyAmber = com.nomad.android.ui.theme.PipBoyAmber
-private val PipBoyDanger = com.nomad.android.ui.theme.PipBoyDanger
-private val PipBoyBackground = com.nomad.android.ui.theme.PipBoyBg
-private val PipBoySurface = com.nomad.android.ui.theme.PipBoySurface
 
 fun Modifier.scanlineOverlay(): Modifier = this.then(
     Modifier.drawBehind {

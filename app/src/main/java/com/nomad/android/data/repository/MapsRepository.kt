@@ -30,7 +30,7 @@ class MapsRepository @Inject constructor(
         emit(0f)
         // TODO: Implement actual tile download via OkHttp
         emit(1f)
-    }.catch { emit(Result.error<Unit>("Tile download failed", it).exceptionOrNull()?.let { e -> throw e } ?: throw RuntimeException("Tile download failed")) }
+    }.catch { throw it }
 
     fun hasOfflineTiles(): Boolean = tilesDir.listFiles()?.isNotEmpty() == true
 
