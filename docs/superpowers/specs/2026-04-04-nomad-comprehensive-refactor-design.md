@@ -45,7 +45,6 @@ Each repository:
 - Handles error wrapping in sealed `Result<T>` types (Success/Error)
 - No direct DAO exposure to UI layer
 - ViewModels map repository `Result<T>` → `UiState<T>` (Success.data → UiState.data, Error.message → UiState.error)
-- ViewModels map repository `Result<T>` → `UiState<T>` (Success.data → UiState.data, Error.message → UiState.error)
 
 ### 2.2 ViewModel Layer
 
