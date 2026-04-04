@@ -41,6 +41,7 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.composed
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -86,8 +87,6 @@ fun Modifier.crtFlicker(): Modifier = this.then(
         Modifier.graphicsLayer { this.alpha = alpha }
     }
 )
-
-@Composable
 @Composable
 fun CrtScreen(
     modifier: Modifier = Modifier,
@@ -198,7 +197,7 @@ val PipBoyTabs = listOf(
     PipBoyTab("maps", "Maps", Icons.Filled.Map, Icons.Outlined.Map),
     PipBoyTab("knowledge", "Knowledge", Icons.Filled.Book, Icons.Outlined.Book),
     PipBoyTab("chat", "Chat", Icons.Filled.Chat, Icons.Outlined.Chat),
-    PipBoyTab("emergency", "Emergency", Icons.Filled.Warning, Icons.Outlined.Warning)
+    PipBoyTab("emergency", "Emergency", Icons.Filled.Notifications, Icons.Outlined.Notifications)
 )
 
 @Composable

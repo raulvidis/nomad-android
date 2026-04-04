@@ -328,7 +328,7 @@ private fun DownloadPackStep(onAdvance: () -> Unit) {
 
     LaunchedEffect(Unit) {
         for ((index, fileProgress) in files.withIndex()) {
-            progress = fileProgress
+            progress = fileProgress.value
             delay(800)
             visibleFiles = index + 1
         }
