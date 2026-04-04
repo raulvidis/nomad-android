@@ -3,8 +3,6 @@ package com.nomad.android.di
 import android.content.Context
 import com.nomad.android.data.content.ContentPackManager
 import com.nomad.android.data.content.KiwixManager
-import com.nomad.android.data.content.KiwixManager
-import com.nomad.android.data.local.dao.ContentPackDao
 import com.nomad.android.data.repository.ChatRepository
 import com.nomad.android.data.repository.ContentPackRepository
 import com.nomad.android.data.repository.MapsRepository

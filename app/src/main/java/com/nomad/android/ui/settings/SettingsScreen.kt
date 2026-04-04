@@ -25,6 +25,8 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.nomad.android.ui.theme.PipBoyBg
+import com.nomad.android.ui.theme.PipBoyGreen
+import com.nomad.android.ui.theme.PipBoyGreenDim
 import com.nomad.android.ui.components.PipBoyButton
 import com.nomad.android.ui.components.PipBoyCard
 import com.nomad.android.ui.components.PipBoyDivider
