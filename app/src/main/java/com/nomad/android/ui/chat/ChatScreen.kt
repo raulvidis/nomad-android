@@ -59,7 +59,10 @@ fun ChatScreen(
 
     when {
         uiState.isLoading -> PipBoyLoadingScreen("ESTABLISHING NEURAL LINK...")
-        uiState.error != null -> PipBoyErrorScreen(uiState.error) { viewModel.loadRecentSessions() }
+        uiState.error != null -> PipBoyErrorScreen(
+            message = uiState.error ?: "Unknown error",
+            onRetry = { viewModel.loadRecentSessions() }
+        )
         uiState.data.messages.isEmpty() && uiState.data.currentSessionId == null -> {
             PipBoyEmptyScreen(
                 message = "No active session. Start a new conversation.",
