@@ -49,6 +49,4 @@ abstract class NomadDatabase : RoomDatabase() {
         }
     }
 }
-        }
-    }
 }

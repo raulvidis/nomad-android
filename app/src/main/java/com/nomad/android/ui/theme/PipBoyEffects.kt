@@ -124,7 +124,6 @@ fun PipBoyStatusBar(
             currentTime = dateFormat.format(Date())
         }
     }
-    }
 
     Row(
         modifier = modifier
