@@ -33,6 +33,8 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.nomad.android.ui.components.PipBoyAmber
 import com.nomad.android.ui.components.PipBoyBg
 import com.nomad.android.ui.components.PipBoyCard
@@ -49,13 +51,13 @@ private data class EmergencyQuickAccess(
     val subtitle: String,
 )
 
-private data class EmergencyContact(
-    val name: String,
-    val number: String,
-)
-
 @Composable
-fun EmergencyScreen() {
+fun EmergencyScreen(
+    viewModel: EmergencyViewModel = hiltViewModel()
+) {
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val data = uiState.data
+
     val infiniteTransition = rememberInfiniteTransition(label = "emergency")
     val flashAlpha by infiniteTransition.animateFloat(
         initialValue = 1f,
@@ -82,12 +84,6 @@ fun EmergencyScreen() {
         EmergencyQuickAccess("\uD83C\uDD98", "SOS SIGNALS", "Visual reference"),
         EmergencyQuickAccess("\uD83C\uDFE5", "NEAREST HOSPITAL", "From offline map"),
         EmergencyQuickAccess("\uD83C\uDF92", "SURVIVAL CHECKLIST", "Essential items"),
-    )
-
-    val contacts = listOf(
-        EmergencyContact("Emergency Services", "911"),
-        EmergencyContact("Poison Control", "1-800-222-1222"),
-        EmergencyContact("Local Hospital", "Not set"),
     )
 
     Column(
@@ -165,7 +161,7 @@ fun EmergencyScreen() {
             color = PipBoyAmber,
         )
 
-        contacts.forEach { contact ->
+        data.contacts.forEach { contact ->
             Row(
                 modifier = Modifier
                     .fillMaxWidth()

@@ -39,6 +39,8 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.nomad.android.ui.components.PipBoyButton
 import com.nomad.android.ui.components.PipBoyProgressBar
 import kotlinx.coroutines.delay
@@ -51,7 +53,18 @@ private val CardBg = Color(0xFF0D1A0D)
 private val BrightGreen = Color(0xFF00FF41)
 
 @Composable
-fun OnboardingScreen(onComplete: () -> Unit) {
+fun OnboardingScreen(
+    viewModel: OnboardingViewModel = hiltViewModel(),
+    onComplete: () -> Unit = {}
+) {
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val isComplete by viewModel.isOnboardingComplete.collectAsStateWithLifecycle(initial = false)
+
+    if (isComplete) {
+        onComplete()
+        return
+    }
+
     var currentStep by remember { mutableIntStateOf(0) }
 
     Box(
@@ -63,9 +76,33 @@ fun OnboardingScreen(onComplete: () -> Unit) {
         when (currentStep) {
             0 -> BootSequenceStep { currentStep = 1 }
             1 -> DeviceScanStep { currentStep = 2 }
-            2 -> ModelSelectionStep { currentStep = 3 }
+            2 -> ModelSelectionStep(
+                selectedModel = uiState.data.selectedModel,
+                onSelectModel = { viewModel.selectModel(it) }
+            ) { currentStep = 3 }
             3 -> DownloadPackStep { currentStep = 4 }
-            4 -> WelcomeStep(onComplete)
+            else -> WelcomeStep { viewModel.completeOnboarding() }
+        }
+    }
+}
+
+    var currentStep by remember { mutableIntStateOf(0) }
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(DarkBg),
+        contentAlignment = Alignment.Center
+    ) {
+        when (currentStep) {
+            0 -> BootSequenceStep { currentStep = 1 }
+            1 -> DeviceScanStep { currentStep = 2 }
+            2 -> ModelSelectionStep(
+                selectedModel = uiState.data.selectedModel,
+                onSelectModel = { viewModel.selectModel(it) }
+            ) { currentStep = 3 }
+            3 -> DownloadPackStep { currentStep = 4 }
+            else -> WelcomeStep { viewModel.completeOnboarding() }
         }
     }
 }
@@ -202,12 +239,16 @@ private fun DeviceScanStep(onAdvance: () -> Unit) {
 }
 
 @Composable
-private fun ModelSelectionStep(onAdvance: () -> Unit) {
+private fun ModelSelectionStep(
+    selectedModel: String,
+    onSelectModel: (String) -> Unit,
+    onAdvance: () -> Unit
+) {
     val models = remember {
         listOf(
             Triple("GEMMA 4 E2B", "3.0 GB", "Full capability model — recommended for 6GB+ RAM devices"),
             Triple("GEMMA 3 1B", "1.0 GB", "Lightweight model — works on most devices"),
-            Triple("AICORE (SYSTEM)", "N/A", "On-device AI via Android AICore — no download required")
+            Triple("FALLBACK", "N/A", "Rule-based offline responses — no download required")
         )
     }
 
