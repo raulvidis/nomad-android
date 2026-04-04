@@ -1,11 +1,7 @@
 package com.nomad.android.data.ai
 
-import android.content.Context
-import android.database.sqlite.SQLiteDatabase
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.withContext
 
 data class RAGChunk(
     val id: Long,
@@ -22,7 +18,6 @@ data class RAGQuery(
 )
 
 class RAGEngine(
-    private val context: Context,
     private val aiEngine: AIEngine
 ) {
     companion object {
@@ -32,56 +27,7 @@ class RAGEngine(
         const val EMBEDDING_DIMENSION = 384
     }
 
-    suspend fun initVectorStore(db: SQLiteDatabase) = withContext(Dispatchers.IO) {
-        db.execSQL("""
-            CREATE TABLE IF NOT EXISTS rag_chunks (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                source TEXT NOT NULL,
-                title TEXT NOT NULL,
-                chunk_text TEXT NOT NULL,
-                chunk_index INTEGER NOT NULL,
-                created_at INTEGER DEFAULT (strftime('%s','now'))
-            )
-        """)
-        // TODO: Enable when sqlite-vec .so is loaded
-        // db.execSQL("CREATE VIRTUAL TABLE IF NOT EXISTS rag_embeddings USING vec0(embedding float[$EMBEDDING_DIMENSION])")
-    }
-
-    suspend fun indexContent(source: String, title: String, text: String, db: SQLiteDatabase): Int = withContext(Dispatchers.IO) {
-        val chunks = chunkText(text)
-        var indexed = 0
-        db.beginTransaction()
-        try {
-            chunks.forEachIndexed { index, chunk ->
-                db.execSQL(
-                    "INSERT INTO rag_chunks (source, title, chunk_text, chunk_index) VALUES (?, ?, ?, ?)",
-                    arrayOf(source, title, chunk, index)
-                )
-                // TODO: Generate embedding and insert into rag_embeddings
-                // val embedding = embed(chunk)
-                // db.execSQL("INSERT INTO rag_embeddings (rowid, embedding) VALUES (last_insert_rowid(), ?)", arrayOf(serializeVector(embedding)))
-                indexed++
-            }
-            db.setTransactionSuccessful()
-        } finally {
-            db.endTransaction()
-        }
-        return indexed
-    }
-
-    suspend fun query(question: String, topK: Int = DEFAULT_TOP_K, sources: List<String>? = null): Flow<String> = withContext(Dispatchers.IO) {
-        val contextChunks = mockSearch(question, topK)
-        val ragPrompt = buildRAGPrompt(question, contextChunks)
-        return@withContext aiEngine.generateStream(ragPrompt, systemPrompt())
-    }
-
-    suspend fun querySync(question: String, topK: Int = DEFAULT_TOP_K): Result<String> {
-        val contextChunks = mockSearch(question, topK)
-        val ragPrompt = buildRAGPrompt(question, contextChunks)
-        return aiEngine.generate(ragPrompt, systemPrompt())
-    }
-
-    private fun chunkText(text: String): List<String> {
+    fun chunkText(text: String): List<String> {
         val words = text.split(Regex("\\s+"))
         if (words.size <= CHUNK_SIZE) return listOf(text)
 
@@ -95,6 +41,39 @@ class RAGEngine(
         return chunks
     }
 
+    suspend fun query(question: String, topK: Int = DEFAULT_TOP_K, documents: List<String>): Flow<String> = flow {
+        val contextChunks = search(question, topK, documents)
+        val ragPrompt = buildRAGPrompt(question, contextChunks)
+        aiEngine.generateStream(ragPrompt, emptyList()).collect { emit(it) }
+    }
+
+    suspend fun querySync(question: String, topK: Int = DEFAULT_TOP_K, documents: List<String>): String {
+        val contextChunks = search(question, topK, documents)
+        val ragPrompt = buildRAGPrompt(question, contextChunks)
+        return aiEngine.generate(ragPrompt, emptyList())
+    }
+
+    private fun search(query: String, topK: Int, documents: List<String>): List<RAGChunk> {
+        val queryWords = query.lowercase().split(Regex("\\s+")).toSet()
+        val scored = documents.mapIndexed { index, doc ->
+            val docWords = doc.lowercase().split(Regex("\\s+")).toSet()
+            val overlap = queryWords.intersect(docWords).size
+            index to overlap
+        }.filter { it.second > 0 }
+            .sortedByDescending { it.second }
+            .take(topK)
+
+        return scored.map { (index, _) ->
+            RAGChunk(
+                id = index.toLong(),
+                source = "local://doc$index",
+                title = "Document $index",
+                chunkText = documents[index],
+                chunkIndex = 0
+            )
+        }
+    }
+
     private fun buildRAGPrompt(question: String, chunks: List<RAGChunk>): String {
         val contextBlock = chunks.joinToString("\n\n---\n\n") { chunk ->
             "[Source: ${chunk.source} | ${chunk.title}]\n${chunk.chunkText}"
@@ -106,34 +85,18 @@ class RAGEngine(
             ---
             USER QUESTION: $question
 
-            Based on the context above, provide a clear and helpful answer. If the context doesn't contain relevant information, say so and provide general guidance.
+            Based on the context above, provide a clear and helpful answer. If the context doesn't contain the answer, say so clearly.
         """.trimIndent()
     }
 
-    private fun mockSearch(query: String, topK: Int): List<RAGChunk> {
-        return (1..minOf(topK, 3)).map { i ->
-            RAGChunk(
-                id = i.toLong(),
-                source = "local://doc$i",
-                title = "Document $i",
-                chunkText = "Relevant content from document $i related to: $query",
-                chunkIndex = 0
-            )
-        }
-    }
-
-    private fun systemPrompt(): String {
-        return """You are NOMAD's offline AI assistant. Answer questions using only the provided context from the local knowledge base. Be concise and accurate. If the context doesn't contain the answer, say so clearly."""
-    }
-
-    private fun serializeVector(vector: FloatArray): ByteArray {
+    fun serializeVector(vector: FloatArray): ByteArray {
         val buffer = java.nio.ByteBuffer.allocate(vector.size * 4)
         buffer.order(java.nio.ByteOrder.LITTLE_ENDIAN)
         vector.forEach { buffer.putFloat(it) }
         return buffer.array()
     }
 
-    private fun deserializeVector(bytes: ByteArray): FloatArray {
+    fun deserializeVector(bytes: ByteArray): FloatArray {
         val buffer = java.nio.ByteBuffer.wrap(bytes)
         buffer.order(java.nio.ByteOrder.LITTLE_ENDIAN)
         val vector = FloatArray(bytes.size / 4)
@@ -143,7 +106,7 @@ class RAGEngine(
         return vector
     }
 
-    private fun cosineSimilarity(a: FloatArray, b: FloatArray): Float {
+    fun cosineSimilarity(a: FloatArray, b: FloatArray): Float {
         var dotProduct = 0f
         var normA = 0f
         var normB = 0f

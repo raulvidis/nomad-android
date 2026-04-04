@@ -2,7 +2,12 @@ package com.nomad.android.di
 
 import android.app.ActivityManager
 import android.content.Context
-import com.nomad.android.data.ai.*
+import com.nomad.android.data.ai.AIEngine
+import com.nomad.android.data.ai.AIEngineStatus
+import com.nomad.android.data.ai.AIEngineType
+import com.nomad.android.data.ai.FallbackEngine
+import com.nomad.android.data.ai.LiteRTLMEngine
+import com.nomad.android.data.ai.RAGEngine
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -23,25 +28,29 @@ object AIModule {
         val totalRamMB = memoryInfo.totalMem / (1024 * 1024)
 
         return when {
-            AICoreEngine.isSupported(context) -> AICoreEngine(context)
-            totalRamMB >= 256 -> LiteRTLMEngine(context, LiteRTLMEngine.ModelVariant.E2B)
-            else -> LiteRTLMEngine(context, LiteRTLMEngine.ModelVariant.ONE_B)
+            totalRamMB >= 6144 -> LiteRTLMEngine(context, LiteRTLMEngine.ModelVariant.E2B)
+            totalRamMB >= 2048 -> LiteRTLMEngine(context, LiteRTLMEngine.ModelVariant.ONE_B)
+            else -> FallbackEngine(context)
         }
     }
 
     @Provides
     @Singleton
-    fun provideAIEngineStatus(@ApplicationContext context: Context, engine: AIEngine): AIEngineStatus {
+    fun provideRAGEngine(engine: AIEngine): RAGEngine = RAGEngine(engine)
+
+    @Provides
+    @Singleton
+    fun provideAIEngineStatus(engine: AIEngine): AIEngineStatus {
         return AIEngineStatus(
             engineType = when (engine) {
-                is AICoreEngine -> AIEngineType.AICORE
                 is LiteRTLMEngine -> if (engine.modelVariant == LiteRTLMEngine.ModelVariant.E2B) AIEngineType.LITERTLM_E2B else AIEngineType.LITERTLM_1B
+                is FallbackEngine -> AIEngineType.FALLBACK
                 else -> AIEngineType.NONE
             },
-            isReady = engine.isAvailable(),
+            isReady = false,
             modelName = engine.getModelName(),
-            ramRequired = engine.getDeviceInfo(),
-            modelSize = if (engine is LiteRTLMEngine) "${engine.getModelSizeMB()} MB" else "System managed"
+            ramRequired = engine.getDeviceInfo().let { "${it.totalRamMB}MB total" },
+            modelSize = if (engine is LiteRTLMEngine) "${engine.getModelSizeMB()} MB" else "N/A"
         )
     }
 }
