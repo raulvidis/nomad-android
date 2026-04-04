@@ -30,8 +30,6 @@ import com.nomad.android.ui.theme.PipBoyGreenDim
 import com.nomad.android.ui.components.PipBoyButton
 import com.nomad.android.ui.components.PipBoyCard
 import com.nomad.android.ui.components.PipBoyDivider
-import com.nomad.android.ui.components.PipBoyGreen
-import com.nomad.android.ui.components.PipBoyGreenDim
 import com.nomad.android.ui.components.PipBoyProgressBar
 import com.nomad.android.ui.components.PipBoyText
 
