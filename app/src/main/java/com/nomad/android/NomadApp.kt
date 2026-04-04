@@ -20,7 +20,7 @@ import com.nomad.android.ui.navigation.NomadNavHost
 @Composable
 fun NomadApp() {
     val onboardingViewModel: OnboardingViewModel = hiltViewModel()
-    val isOnboardingComplete by onboardingViewModel.isOnboardingComplete.collectAsStateWithLifecycle(initial = false)
+    val isOnboardingComplete by onboardingViewModel.isOnboardingComplete.collectAsStateWithLifecycle(initialValue = false)
 
     if (!isOnboardingComplete) {
         NomadTheme {
