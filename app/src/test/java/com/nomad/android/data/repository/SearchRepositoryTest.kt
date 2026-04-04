@@ -49,7 +49,6 @@ class SearchRepositoryTest {
     }
 
     @Test
-
     @Test
     fun `insertHistoryEntry succeeds`() = runTest {
         val dao = FakeSearchHistoryDao()

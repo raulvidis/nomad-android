@@ -48,7 +48,6 @@ class RAGEngineTest {
     }
 
     @Test
-
     @Test
     fun `CHUNK_SIZE is 512`() {
         assertEquals(512, RAGEngine.CHUNK_SIZE)
