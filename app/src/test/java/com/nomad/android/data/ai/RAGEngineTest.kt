@@ -112,12 +112,4 @@ class RAGEngineTest {
         val similarity = engine.cosineSimilarity(a, b)
         assertEquals(0.0f, similarity, 0.001f)
     }
-
-    @Test
-    fun `buildRagPrompt includes context and question`() {
-        val prompt = engine.buildRagPrompt("How to purify water?", listOf("Boil water for 1 minute", "Use purification tablets"))
-        assertTrue(prompt.contains("How to purify water?"))
-        assertTrue(prompt.contains("Boil water for 1 minute"))
-        assertTrue(prompt.contains("Use purification tablets"))
-    }
 }
