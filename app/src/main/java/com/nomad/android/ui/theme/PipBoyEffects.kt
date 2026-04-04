@@ -197,7 +197,7 @@ val PipBoyTabs = listOf(
     PipBoyTab("maps", "Maps", Icons.Filled.Map, Icons.Outlined.Map),
     PipBoyTab("knowledge", "Knowledge", Icons.Filled.Book, Icons.Outlined.Book),
     PipBoyTab("chat", "Chat", Icons.Filled.Chat, Icons.Outlined.Chat),
-    PipBoyTab("emergency", "Emergency", Icons.Filled.Notifications, Icons.Outlined.Notifications)
+    PipBoyTab("emergency", "Emergency", Icons.Filled.Bookmark, Icons.Outlined.Bookmark)
 )
 
 @Composable
