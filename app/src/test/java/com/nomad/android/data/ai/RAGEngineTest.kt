@@ -5,20 +5,30 @@ import org.junit.Test
 
 class RAGEngineTest {
 
-    // Test chunkText via reflection since it's private
-    private val engineClass = RAGEngine::class.java
+    private val mockEngine = object : AIEngine {
+        override suspend fun generate(prompt: String, context: List<String>): String = "mock"
+        override fun generateStream(prompt: String, context: List<String>): kotlinx.coroutines.flow.Flow<String> =
+            kotlinx.coroutines.flow.flow { emit("mock") }
+        override suspend fun isAvailable(): Boolean = true
+        override fun getModelName(): String = "mock"
+        override fun getDeviceInfo(): DeviceInfo = DeviceInfo(0, 0, false, false)
+        override suspend fun loadModel(): Result<Unit> = Result.success(Unit)
+        override fun unloadModel() {}
+    }
+
+    private val engine = RAGEngine(mockEngine)
 
     @Test
     fun `chunkText with short text returns single chunk`() {
         val text = "Hello world this is short"
-        val chunks = invokeChunkText(text)
+        val chunks = engine.chunkText(text)
         assertEquals(1, chunks.size)
         assertEquals(text, chunks[0])
     }
 
     @Test
     fun `chunkText with empty string returns single empty chunk`() {
-        val chunks = invokeChunkText("")
+        val chunks = engine.chunkText("")
         assertEquals(1, chunks.size)
     }
 
@@ -26,14 +36,13 @@ class RAGEngineTest {
     fun `chunkText respects chunk size`() {
         val words = (1..600).map { "word$it" }
         val text = words.joinToString(" ")
-        val chunks = invokeChunkText(text)
+        val chunks = engine.chunkText(text)
 
-        assertTrue(chunks.size > 1, "Expected multiple chunks for 600 words")
+        assertTrue(chunks.size > 1)
         chunks.forEach { chunk ->
             val chunkWords = chunk.split(Regex("\\s+"))
             assertTrue(
                 chunkWords.size <= RAGEngine.CHUNK_SIZE + RAGEngine.CHUNK_OVERLAP,
-                "Chunk too large: ${chunkWords.size} words"
             )
         }
     }
@@ -42,13 +51,13 @@ class RAGEngineTest {
     fun `chunkText has overlap between consecutive chunks`() {
         val words = (1..700).map { "word$it" }
         val text = words.joinToString(" ")
-        val chunks = invokeChunkText(text)
+        val chunks = engine.chunkText(text)
 
         if (chunks.size >= 2) {
             val lastWordsOfFirst = chunks[0].split(Regex("\\s+")).takeLast(10).toSet()
             val firstWordsOfSecond = chunks[1].split(Regex("\\s+")).take(50).toSet()
             val overlap = lastWordsOfFirst.intersect(firstWordsOfSecond)
-            assertTrue(overlap.isNotEmpty(), "Expected overlap between consecutive chunks")
+            assertTrue(overlap.isNotEmpty())
         }
     }
 
@@ -74,70 +83,41 @@ class RAGEngineTest {
 
     @Test
     fun `serializeVector and deserializeVector round-trip`() {
-        val engine = createEngineForTesting()
-        val method = engineClass.getDeclaredMethod("serializeVector", FloatArray::class.java)
-        method.isAccessible = true
         val original = FloatArray(384) { it.toFloat() * 0.1f }
-
-        val serialized = method.invoke(engine, original) as ByteArray
-        val deserializedMethod = engineClass.getDeclaredMethod("deserializeVector", ByteArray::class.java)
-        deserializedMethod.isAccessible = true
-        val result = deserializedMethod.invoke(engine, serialized) as FloatArray
+        val serialized = engine.serializeVector(original)
+        val result = engine.deserializeVector(serialized)
 
         assertArrayEquals(original, result, 0.001f)
     }
 
     @Test
     fun `cosineSimilarity with identical vectors returns 1`() {
-        val engine = createEngineForTesting()
-        val method = engineClass.getDeclaredMethod("cosineSimilarity", FloatArray::class.java, FloatArray::class.java)
-        method.isAccessible = true
         val vec = floatArrayOf(1f, 0f, 0f, 0f)
-
-        val similarity = method.invoke(engine, vec, vec) as Float
+        val similarity = engine.cosineSimilarity(vec, vec)
         assertEquals(1.0f, similarity, 0.001f)
     }
 
     @Test
     fun `cosineSimilarity with orthogonal vectors returns 0`() {
-        val engine = createEngineForTesting()
-        val method = engineClass.getDeclaredMethod("cosineSimilarity", FloatArray::class.java, FloatArray::class.java)
-        method.isAccessible = true
         val a = floatArrayOf(1f, 0f)
         val b = floatArrayOf(0f, 1f)
-
-        val similarity = method.invoke(engine, a, b) as Float
+        val similarity = engine.cosineSimilarity(a, b)
         assertEquals(0.0f, similarity, 0.001f)
     }
 
     @Test
     fun `cosineSimilarity with zero vectors returns 0`() {
-        val engine = createEngineForTesting()
-        val method = engineClass.getDeclaredMethod("cosineSimilarity", FloatArray::class.java, FloatArray::class.java)
-        method.isAccessible = true
         val a = floatArrayOf(0f, 0f)
         val b = floatArrayOf(1f, 1f)
-
-        val similarity = method.invoke(engine, a, b) as Float
+        val similarity = engine.cosineSimilarity(a, b)
         assertEquals(0.0f, similarity, 0.001f)
     }
 
-    private fun invokeChunkText(text: String): List<String> {
-        val engine = createEngineForTesting()
-        val method = engineClass.getDeclaredMethod("chunkText", String::class.java)
-        method.isAccessible = true
-        @Suppress("UNCHECKED_CAST")
-        return method.invoke(engine, text) as List<String>
-    }
-
-    private fun createEngineForTesting(): Any {
-        // RAGEngine constructor needs Context and AIEngine, but we only test private methods
-        // Use reflection to create a minimal instance
-        val constructor = engineClass.getDeclaredConstructor(
-            android.content.Context::class.java,
-            com.nomad.android.data.ai.AIEngine::class.java
-        )
-        constructor.isAccessible = true
-        return constructor.newInstance(null, null)
+    @Test
+    fun `buildRagPrompt includes context and question`() {
+        val prompt = engine.buildRagPrompt("How to purify water?", listOf("Boil water for 1 minute", "Use purification tablets"))
+        assertTrue(prompt.contains("How to purify water?"))
+        assertTrue(prompt.contains("Boil water for 1 minute"))
+        assertTrue(prompt.contains("Use purification tablets"))
     }
 }

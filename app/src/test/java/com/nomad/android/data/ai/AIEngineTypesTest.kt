@@ -9,9 +9,9 @@ class AIEngineTypesTest {
     fun `AIEngineType enum has all values`() {
         val values = AIEngineType.values()
         assertEquals(4, values.size)
-        assertTrue(values.contains(AIEngineType.AICORE))
         assertTrue(values.contains(AIEngineType.LITERTLM_E2B))
         assertTrue(values.contains(AIEngineType.LITERTLM_1B))
+        assertTrue(values.contains(AIEngineType.FALLBACK))
         assertTrue(values.contains(AIEngineType.NONE))
     }
 
@@ -21,7 +21,7 @@ class AIEngineTypesTest {
             engineType = AIEngineType.LITERTLM_E2B,
             isReady = true,
             modelName = "Gemma 4 E2B",
-            ramRequired = "6GB+"
+            ramRequired = "6144MB total",
             modelSize = "3000 MB"
         )
         assertEquals(AIEngineType.LITERTLM_E2B, status.engineType)
@@ -30,11 +30,25 @@ class AIEngineTypesTest {
     }
 
     @Test
+    fun `DeviceInfo data class holds values`() {
+        val info = DeviceInfo(
+            totalRamMB = 8192,
+            availableRamMB = 4096,
+            hasNPU = true,
+            hasGPU = true
+        )
+        assertEquals(8192L, info.totalRamMB)
+        assertEquals(4096L, info.availableRamMB)
+        assertTrue(info.hasNPU)
+        assertTrue(info.hasGPU)
+    }
+
+    @Test
     fun `LiteRTLMEngine ModelVariant E2B has correct properties`() {
         val e2b = LiteRTLMEngine.ModelVariant.E2B
         assertEquals("Gemma 4 E2B", e2b.displayName)
         assertEquals("gemma4-e2b.bin", e2b.fileName)
-        assertEquals("6GB+", e2b.ramRequired)
+        assertEquals(6144L, e2b.ramRequiredMB)
         assertEquals(3000, e2b.sizeMB)
     }
 
@@ -43,7 +57,7 @@ class AIEngineTypesTest {
         val oneB = LiteRTLMEngine.ModelVariant.ONE_B
         assertEquals("Gemma 3 1B", oneB.displayName)
         assertEquals("gemma3-1b.bin", oneB.fileName)
-        assertEquals("4GB+", oneB.ramRequired)
+        assertEquals(2048L, oneB.ramRequiredMB)
         assertEquals(1000, oneB.sizeMB)
     }
 
@@ -54,16 +68,17 @@ class AIEngineTypesTest {
     }
 
     @Test
-    fun `recommendedVariant selects 1B for under 6GB RAM`() {
+    fun `recommendedVariant selects 1B for 2GB-6GB RAM`() {
         assertEquals(LiteRTLMEngine.ModelVariant.ONE_B, LiteRTLMEngine.recommendedVariant(4096))
         assertEquals(LiteRTLMEngine.ModelVariant.ONE_B, LiteRTLMEngine.recommendedVariant(2048))
     }
 
     @Test
     fun `RAGChunk data class holds values`() {
-        val chunk = RAGChunk(1L, "survival", "Boil water...", 0)
+        val chunk = RAGChunk(1L, "local://doc0", "Document 0", "Boil water...", 0)
         assertEquals(1L, chunk.id)
-        assertEquals("survival", chunk.source)
+        assertEquals("local://doc0", chunk.source)
+        assertEquals("Document 0", chunk.title)
         assertEquals("Boil water...", chunk.chunkText)
     }
 

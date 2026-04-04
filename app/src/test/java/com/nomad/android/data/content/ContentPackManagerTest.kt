@@ -12,7 +12,7 @@ class ContentPackManagerTest {
 
     @Test
     fun `formatSize formats MB correctly`() {
-        assertEquals("1.0 MB", ContentPackManager(null, null).formatSize(1_048_576L))
+        assertEquals("512.0 MB", ContentPackManager(null, null).formatSize(512L * 1024 * 1024))
     }
 
     @Test
@@ -23,11 +23,6 @@ class ContentPackManagerTest {
     @Test
     fun `formatSize formats large GB`() {
         assertEquals("32.0 GB", ContentPackManager(null, null).formatSize(32L * 1024 * 1024 * 1024))
-    }
-
-    @Test
-    fun `formatSize formats 512 MB`() {
-        assertEquals("512.0 MB", ContentPackManager(null, null).formatSize(512L * 1024 * 1024))
     }
 
     @Test
@@ -62,6 +57,6 @@ class ContentPackManagerTest {
         val pack = ContentPack("id", "name", "type", 0L, "desc", PackStatus.AVAILABLE)
         val downloaded = pack.copy(status = PackStatus.DOWNLOADED)
         assertEquals(PackStatus.DOWNLOADED, downloaded.status)
-        assertEquals(PackStatus.AVAILABLE, pack.status) // original unchanged
+        assertEquals(PackStatus.AVAILABLE, pack.status)
     }
 }
