@@ -86,15 +86,17 @@ class OnboardingViewModel @Inject constructor(
     }
 
     fun nextStep() {
-        val current = _uiState.value.data
-        if (current.currentStep < current.totalSteps - 1) {
-            _uiState.update {
-                it.copy(data = current.copy(currentStep = current.currentStep + 1))
-            }
-
-            // Simulate download progress on step 3
-            if (current.currentStep + 1 == 3) {
-                simulateDownload()
+        _uiState.update { state ->
+            val current = state.data
+            if (current.currentStep < current.totalSteps - 1) {
+                val nextStep = current.currentStep + 1
+                // Simulate download progress on step 3
+                if (nextStep == 3) {
+                    simulateDownload()
+                }
+                state.copy(data = current.copy(currentStep = nextStep))
+            } else {
+                state
             }
         }
     }

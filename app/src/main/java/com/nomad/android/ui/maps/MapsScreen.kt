@@ -85,22 +85,31 @@ private fun MapsContent(
             modifier = Modifier
                 .fillMaxWidth()
                 .weight(1f)
+                .background(Color(0xFF0F1A0F), RoundedCornerShape(4.dp))
                 .border(1.dp, PipBoyGreen, RoundedCornerShape(4.dp)),
             contentAlignment = Alignment.Center
         ) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
                 Text(
-                    text = "MAP MODULE",
+                    text = "[MAP VIEW]",
                     color = PipBoyGreen,
                     fontFamily = FontFamily.Monospace,
-                    fontSize = 24.sp
+                    fontSize = 20.sp
                 )
-                Spacer(modifier = Modifier.size(8.dp))
                 Text(
-                    text = if (data.hasOfflineTiles) "Offline tiles available" else "MapLibre GL Native integration pending",
-                    color = PipBoyGreenDim,
+                    text = if (data.hasOfflineTiles) "OFFLINE TILES LOADED" else "NO OFFLINE TILES",
+                    color = if (data.hasOfflineTiles) PipBoyGreen else PipBoyGreenDim,
                     fontFamily = FontFamily.Monospace,
                     fontSize = 12.sp
+                )
+                Text(
+                    text = "Download map packs in Settings\nto enable offline cartography",
+                    color = PipBoyGreenDim,
+                    fontFamily = FontFamily.Monospace,
+                    fontSize = 11.sp
                 )
             }
         }

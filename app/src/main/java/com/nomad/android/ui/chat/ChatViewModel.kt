@@ -158,7 +158,12 @@ class ChatViewModel @Inject constructor(
     }
 
     fun sendMessage(content: String) {
-        val sessionId = _uiState.value.data.currentSessionId ?: run {
+        if (_uiState.value.data.isStreaming) return
+
+        val sessionId = _uiState.value.data.currentSessionId
+        if (sessionId != null) {
+            sendUserMessage(sessionId, content)
+        } else {
             val newId = UUID.randomUUID().toString()
             val session = ChatSession(
                 id = newId,
@@ -166,6 +171,15 @@ class ChatViewModel @Inject constructor(
                 createdAt = System.currentTimeMillis(),
                 updatedAt = System.currentTimeMillis()
             )
+            // Set currentSessionId immediately to prevent duplicate session creation
+            _uiState.update {
+                it.copy(
+                    data = it.data.copy(
+                        currentSessionId = newId,
+                        sessions = listOf(session) + it.data.sessions
+                    )
+                )
+            }
             viewModelScope.launch {
                 chatRepository.insertSession(
                     ChatSessionEntity(
@@ -175,20 +189,9 @@ class ChatViewModel @Inject constructor(
                         updatedAt = session.updatedAt
                     )
                 )
-                _uiState.update {
-                    it.copy(
-                        data = it.data.copy(
-                            currentSessionId = newId,
-                            sessions = listOf(session) + it.data.sessions
-                        )
-                    )
-                }
                 sendUserMessage(newId, content)
             }
-            return
         }
-
-        sendUserMessage(sessionId, content)
     }
 
     private fun sendUserMessage(sessionId: String, content: String) {

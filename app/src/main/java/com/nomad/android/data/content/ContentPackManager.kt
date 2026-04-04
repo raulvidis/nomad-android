@@ -1,12 +1,19 @@
 package com.nomad.android.data.content
 
 import android.content.Context
+import android.util.Log
+import com.nomad.android.data.ai.LiteRTLMEngine
 import com.nomad.android.data.local.dao.ContentPackDao
 import com.nomad.android.data.local.entity.ContentPackEntity
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOn
+import okhttp3.OkHttpClient
+import okhttp3.Request
 import java.io.File
+import java.io.FileOutputStream
 
 data class ContentPack(
     val id: String,
@@ -14,41 +21,72 @@ data class ContentPack(
     val type: String,
     val sizeBytes: Long,
     val description: String,
-    val status: PackStatus
+    val status: PackStatus,
+    val downloadUrl: String? = null
 )
 
 enum class PackStatus { AVAILABLE, DOWNLOADING, DOWNLOADED, ERROR }
 
 class ContentPackManager(
     private val context: Context,
-    private val contentPackDao: ContentPackDao
+    private val contentPackDao: ContentPackDao,
+    private val okHttpClient: OkHttpClient
 ) {
     private val downloadDir by lazy {
         File(context.filesDir, "contentPacks").also { it.mkdirs() }
     }
-
-    fun getAvailablePacks(): Flow<List<ContentPack>> = flow {
-        val bundled = getBundledPacks()
-        val downloadedIds = downloadDir.listFiles()?.map { it.name } ?: emptyList()
-
-        val packs = bundled.map { pack ->
-            pack.copy(
-                status = if (downloadedIds.contains(pack.id)) PackStatus.DOWNLOADED else pack.status
-            )
-        }
-        emit(packs)
+    private val modelsDir by lazy {
+        File(context.filesDir, "models").also { it.mkdirs() }
     }
 
-    private fun getBundledPacks(): List<ContentPack> = listOf(
-        ContentPack("essentials", "Essentials Pack", "survival", 524288000L, "First aid, survival guides, SOS protocols", PackStatus.DOWNLOADED),
-        ContentPack("wiki_mini", "Wikipedia Mini", "wikipedia", 2147483648L, "Top 10,000 articles (no images)", PackStatus.AVAILABLE),
-        ContentPack("wiki_full", "Wikipedia Full", "wikipedia", 32212254720L, "All articles (no images)", PackStatus.AVAILABLE),
-        ContentPack("map_region", "Map - Region", "maps", 1073741824L, "Single region offline map", PackStatus.AVAILABLE),
-        ContentPack("map_world", "Map - World", "maps", 128849018880L, "Global basemap + POIs", PackStatus.AVAILABLE),
-        ContentPack("ai_e2b", "AI Model - Gemma 4 E2B", "ai_model", 3145728000L, "On-device AI (3GB, requires 6GB RAM)", PackStatus.AVAILABLE),
-        ContentPack("ai_1b", "AI Model - Gemma 3 1B", "ai_model", 1048576000L, "Lightweight AI (1GB, requires 4GB RAM)", PackStatus.AVAILABLE),
-        ContentPack("books", "Classic Books Pack", "books", 2147483648L, "Project Gutenberg top 1000", PackStatus.AVAILABLE),
-    )
+    fun getAvailablePacks(): Flow<List<ContentPack>> = flow {
+        // Clean up old misnamed model files from previous versions
+        cleanupOldModelFiles()
+
+        val bundled = getBundledPacks()
+        val downloadedContentIds = downloadDir.listFiles()?.map { it.name } ?: emptyList()
+        val downloadedModelFiles = modelsDir.listFiles()?.map { it.name } ?: emptyList()
+
+        val packs = bundled.map { pack ->
+            val isDownloaded = when (pack.type) {
+                "ai_model" -> {
+                    // Check if the actual model file exists in models dir
+                    val variant = getModelVariantForPack(pack.id)
+                    variant != null && downloadedModelFiles.contains(variant.fileName)
+                }
+                else -> downloadedContentIds.contains(pack.id)
+            }
+            pack.copy(status = if (isDownloaded) PackStatus.DOWNLOADED else pack.status)
+        }
+        emit(packs)
+    }.flowOn(Dispatchers.IO)
+
+    private fun getBundledPacks(): List<ContentPack> {
+        val gemma4 = LiteRTLMEngine.ModelVariant.GEMMA4_E2B
+
+        return listOf(
+            ContentPack("essentials", "Essentials Pack", "survival", 524288000L, "First aid, survival guides, SOS protocols", PackStatus.DOWNLOADED),
+            ContentPack("wiki_mini", "Wikipedia Mini", "wikipedia", 2147483648L, "Top 10,000 articles (no images)", PackStatus.AVAILABLE),
+            ContentPack("wiki_full", "Wikipedia Full", "wikipedia", 32212254720L, "All articles (no images)", PackStatus.AVAILABLE),
+            ContentPack("map_region", "Map - Region", "maps", 1073741824L, "Single region offline map", PackStatus.AVAILABLE),
+            ContentPack("map_world", "Map - World", "maps", 128849018880L, "Global basemap + POIs", PackStatus.AVAILABLE),
+            ContentPack(
+                id = "ai_gemma4",
+                name = gemma4.displayName,
+                type = "ai_model",
+                sizeBytes = gemma4.sizeMB.toLong() * 1_048_576,
+                description = "On-device LLM (2.0 GB download)",
+                status = PackStatus.AVAILABLE,
+                downloadUrl = gemma4.downloadUrl
+            ),
+            ContentPack("books", "Classic Books Pack", "books", 2147483648L, "Project Gutenberg top 1000", PackStatus.AVAILABLE),
+        )
+    }
+
+    private fun getModelVariantForPack(packId: String): LiteRTLMEngine.ModelVariant? = when (packId) {
+        "ai_gemma4" -> LiteRTLMEngine.ModelVariant.GEMMA4_E2B
+        else -> null
+    }
 
     fun downloadPack(packId: String): Flow<Float> = flow {
         emit(0f)
@@ -56,40 +94,157 @@ class ContentPackManager(
         val pack = getBundledPacks().find { it.id == packId }
             ?: throw IllegalArgumentException("Unknown pack: $packId")
 
-        val destFile = File(downloadDir, packId)
-        if (destFile.exists()) {
-            emit(1f)
-            return@flow
+        if (pack.type == "ai_model" && pack.downloadUrl != null) {
+            // Real download from HuggingFace
+            val variant = getModelVariantForPack(packId)
+                ?: throw IllegalArgumentException("Unknown model variant for pack: $packId")
+            val destFile = File(modelsDir, variant.fileName)
+
+            if (destFile.exists() && destFile.length() > 0) {
+                emit(1f)
+            } else {
+                downloadFile(pack.downloadUrl, destFile) { progress ->
+                    emit(progress)
+                }
+            }
+        } else {
+            // Simulated download for non-AI packs (no real CDN yet)
+            val destFile = File(downloadDir, packId)
+            if (destFile.exists()) {
+                emit(1f)
+                return@flow
+            }
+            val steps = 25
+            val delayPerStep = when {
+                pack.sizeBytes > 10_000_000_000L -> 300L
+                pack.sizeBytes > 1_000_000_000L -> 200L
+                else -> 120L
+            }
+            for (i in 1..steps) {
+                delay(delayPerStep)
+                emit(i.toFloat() / steps)
+            }
+            destFile.createNewFile()
         }
 
-        // Simulate download progress for now (replace with OkHttp + WorkManager when backend is ready)
-        val steps = 20
-        for (i in 1..steps) {
-            delay(100)
-            emit(i.toFloat() / steps)
-        }
+        // Persist to Room
+        contentPackDao.insert(
+            ContentPackEntity(
+                id = pack.id,
+                name = pack.name,
+                type = pack.type,
+                sizeBytes = pack.sizeBytes,
+                status = "downloaded",
+                downloadedAt = System.currentTimeMillis(),
+                version = "1.0",
+                description = pack.description
+            )
+        )
 
-        // Create placeholder file to mark as downloaded
-        destFile.createNewFile()
         emit(1f)
+    }.flowOn(Dispatchers.IO)
+
+    private suspend fun downloadFile(
+        url: String,
+        destFile: File,
+        onProgress: suspend (Float) -> Unit
+    ) {
+        val tmpFile = File(destFile.parentFile, "${destFile.name}.tmp")
+
+        try {
+            Log.i(TAG, "Downloading $url to ${destFile.absolutePath}")
+            val request = Request.Builder()
+                .url(url)
+                .header("User-Agent", "NOMAD-Android/1.0")
+                .build()
+
+            val response = okHttpClient.newCall(request).execute()
+            response.use { resp ->
+                if (!resp.isSuccessful) {
+                    throw RuntimeException("Download failed: HTTP ${resp.code}")
+                }
+
+                val body = resp.body ?: throw RuntimeException("Empty response body")
+                val totalBytes = body.contentLength()
+                var downloadedBytes = 0L
+
+                body.byteStream().use { input ->
+                    FileOutputStream(tmpFile).use { output ->
+                        val buffer = ByteArray(65536)
+                        var bytesRead: Int
+                        while (input.read(buffer).also { bytesRead = it } != -1) {
+                            output.write(buffer, 0, bytesRead)
+                            downloadedBytes += bytesRead
+                            if (totalBytes > 0) {
+                                onProgress(downloadedBytes.toFloat() / totalBytes.toFloat())
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Atomic rename
+            if (!tmpFile.renameTo(destFile)) {
+                throw RuntimeException("Failed to rename temp file to ${destFile.name}")
+            }
+            Log.i(TAG, "Download complete: ${destFile.absolutePath} (${destFile.length()} bytes)")
+
+        } catch (e: Exception) {
+            tmpFile.delete()
+            throw e
+        }
     }
 
     suspend fun deletePack(packId: String) {
+        // Delete model file if AI pack
+        val variant = getModelVariantForPack(packId)
+        if (variant != null) {
+            val modelFile = File(modelsDir, variant.fileName)
+            if (modelFile.exists()) modelFile.delete()
+        }
+        // Delete content pack file
         val file = File(downloadDir, packId)
         if (file.exists()) file.delete()
+        // Remove from database
         contentPackDao.deleteById(packId)
     }
 
-    fun isPackDownloaded(packId: String): Boolean = File(downloadDir, packId).exists()
+    fun isPackDownloaded(packId: String): Boolean {
+        val variant = getModelVariantForPack(packId)
+        if (variant != null) {
+            return File(modelsDir, variant.fileName).exists()
+        }
+        return File(downloadDir, packId).exists()
+    }
 
     fun getDownloadedPackSize(packId: String): Long {
+        val variant = getModelVariantForPack(packId)
+        if (variant != null) {
+            val file = File(modelsDir, variant.fileName)
+            return if (file.exists()) file.length() else 0L
+        }
         val file = File(downloadDir, packId)
         return if (file.exists()) file.length() else 0L
     }
 
     fun formatSize(bytes: Long): String = when {
         bytes >= 1_073_741_824 -> "%.1f GB".format(bytes / 1_073_741_824.0)
-        bytes >= 1_048_576 -> "%.1f MB".format(bytes / 1_048_576.0)
+        bytes >= 1_048_576 -> "%.0f MB".format(bytes / 1_048_576.0)
         else -> "$bytes bytes"
+    }
+
+    private fun cleanupOldModelFiles() {
+        // Remove model files from previous versions with wrong filenames
+        val validFileNames = LiteRTLMEngine.ModelVariant.entries.map { it.fileName }.toSet()
+        modelsDir.listFiles()?.forEach { file ->
+            if (file.name !in validFileNames && !file.name.endsWith(".tmp")) {
+                Log.i(TAG, "Cleaning up old model file: ${file.name}")
+                file.delete()
+            }
+        }
+    }
+
+    companion object {
+        private const val TAG = "ContentPackManager"
     }
 }

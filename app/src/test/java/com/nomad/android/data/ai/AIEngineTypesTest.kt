@@ -44,33 +44,21 @@ class AIEngineTypesTest {
     }
 
     @Test
-    fun `LiteRTLMEngine ModelVariant E2B has correct properties`() {
-        val e2b = LiteRTLMEngine.ModelVariant.E2B
-        assertEquals("Gemma 4 E2B", e2b.displayName)
-        assertEquals("gemma4-e2b.bin", e2b.fileName)
-        assertEquals(6144L, e2b.ramRequiredMB)
-        assertEquals(3000, e2b.sizeMB)
+    fun `LiteRTLMEngine ModelVariant GEMMA4_E2B has correct properties`() {
+        val gemma4 = LiteRTLMEngine.ModelVariant.GEMMA4_E2B
+        assertEquals("Gemma 4 E2B", gemma4.displayName)
+        assertEquals("gemma-4-E2B-it-web.task", gemma4.fileName)
+        assertEquals(2048L, gemma4.ramRequiredMB)
+        assertEquals(2004, gemma4.sizeMB)
+        assertTrue(gemma4.downloadUrl.startsWith("https://"))
+        assertTrue(gemma4.downloadUrl.contains("huggingface"))
     }
 
     @Test
-    fun `LiteRTLMEngine ModelVariant ONE_B has correct properties`() {
-        val oneB = LiteRTLMEngine.ModelVariant.ONE_B
-        assertEquals("Gemma 3 1B", oneB.displayName)
-        assertEquals("gemma3-1b.bin", oneB.fileName)
-        assertEquals(2048L, oneB.ramRequiredMB)
-        assertEquals(1000, oneB.sizeMB)
-    }
-
-    @Test
-    fun `recommendedVariant selects E2B for 6GB+ RAM`() {
-        assertEquals(LiteRTLMEngine.ModelVariant.E2B, LiteRTLMEngine.recommendedVariant(6144))
-        assertEquals(LiteRTLMEngine.ModelVariant.E2B, LiteRTLMEngine.recommendedVariant(8192))
-    }
-
-    @Test
-    fun `recommendedVariant selects 1B for 2GB-6GB RAM`() {
-        assertEquals(LiteRTLMEngine.ModelVariant.ONE_B, LiteRTLMEngine.recommendedVariant(4096))
-        assertEquals(LiteRTLMEngine.ModelVariant.ONE_B, LiteRTLMEngine.recommendedVariant(2048))
+    fun `recommendedVariant always selects Gemma4`() {
+        assertEquals(LiteRTLMEngine.ModelVariant.GEMMA4_E2B, LiteRTLMEngine.recommendedVariant(8192))
+        assertEquals(LiteRTLMEngine.ModelVariant.GEMMA4_E2B, LiteRTLMEngine.recommendedVariant(4096))
+        assertEquals(LiteRTLMEngine.ModelVariant.GEMMA4_E2B, LiteRTLMEngine.recommendedVariant(2048))
     }
 
     @Test

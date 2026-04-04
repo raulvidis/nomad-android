@@ -1,5 +1,6 @@
 package com.nomad.android.data.ai
 
+import com.nomad.android.data.Result
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 
@@ -62,10 +63,9 @@ class FallbackEngine : AIEngine {
     override fun getModelName(): String = "Fallback (Rule-Based)"
 
     override fun getDeviceInfo(): DeviceInfo {
-        val runtime = Runtime.getRuntime()
         return DeviceInfo(
-            totalRamMB = runtime.maxMemory() / (1024 * 1024),
-            availableRamMB = runtime.freeMemory() / (1024 * 1024),
+            totalRamMB = 0,
+            availableRamMB = 0,
             hasNPU = false,
             hasGPU = false
         )

@@ -11,6 +11,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -59,12 +60,11 @@ class DashboardViewModel @Inject constructor(
                 modelSize = "N/A"
             )
 
-            // Collect content pack count from the database
+            // Get content pack count from the database (first emission only)
             var packCount = 0
-            contentPackRepository.getAllPacks().collect { result ->
-                if (result is Result.Success) {
-                    packCount = result.data.size
-                }
+            val packResult = contentPackRepository.getAllPacks().first()
+            if (packResult is Result.Success) {
+                packCount = packResult.data.size
             }
 
             _uiState.update {

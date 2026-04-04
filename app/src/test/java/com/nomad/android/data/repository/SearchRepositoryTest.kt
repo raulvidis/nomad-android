@@ -68,6 +68,25 @@ class SearchRepositoryTest {
         assertTrue(result.isSuccess)
         assertEquals(5000L, dao.deletedBeforeTimestamp)
     }
+
+    @Test
+    fun `insertHistoryEntry returns error when DAO fails`() = runTest {
+        val dao = FakeSearchHistoryDao(shouldFail = true)
+        val repo = SearchRepository(dao)
+        val entry = SearchHistoryEntity(query = "fire", source = "knowledge", timestamp = 1000)
+
+        val result = repo.insertHistoryEntry(entry)
+        assertTrue(result.isError)
+    }
+
+    @Test
+    fun `deleteOlderThan returns error when DAO fails`() = runTest {
+        val dao = FakeSearchHistoryDao(shouldFail = true)
+        val repo = SearchRepository(dao)
+
+        val result = repo.deleteOlderThan(5000)
+        assertTrue(result.isError)
+    }
 }
 
 class FakeSearchHistoryDao(

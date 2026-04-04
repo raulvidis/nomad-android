@@ -162,23 +162,25 @@ class KnowledgeViewModel @Inject constructor(
     }
 
     private fun applyFilters() {
-        val state = _uiState.value.data
-        var filtered = state.articles
+        _uiState.update { current ->
+            val data = current.data
+            var filtered = data.articles
 
-        if (state.selectedCategory != "All") {
-            filtered = filtered.filter { it.category == state.selectedCategory }
-        }
-
-        if (state.searchQuery.isNotBlank()) {
-            val query = state.searchQuery.lowercase()
-            filtered = filtered.filter { article ->
-                article.title.lowercase().contains(query) ||
-                article.content.lowercase().contains(query) ||
-                article.category.lowercase().contains(query)
+            if (data.selectedCategory != "All") {
+                filtered = filtered.filter { it.category == data.selectedCategory }
             }
-        }
 
-        _uiState.update { it.copy(data = state.copy(filteredArticles = filtered)) }
+            if (data.searchQuery.isNotBlank()) {
+                val query = data.searchQuery.lowercase()
+                filtered = filtered.filter { article ->
+                    article.title.lowercase().contains(query) ||
+                    article.content.lowercase().contains(query) ||
+                    article.category.lowercase().contains(query)
+                }
+            }
+
+            current.copy(data = data.copy(filteredArticles = filtered))
+        }
     }
 
     fun toggleFavorite(articleId: String) {

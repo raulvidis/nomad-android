@@ -20,7 +20,7 @@ class SettingsRepository @Inject constructor(
 ) {
     fun getSetting(key: String): Flow<Result<String?>> =
         settingsDao.getAll()
-            .map { list -> Result.success(list.find { it.key == key }?.value) }
+            .map { list -> Result.success(list.find { it.key == key }?.value) as Result<String?> }
             .catch { emit(Result.error("Failed to read setting", it)) }
 
     suspend fun setSetting(key: String, value: String): Result<Unit> =

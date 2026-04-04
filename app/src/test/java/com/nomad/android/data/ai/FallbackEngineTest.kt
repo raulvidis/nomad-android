@@ -1,6 +1,7 @@
 package com.nomad.android.data.ai
 
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.*
 import org.junit.Test
@@ -59,15 +60,23 @@ class FallbackEngineTest {
     }
 
     @Test
-    fun `generateStream emits chunks`() = runTest {
+    fun `generateStream emits all chunks`() = runTest {
         val flow = engine.generateStream("How to start a fire?", emptyList())
-        val result = flow.first()
-        assertTrue(result.isNotEmpty())
+        val results = flow.toList()
+        assertTrue(results.isNotEmpty())
+        val fullResponse = results.joinToString("")
+        assertTrue(fullResponse.contains("fire"))
     }
 
     @Test
     fun `generate is case insensitive`() = runTest {
         val response = engine.generate("HOW TO PERFORM CPR?", emptyList())
         assertTrue(response.contains("CPR"))
+    }
+
+    @Test
+    fun `loadModel returns custom Result type`() = runTest {
+        val result = engine.loadModel()
+        assertTrue(result is com.nomad.android.data.Result.Success)
     }
 }

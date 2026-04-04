@@ -12,7 +12,7 @@ class RAGEngineTest {
         override suspend fun isAvailable(): Boolean = true
         override fun getModelName(): String = "mock"
         override fun getDeviceInfo(): DeviceInfo = DeviceInfo(0, 0, false, false)
-        override suspend fun loadModel(): Result<Unit> = Result.success(Unit)
+        override suspend fun loadModel(): com.nomad.android.data.Result<Unit> = com.nomad.android.data.Result.success(Unit)
         override fun unloadModel() {}
     }
 
@@ -42,7 +42,8 @@ class RAGEngineTest {
         chunks.forEach { chunk ->
             val chunkWords = chunk.split(Regex("\\s+"))
             assertTrue(
-                chunkWords.size <= RAGEngine.CHUNK_SIZE + RAGEngine.CHUNK_OVERLAP,
+                "Chunk has ${chunkWords.size} words, expected <= ${RAGEngine.CHUNK_SIZE}",
+                chunkWords.size <= RAGEngine.CHUNK_SIZE,
             )
         }
     }

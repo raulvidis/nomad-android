@@ -60,12 +60,12 @@ fun OnboardingScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val isComplete by viewModel.isOnboardingComplete.collectAsStateWithLifecycle(initialValue = false)
 
-    if (isComplete) {
-        onComplete()
-        return
+    LaunchedEffect(isComplete) {
+        if (isComplete) onComplete()
     }
+    if (isComplete) return
 
-    var currentStep by remember { mutableIntStateOf(0) }
+    val currentStep = uiState.data.currentStep
 
     Box(
         modifier = Modifier
@@ -74,13 +74,16 @@ fun OnboardingScreen(
         contentAlignment = Alignment.Center
     ) {
         when (currentStep) {
-            0 -> BootSequenceStep { currentStep = 1 }
-            1 -> DeviceScanStep { currentStep = 2 }
+            0 -> BootSequenceStep { viewModel.nextStep() }
+            1 -> DeviceScanStep(
+                hardwareInfo = uiState.data.hardwareInfo,
+                onAdvance = { viewModel.nextStep() }
+            )
             2 -> ModelSelectionStep(
                 selectedModel = uiState.data.selectedModel,
                 onSelectModel = { viewModel.selectModel(it) }
-            ) { currentStep = 3 }
-            3 -> DownloadPackStep { currentStep = 4 }
+            ) { viewModel.nextStep() }
+            3 -> DownloadPackStep { viewModel.nextStep() }
             else -> WelcomeStep { viewModel.completeOnboarding() }
         }
     }
@@ -145,13 +148,22 @@ private fun BootSequenceStep(onAdvance: () -> Unit) {
 }
 
 @Composable
-private fun DeviceScanStep(onAdvance: () -> Unit) {
+private fun DeviceScanStep(
+    hardwareInfo: HardwareInfo?,
+    onAdvance: () -> Unit
+) {
+    val ramMB = hardwareInfo?.totalRamMB ?: 0
+    val storageMB = hardwareInfo?.availableStorageMB ?: 0
+    val storageGB = "%.1f".format(storageMB / 1024.0)
+    val hasNPU = hardwareInfo?.hasNPU ?: false
+    val hasGPU = hardwareInfo?.hasGPU ?: false
+
     val specs = listOf(
-        "RAM: 8192 MB [OK]" to 500L,
-        "STORAGE: 32.0 GB AVAILABLE [OK]" to 400L,
+        "RAM: $ramMB MB [OK]" to 500L,
+        "STORAGE: $storageGB GB AVAILABLE [OK]" to 400L,
         "AI CAPABILITY: LITERT-LM SUPPORTED [OK]" to 600L,
-        "GPU: ADRENO 750 [OK]" to 350L,
-        "NPU: AVAILABLE [OK]" to 300L
+        "GPU: ${if (hasGPU) "DETECTED" else "NOT FOUND"} [${if (hasGPU) "OK" else "WARN"}]" to 350L,
+        "NPU: ${if (hasNPU) "AVAILABLE" else "NOT AVAILABLE"} [${if (hasNPU) "OK" else "WARN"}]" to 300L
     )
 
     var visibleCount by remember { mutableIntStateOf(0) }
@@ -225,8 +237,7 @@ private fun ModelSelectionStep(
 ) {
     val models = remember {
         listOf(
-            Triple("GEMMA 4 E2B", "3.0 GB", "Full capability model — recommended for 6GB+ RAM devices"),
-            Triple("GEMMA 3 1B", "1.0 GB", "Lightweight model — works on most devices"),
+            Triple("GEMMA 4 E2B", "2.0 GB", "On-device LLM — download in Settings after setup"),
             Triple("FALLBACK", "N/A", "Rule-based offline responses — no download required")
         )
     }

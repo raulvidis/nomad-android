@@ -108,6 +108,35 @@ class ChatRepositoryTest {
         assertTrue(result.isSuccess)
         assertEquals(session, result.getOrNull())
     }
+
+    @Test
+    fun `insertMessage returns error when DAO fails`() = runTest {
+        val dao = FakeChatMessageDao(shouldFail = true)
+        val repo = ChatRepository(dao)
+        val message = ChatMessageEntity(sessionId = "s1", role = "user", content = "test", timestamp = 1000)
+
+        val result = repo.insertMessage(message)
+        assertTrue(result.isError)
+    }
+
+    @Test
+    fun `insertSession returns error when DAO fails`() = runTest {
+        val dao = FakeChatMessageDao(shouldFail = true)
+        val repo = ChatRepository(dao)
+        val session = ChatSessionEntity(id = "s1", title = "Test", createdAt = 1000, updatedAt = 2000)
+
+        val result = repo.insertSession(session)
+        assertTrue(result.isError)
+    }
+
+    @Test
+    fun `getSessionById returns error when DAO fails`() = runTest {
+        val dao = FakeChatMessageDao(shouldFail = true)
+        val repo = ChatRepository(dao)
+
+        val result = repo.getSessionById("s1")
+        assertTrue(result.isError)
+    }
 }
 
 class FakeChatMessageDao(

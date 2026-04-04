@@ -28,8 +28,7 @@ object AIModule {
         val totalRamMB = memoryInfo.totalMem / (1024 * 1024)
 
         return when {
-            totalRamMB >= 6144 -> LiteRTLMEngine(context, LiteRTLMEngine.ModelVariant.E2B)
-            totalRamMB >= 2048 -> LiteRTLMEngine(context, LiteRTLMEngine.ModelVariant.ONE_B)
+            totalRamMB >= 2048 -> LiteRTLMEngine(context, LiteRTLMEngine.ModelVariant.GEMMA4_E2B, totalRamMB)
             else -> FallbackEngine()
         }
     }
@@ -41,15 +40,16 @@ object AIModule {
     @Provides
     @Singleton
     fun provideAIEngineStatus(engine: AIEngine): AIEngineStatus {
+        val deviceInfo = engine.getDeviceInfo()
         return AIEngineStatus(
             engineType = when (engine) {
                 is LiteRTLMEngine -> if (engine.getModelName().contains("E2B")) AIEngineType.LITERTLM_E2B else AIEngineType.LITERTLM_1B
                 is FallbackEngine -> AIEngineType.FALLBACK
                 else -> AIEngineType.NONE
             },
-            isReady = false,
+            isReady = engine is FallbackEngine,
             modelName = engine.getModelName(),
-            ramRequired = engine.getDeviceInfo().let { "${it.totalRamMB}MB total" },
+            ramRequired = "${deviceInfo.totalRamMB}MB total",
             modelSize = if (engine is LiteRTLMEngine) "${engine.getModelSizeMB()} MB" else "N/A"
         )
     }

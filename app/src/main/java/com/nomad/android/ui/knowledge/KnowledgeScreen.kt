@@ -1,5 +1,8 @@
 package com.nomad.android.ui.knowledge
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -34,6 +37,8 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.material3.Text
+import com.nomad.android.ui.theme.PipBoyAmber
+import com.nomad.android.ui.theme.PipBoySurface
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.nomad.android.ui.theme.PipBoyBg
@@ -158,51 +163,97 @@ private fun KnowledgeContent(
             }
         }
 
+        var expandedArticleId by remember { mutableStateOf<String?>(null) }
+
         LazyColumn(
             modifier = Modifier.weight(1f),
-            verticalArrangement = Arrangement.spacedBy(0.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp),
         ) {
             items(data.filteredArticles, key = { it.id }) { article ->
-                Row(
+                val isExpanded = expandedArticleId == article.id
+
+                Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 12.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        ) {
-                            Text(
-                                text = article.category,
-                                color = categoryColor[article.category] ?: PipBoyGreen,
-                                fontFamily = FontFamily.Monospace,
-                                fontSize = 10.sp,
-                            )
-                            if (article.isFavorite) {
-                                Text(
-                                    text = "★",
-                                    color = Color(0xFFFFB000),
-                                    fontFamily = FontFamily.Monospace,
-                                    fontSize = 12.sp,
-                                )
+                        .background(
+                            if (isExpanded) PipBoySurface else Color.Transparent,
+                            RoundedCornerShape(4.dp)
+                        )
+                        .then(
+                            if (isExpanded) Modifier.border(1.dp, PipBoyGreenDim, RoundedCornerShape(4.dp))
+                            else Modifier
+                        )
+                        .clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null,
+                            onClick = {
+                                expandedArticleId = if (isExpanded) null else article.id
                             }
+                        )
+                        .padding(horizontal = 12.dp, vertical = 8.dp),
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            ) {
+                                Text(
+                                    text = article.category,
+                                    color = categoryColor[article.category] ?: PipBoyGreen,
+                                    fontFamily = FontFamily.Monospace,
+                                    fontSize = 10.sp,
+                                )
+                                if (article.isFavorite) {
+                                    Text(
+                                        text = "★",
+                                        color = Color(0xFFFFB000),
+                                        fontFamily = FontFamily.Monospace,
+                                        fontSize = 12.sp,
+                                    )
+                                }
+                            }
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(
+                                text = article.title,
+                                color = PipBoyGreen,
+                                fontFamily = FontFamily.Monospace,
+                                fontSize = 14.sp,
+                            )
                         }
-                        Spacer(modifier = Modifier.height(2.dp))
                         Text(
-                            text = article.title,
+                            text = if (isExpanded) "[-]" else "[+]",
                             color = PipBoyGreen,
                             fontFamily = FontFamily.Monospace,
                             fontSize = 14.sp,
                         )
                     }
-                    Text(
-                        text = ">",
-                        color = PipBoyGreen,
-                        fontFamily = FontFamily.Monospace,
-                        fontSize = 16.sp,
-                    )
+
+                    AnimatedVisibility(
+                        visible = isExpanded,
+                        enter = expandVertically(),
+                        exit = shrinkVertically(),
+                    ) {
+                        Column(modifier = Modifier.padding(top = 8.dp)) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(1.dp)
+                                    .background(PipBoyGreenDim.copy(alpha = 0.3f))
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = article.content,
+                                color = PipBoyAmber,
+                                fontFamily = FontFamily.Monospace,
+                                fontSize = 12.sp,
+                                lineHeight = 18.sp,
+                            )
+                        }
+                    }
                 }
             }
         }

@@ -8,6 +8,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -40,24 +41,23 @@ class MapsViewModel @Inject constructor(
         _uiState.update { it.copy(isLoading = true, error = null) }
 
         viewModelScope.launch {
-            mapsRepository.getAvailableLayers().collect { result ->
-                when (result) {
-                    is Result.Success -> {
-                        _uiState.update {
-                            it.copy(
-                                isLoading = false,
-                                data = MapsData(
-                                    layers = result.data,
-                                    hasOfflineTiles = mapsRepository.hasOfflineTiles(),
-                                    isMapInitialized = true
-                                )
+            val result = mapsRepository.getAvailableLayers().first()
+            when (result) {
+                is Result.Success -> {
+                    _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            data = MapsData(
+                                layers = result.data,
+                                hasOfflineTiles = mapsRepository.hasOfflineTiles(),
+                                isMapInitialized = true
                             )
-                        }
+                        )
                     }
-                    is Result.Error -> {
-                        _uiState.update {
-                            it.copy(isLoading = false, error = result.message)
-                        }
+                }
+                is Result.Error -> {
+                    _uiState.update {
+                        it.copy(isLoading = false, error = result.message)
                     }
                 }
             }

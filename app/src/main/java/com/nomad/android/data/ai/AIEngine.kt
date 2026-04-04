@@ -8,7 +8,7 @@ interface AIEngine {
     suspend fun isAvailable(): Boolean
     fun getModelName(): String
     fun getDeviceInfo(): DeviceInfo
-    suspend fun loadModel(): Result<Unit>
+    suspend fun loadModel(): com.nomad.android.data.Result<Unit>
     fun unloadModel()
 }
 

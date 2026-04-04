@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -107,13 +108,23 @@ private fun ChatContent(
                 )
             }
         } else {
+            val listState = rememberLazyListState()
+
+            LaunchedEffect(data.messages.size, data.isStreaming) {
+                if (data.messages.isNotEmpty()) {
+                    val targetIndex = data.messages.size - 1 + if (data.isStreaming) 1 else 0
+                    listState.animateScrollToItem(targetIndex)
+                }
+            }
+
             LazyColumn(
+                state = listState,
                 modifier = Modifier
                     .weight(1f)
                     .padding(horizontal = 8.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                items(data.messages, key = { it.id }) { message ->
+                items(data.messages, key = { "${it.sessionId}_${it.timestamp}_${it.role}" }) { message ->
                     MessageBubble(
                         isUser = message.role == "user",
                         text = message.content
@@ -199,9 +210,10 @@ private fun MessageBubble(isUser: Boolean, text: String) {
     val prefix = if (isUser) "> QUERY:" else "RESPONSE:"
     val prefixColor = if (isUser) PipBoyGreen else PipBoyAmber
 
-    PipBoyCard(
+    Column(
         modifier = Modifier
             .fillMaxWidth()
+            .background(PipBoySurface, RoundedCornerShape(4.dp))
             .drawBehind {
                 drawLine(
                     color = borderColor,
@@ -209,7 +221,8 @@ private fun MessageBubble(isUser: Boolean, text: String) {
                     end = Offset(0f, size.height),
                     strokeWidth = 3.dp.toPx(),
                 )
-            },
+            }
+            .padding(start = 12.dp, end = 8.dp, top = 8.dp, bottom = 8.dp),
     ) {
         PipBoyText(
             text = prefix,

@@ -122,7 +122,7 @@ fun PipBoyCard(
     modifier: Modifier = Modifier,
     content: @Composable () -> Unit,
 ) {
-    Box(
+    Column(
         modifier = modifier
             .background(PipBoySurface, RoundedCornerShape(4.dp))
             .border(1.dp, PipBoyGreen, RoundedCornerShape(4.dp))

@@ -14,6 +14,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -66,32 +67,30 @@ class SettingsViewModel @Inject constructor(
 
         viewModelScope.launch {
             val storageMetrics = settingsRepository.getStorageMetrics()
+            val theme = settingsRepository.getTheme().first()
+            val packs = contentPackManager.getAvailablePacks().first()
 
-            settingsRepository.getTheme().collect { theme ->
-                contentPackManager.getAvailablePacks().collect { packs ->
-                    val contentPacks = packs.map { pack ->
-                        ContentPackInfo(
-                            id = pack.id,
-                            name = pack.name,
-                            type = pack.type,
-                            size = contentPackManager.formatSize(pack.sizeBytes),
-                            isDownloaded = pack.status == PackStatus.DOWNLOADED,
-                            isDownloading = pack.status == PackStatus.DOWNLOADING
-                        )
-                    }
+            val contentPacks = packs.map { pack ->
+                ContentPackInfo(
+                    id = pack.id,
+                    name = pack.name,
+                    type = pack.type,
+                    size = contentPackManager.formatSize(pack.sizeBytes),
+                    isDownloaded = pack.status == PackStatus.DOWNLOADED,
+                    isDownloading = pack.status == PackStatus.DOWNLOADING
+                )
+            }
 
-                    _uiState.update {
-                        it.copy(
-                            isLoading = false,
-                            data = SettingsData(
-                                aiStatus = aiEngineStatus,
-                                storageMetrics = storageMetrics,
-                                currentTheme = theme,
-                                contentPacks = contentPacks
-                            )
-                        )
-                    }
-                }
+            _uiState.update {
+                it.copy(
+                    isLoading = false,
+                    data = SettingsData(
+                        aiStatus = aiEngineStatus,
+                        storageMetrics = storageMetrics,
+                        currentTheme = theme,
+                        contentPacks = contentPacks
+                    )
+                )
             }
         }
     }
@@ -106,6 +105,8 @@ class SettingsViewModel @Inject constructor(
     fun downloadPack(packId: String) {
         val pack = _uiState.value.data.contentPacks.find { it.id == packId } ?: return
         if (pack.isDownloaded || pack.isDownloading) return
+
+        _uiState.update { it.copy(error = null) }
 
         _uiState.update {
             it.copy(data = it.data.copy(
@@ -126,15 +127,29 @@ class SettingsViewModel @Inject constructor(
                         ))
                     }
                 }
-                // Reload to get updated pack status
-                loadSettings()
-            } catch (e: Exception) {
+                // Mark as downloaded without full reload (avoids loading flash)
                 _uiState.update {
                     it.copy(data = it.data.copy(
                         contentPacks = it.data.contentPacks.map { p ->
-                            if (p.id == packId) p.copy(isDownloading = false, downloadProgress = 0f) else p
-                        }
+                            if (p.id == packId) p.copy(
+                                isDownloading = false,
+                                isDownloaded = true,
+                                downloadProgress = 1f
+                            ) else p
+                        },
+                        storageMetrics = settingsRepository.getStorageMetrics()
                     ))
+                }
+            } catch (e: Exception) {
+                _uiState.update {
+                    it.copy(
+                        error = "Download failed: ${e.message}",
+                        data = it.data.copy(
+                            contentPacks = it.data.contentPacks.map { p ->
+                                if (p.id == packId) p.copy(isDownloading = false, downloadProgress = 0f) else p
+                            }
+                        )
+                    )
                 }
             }
         }

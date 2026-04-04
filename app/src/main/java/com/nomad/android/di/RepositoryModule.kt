@@ -28,8 +28,9 @@ object RepositoryModule {
     @Singleton
     fun provideContentPackManager(
         @ApplicationContext context: Context,
-        contentPackDao: ContentPackDao
-    ): ContentPackManager = ContentPackManager(context, contentPackDao)
+        contentPackDao: ContentPackDao,
+        okHttpClient: OkHttpClient
+    ): ContentPackManager = ContentPackManager(context, contentPackDao, okHttpClient)
 
     @Provides
     @Singleton

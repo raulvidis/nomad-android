@@ -41,7 +41,7 @@ class RAGEngine(
         return chunks
     }
 
-    suspend fun query(question: String, topK: Int = DEFAULT_TOP_K, documents: List<String>): Flow<String> = flow {
+    fun query(question: String, topK: Int = DEFAULT_TOP_K, documents: List<String>): Flow<String> = flow {
         val contextChunks = search(question, topK, documents)
         val ragPrompt = buildRAGPrompt(question, contextChunks)
         aiEngine.generateStream(ragPrompt, emptyList()).collect { emit(it) }

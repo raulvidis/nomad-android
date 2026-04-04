@@ -34,9 +34,9 @@ interface ChatMessageDao {
     @Query(
         """
         SELECT s.* FROM chat_sessions s
-        INNER JOIN chat_messages m ON s.id = m.sessionId
+        LEFT JOIN chat_messages m ON s.id = m.sessionId
         GROUP BY s.id
-        ORDER BY MAX(m.timestamp) DESC
+        ORDER BY MAX(COALESCE(m.timestamp, s.createdAt)) DESC
         LIMIT :limit
         """
     )

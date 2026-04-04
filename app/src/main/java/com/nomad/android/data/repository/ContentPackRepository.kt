@@ -4,9 +4,11 @@ import android.content.Context
 import com.nomad.android.data.Result
 import com.nomad.android.data.local.dao.ContentPackDao
 import com.nomad.android.data.local.entity.ContentPackEntity
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -64,30 +66,39 @@ class ContentPackRepository @Inject constructor(
         emit(0f)
         val request = Request.Builder().url(url).build()
         val response = okHttpClient.newCall(request).execute()
-        if (!response.isSuccessful) {
-            throw RuntimeException("Download failed: ${response.code}")
-        }
+        response.use { resp ->
+            if (!resp.isSuccessful) {
+                throw RuntimeException("Download failed: ${resp.code}")
+            }
 
-        val body = response.body ?: throw RuntimeException("Empty response body")
-        val totalBytes = body.contentLength()
-        val file = File(contentPacksDir, pack.id)
-        var downloadedBytes = 0L
+            val body = resp.body ?: throw RuntimeException("Empty response body")
+            val totalBytes = body.contentLength()
+            val tmpFile = File(contentPacksDir, "${pack.id}.tmp")
+            val finalFile = File(contentPacksDir, pack.id)
+            var downloadedBytes = 0L
 
-        body.byteStream().use { input ->
-            FileOutputStream(file).use { output ->
-                val buffer = ByteArray(8192)
-                var bytesRead: Int
-                while (input.read(buffer).also { bytesRead = it } != -1) {
-                    output.write(buffer, 0, bytesRead)
-                    downloadedBytes += bytesRead
-                    if (totalBytes > 0) {
-                        emit(downloadedBytes.toFloat() / totalBytes.toFloat())
+            try {
+                body.byteStream().use { input ->
+                    FileOutputStream(tmpFile).use { output ->
+                        val buffer = ByteArray(8192)
+                        var bytesRead: Int
+                        while (input.read(buffer).also { bytesRead = it } != -1) {
+                            output.write(buffer, 0, bytesRead)
+                            downloadedBytes += bytesRead
+                            if (totalBytes > 0) {
+                                emit(downloadedBytes.toFloat() / totalBytes.toFloat())
+                            }
+                        }
                     }
                 }
+                tmpFile.renameTo(finalFile)
+            } catch (e: Exception) {
+                tmpFile.delete()
+                throw e
             }
         }
         emit(1f)
-    }.catch { throw it }
+    }.flowOn(Dispatchers.IO)
 
     fun getPackFile(packId: String): File? {
         val file = File(contentPacksDir, packId)

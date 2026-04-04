@@ -14,6 +14,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -24,6 +26,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.nomad.android.ui.theme.PipBoyAmber
 import com.nomad.android.ui.theme.PipBoyBg
 import com.nomad.android.ui.theme.PipBoyGreen
 import com.nomad.android.ui.theme.PipBoyGreenDim
@@ -43,6 +46,7 @@ fun SettingsScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(PipBoyBg)
+            .verticalScroll(rememberScrollState())
             .padding(16.dp)
     ) {
         PipBoyText(
@@ -57,6 +61,19 @@ fun SettingsScreen(
         )
         PipBoyDivider()
         Spacer(modifier = Modifier.height(16.dp))
+
+        // Error banner
+        if (uiState.error != null) {
+            PipBoyCard(modifier = Modifier.fillMaxWidth()) {
+                Text(
+                    text = "ERROR: ${uiState.error}",
+                    color = com.nomad.android.ui.theme.PipBoyDanger,
+                    fontFamily = FontFamily.Monospace,
+                    fontSize = 11.sp
+                )
+            }
+            Spacer(modifier = Modifier.height(12.dp))
+        }
 
         // AI Engine section
         PipBoyCard(modifier = Modifier.fillMaxWidth()) {
@@ -96,55 +113,65 @@ fun SettingsScreen(
         PipBoyCard(modifier = Modifier.fillMaxWidth()) {
             SettingsSectionTitle("CONTENT PACKS")
             Spacer(modifier = Modifier.height(8.dp))
-            uiState.data.contentPacks.forEach { pack ->
-                Column(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Text(
-                            text = "${pack.name} (${pack.size})",
-                            color = if (pack.isDownloaded) PipBoyGreen else PipBoyGreenDim,
-                            fontFamily = FontFamily.Monospace,
-                            fontSize = 11.sp,
-                            modifier = Modifier.weight(1f)
-                        )
-                        val statusText = when {
-                            pack.isDownloaded -> "DOWNLOADED"
-                            pack.isDownloading -> "${(pack.downloadProgress * 100).toInt()}%"
-                            else -> "AVAILABLE"
-                        }
-                        Text(
-                            text = statusText,
-                            color = if (pack.isDownloaded) PipBoyGreen else PipBoyGreenDim,
-                            fontFamily = FontFamily.Monospace,
-                            fontSize = 11.sp
-                        )
-                    }
-                    if (pack.isDownloading) {
-                        Spacer(modifier = Modifier.height(4.dp))
-                        PipBoyProgressBar(progress = pack.downloadProgress)
-                    }
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.End,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        if (!pack.isDownloaded && !pack.isDownloading) {
-                            PipBoyButton(
-                                text = "DOWNLOAD",
-                                onClick = { viewModel.downloadPack(pack.id) }
+            uiState.data.contentPacks.forEachIndexed { index, pack ->
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            Text(
+                                text = pack.name,
+                                color = if (pack.isDownloaded) PipBoyGreen else PipBoyGreenDim,
+                                fontFamily = FontFamily.Monospace,
+                                fontSize = 12.sp
                             )
+                            if (pack.isDownloaded) {
+                                Text(
+                                    text = "[OK]",
+                                    color = PipBoyGreen,
+                                    fontFamily = FontFamily.Monospace,
+                                    fontSize = 10.sp
+                                )
+                            }
                         }
-                        if (pack.isDownloaded) {
-                            Spacer(modifier = Modifier.width(8.dp))
-                            PipBoyButton(
-                                text = "DELETE",
-                                onClick = { viewModel.deletePack(pack.id) }
+                        Text(
+                            text = "${pack.type.uppercase()} — ${pack.size}",
+                            color = PipBoyGreenDim,
+                            fontFamily = FontFamily.Monospace,
+                            fontSize = 10.sp
+                        )
+                        if (pack.isDownloading) {
+                            Spacer(modifier = Modifier.height(4.dp))
+                            PipBoyProgressBar(progress = pack.downloadProgress)
+                            Text(
+                                text = "DOWNLOADING... ${(pack.downloadProgress * 100).toInt()}%",
+                                color = PipBoyAmber,
+                                fontFamily = FontFamily.Monospace,
+                                fontSize = 10.sp
                             )
                         }
                     }
+                    Spacer(modifier = Modifier.width(8.dp))
+                    when {
+                        pack.isDownloading -> {} // progress shown inline
+                        pack.isDownloaded -> PipBoyButton(
+                            text = "DELETE",
+                            onClick = { viewModel.deletePack(pack.id) },
+                            variant = com.nomad.android.ui.components.PipBoyButtonVariant.DANGER
+                        )
+                        else -> PipBoyButton(
+                            text = "GET",
+                            onClick = { viewModel.downloadPack(pack.id) }
+                        )
+                    }
+                }
+                if (index < uiState.data.contentPacks.lastIndex) {
+                    PipBoyDivider(color = PipBoyGreenDim.copy(alpha = 0.3f))
                 }
             }
         }

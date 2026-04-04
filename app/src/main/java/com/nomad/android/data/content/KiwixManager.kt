@@ -35,7 +35,7 @@ class KiwixManager(private val context: Context) {
 
     fun hasArchive(name: String): Boolean = File(zimDir, name).exists()
 
-    suspend fun searchArticles(query: String, archiveName: String? = null): Flow<List<ZimSearchResult>> = flow {
+    fun searchArticles(query: String, archiveName: String? = null): Flow<List<ZimSearchResult>> = flow {
         // Try searching actual ZIM archives if available
         val archives = archiveName?.let { listOf(File(zimDir, it)) }
             ?: (zimDir.listFiles()?.filter { it.extension == "zim" } ?: emptyList())
@@ -74,7 +74,7 @@ class KiwixManager(private val context: Context) {
         )
     }
 
-    suspend fun downloadArchive(url: String, name: String): Flow<Float> = flow {
+    fun downloadArchive(url: String, name: String): Flow<Float> = flow {
         val targetFile = File(zimDir, name)
         if (targetFile.exists()) {
             emit(1f)
