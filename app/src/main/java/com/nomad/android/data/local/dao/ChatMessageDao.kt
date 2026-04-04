@@ -1,8 +1,11 @@
 package com.nomad.android.data.local.dao
 
 import androidx.room.Dao
+import androidx.room.Delete
 import androidx.room.Insert
+import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import androidx.room.Update
 import com.nomad.android.data.local.entity.ChatMessageEntity
 import com.nomad.android.data.local.entity.ChatSessionEntity
 import kotlinx.coroutines.flow.Flow
@@ -14,7 +17,19 @@ interface ChatMessageDao {
     fun getBySession(sessionId: String): Flow<List<ChatMessageEntity>>
 
     @Insert
-    suspend fun insert(message: ChatMessageEntity)
+    suspend fun insertMessage(message: ChatMessageEntity)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertSession(session: ChatSessionEntity)
+
+    @Update
+    suspend fun updateSession(session: ChatSessionEntity)
+
+    @Delete
+    suspend fun deleteSession(session: ChatSessionEntity)
+
+    @Query("DELETE FROM chat_sessions WHERE id = :sessionId")
+    suspend fun deleteSessionById(sessionId: String)
 
     @Query(
         """
@@ -26,4 +41,7 @@ interface ChatMessageDao {
         """
     )
     fun getRecentSessions(limit: Int = 20): Flow<List<ChatSessionEntity>>
+
+    @Query("SELECT * FROM chat_sessions WHERE id = :sessionId")
+    suspend fun getSessionById(sessionId: String): ChatSessionEntity?
 }

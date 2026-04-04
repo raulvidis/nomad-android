@@ -1,6 +1,8 @@
 package com.nomad.android.data.local
 
+import android.content.Context
 import androidx.room.Database
+import androidx.room.Room
 import androidx.room.RoomDatabase
 import com.nomad.android.data.local.dao.ChatMessageDao
 import com.nomad.android.data.local.dao.ContentPackDao
@@ -21,11 +23,32 @@ import com.nomad.android.data.local.entity.SettingsEntity
         SettingsEntity::class
     ],
     version = 1,
-    exportSchema = false
+    exportSchema = true
 )
 abstract class NomadDatabase : RoomDatabase() {
     abstract fun contentPackDao(): ContentPackDao
     abstract fun chatMessageDao(): ChatMessageDao
     abstract fun searchHistoryDao(): SearchHistoryDao
     abstract fun settingsDao(): SettingsDao
+
+    companion object {
+        @Volatile
+        private var INSTANCE: NomadDatabase? = null
+
+        fun getInstance(context: Context): NomadDatabase {
+            return INSTANCE ?: synchronized(this) {
+                INSTANCE ?: Room.databaseBuilder(
+                    context.applicationContext,
+                    NomadDatabase::class.java,
+                    "nomad.db"
+                )
+                    .fallbackToDestructiveMigration()
+                    .build()
+                    .also { INSTANCE = it }
+            }
+        }
+    }
+}
+        }
+    }
 }

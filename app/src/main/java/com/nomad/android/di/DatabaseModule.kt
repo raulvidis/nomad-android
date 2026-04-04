@@ -9,6 +9,7 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
+import okhttp3.OkHttpClient
 import javax.inject.Singleton
 
 @Module
@@ -17,13 +18,25 @@ object DatabaseModule {
 
     @Provides
     @Singleton
+    fun provideOkHttpClient(): OkHttpClient = OkHttpClient.Builder().build()
+
+    @Provides
+    @Singleton
     fun provideDatabase(@ApplicationContext context: Context): NomadDatabase {
         return Room.databaseBuilder(
             context,
             NomadDatabase::class.java,
             "nomad.db"
-        ).build()
+        )
+            .fallbackToDestructiveMigration()
+            .build()
     }
+
+    @Provides fun provideContentPackDao(db: NomadDatabase) = db.contentPackDao()
+    @Provides fun provideChatMessageDao(db: NomadDatabase) = db.chatMessageDao()
+    @Provides fun provideSearchHistoryDao(db: NomadDatabase) = db.searchHistoryDao()
+    @Provides fun provideSettingsDao(db: NomadDatabase) = db.settingsDao()
+}
 
     @Provides fun provideContentPackDao(db: NomadDatabase) = db.contentPackDao()
     @Provides fun provideChatMessageDao(db: NomadDatabase) = db.chatMessageDao()
