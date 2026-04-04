@@ -17,9 +17,10 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -33,20 +34,19 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.nomad.android.ui.theme.PipBoyAmber
-import com.nomad.android.ui.theme.PipBoyBg
 import com.nomad.android.ui.components.PipBoyButton
 import com.nomad.android.ui.components.PipBoyCard
 import com.nomad.android.ui.components.PipBoyDivider
 import com.nomad.android.ui.components.PipBoyEmptyScreen
 import com.nomad.android.ui.components.PipBoyErrorScreen
-import com.nomad.android.ui.theme.PipBoyGreen
-import com.nomad.android.ui.theme.PipBoyGreenDim
 import com.nomad.android.ui.components.PipBoyLoadingScreen
-import com.nomad.android.ui.theme.PipBoySurface
 import com.nomad.android.ui.components.PipBoyText
 import com.nomad.android.ui.components.PipBoyTextField
-import androidx.compose.material3.Text
+import com.nomad.android.ui.theme.PipBoyAmber
+import com.nomad.android.ui.theme.PipBoyBg
+import com.nomad.android.ui.theme.PipBoyGreen
+import com.nomad.android.ui.theme.PipBoyGreenDim
+import com.nomad.android.ui.theme.PipBoySurface
 
 @Composable
 fun ChatScreen(
@@ -233,7 +233,7 @@ private fun TypingIndicator() {
     LaunchedEffect(Unit) {
         while (true) {
             kotlinx.coroutines.delay(400)
-            dotCount = ((dotCount) % 3) + 1
+            dotCount = (dotCount % 3) + 1
         }
     }
 
@@ -252,6 +252,22 @@ private fun TypingIndicator() {
     }
 }
 
+@Composable
+private fun ContextFilterRow(
+    filters: List<String>,
+    selectedFilter: String,
+    onFilterSelected: (String) -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 8.dp),
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
+        filters.forEach { label ->
+            val isSelected = label == selectedFilter
+            val borderColor = if (isSelected) PipBoyGreen else PipBoyGreenDim
+            val bgColor = if (isSelected) PipBoyGreen.copy(alpha = 0.15f) else PipBoySurface
             val textColor = if (isSelected) PipBoyGreen else PipBoyGreenDim
 
             Box(
