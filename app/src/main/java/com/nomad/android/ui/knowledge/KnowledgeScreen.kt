@@ -16,7 +16,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState as rememberHScrollState
@@ -33,42 +32,54 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.material3.Text
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.nomad.android.ui.components.PipBoyBg
 import com.nomad.android.ui.components.PipBoyDivider
+import com.nomad.android.ui.components.PipBoyEmptyScreen
+import com.nomad.android.ui.components.PipBoyErrorScreen
 import com.nomad.android.ui.components.PipBoyGreen
 import com.nomad.android.ui.components.PipBoyGreenDim
-import com.nomad.android.ui.components.PipBoyListTile
+import com.nomad.android.ui.components.PipBoyLoadingScreen
 import com.nomad.android.ui.components.PipBoyText
 import com.nomad.android.ui.components.PipBoyTextField
 
-private data class KnowledgeArticle(
-    val title: String,
-    val category: String,
-    val subtitle: String,
-)
+@Composable
+fun KnowledgeScreen(
+    viewModel: KnowledgeViewModel = hiltViewModel()
+) {
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-private val categories = listOf("WIKIPEDIA", "SURVIVAL", "FIRST AID", "BOOKS", "FAVORITES")
-
-private val mockArticles = listOf(
-    KnowledgeArticle("Water Purification", "SURVIVAL", "Essential guide"),
-    KnowledgeArticle("First Aid: CPR", "FIRST AID", "Step by step"),
-    KnowledgeArticle("Solar still construction", "SURVIVAL", "Advanced technique"),
-    KnowledgeArticle("Edible plants: North America", "SURVIVAL", "Regional guide"),
-    KnowledgeArticle("United States", "WIKIPEDIA", "Geography & History"),
-    KnowledgeArticle("Knot tying basics", "SURVIVAL", "8 essential knots"),
-)
+    when {
+        uiState.isLoading -> PipBoyLoadingScreen("INDEXING ARCHIVES...")
+        uiState.error != null -> PipBoyErrorScreen(uiState.error) { viewModel.loadArticles() }
+        uiState.data.articles.isEmpty() -> PipBoyEmptyScreen(
+            message = "No articles in this category. Download content packs in Settings."
+        )
+        else -> KnowledgeContent(
+            data = uiState.data,
+            onSearch = { viewModel.search(it) },
+            onSelectCategory = { viewModel.selectCategory(it) },
+            onToggleFavorite = { viewModel.toggleFavorite(it) }
+        )
+    }
+}
 
 @Composable
-fun KnowledgeScreen() {
+private fun KnowledgeContent(
+    data: KnowledgeData,
+    onSearch: (String) -> Unit,
+    onSelectCategory: (String) -> Unit,
+    onToggleFavorite: (String) -> Unit
+) {
     var searchText by remember { mutableStateOf("") }
-    var selectedCategory by remember { mutableStateOf("SURVIVAL") }
 
     val categoryColor = mapOf(
-        "SURVIVAL" to PipBoyGreen,
-        "FIRST AID" to Color(0xFFFFB000),
-        "WIKIPEDIA" to Color(0xFF64B5F6),
-        "BOOKS" to Color(0xFFCE93D8),
-        "FAVORITES" to Color(0xFFFF8A65),
+        "Survival" to PipBoyGreen,
+        "First Aid" to Color(0xFFFFB000),
+        "Navigation" to Color(0xFF64B5F6),
+        "Shelter" to Color(0xFFCE93D8),
+        "All" to PipBoyGreen,
     )
 
     Column(
@@ -85,7 +96,7 @@ fun KnowledgeScreen() {
         )
 
         PipBoyText(
-            text = "ARCHIVES \u2014 OFFLINE KNOWLEDGE BASE",
+            text = "ARCHIVES — OFFLINE KNOWLEDGE BASE",
             style = TextStyle(fontSize = 16.sp, fontFamily = FontFamily.Monospace),
             color = PipBoyGreen,
         )
@@ -106,8 +117,8 @@ fun KnowledgeScreen() {
                 .horizontalScroll(rememberHScrollState()),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            categories.forEach { category ->
-                val isSelected = category == selectedCategory
+            data.categories.forEach { category ->
+                val isSelected = category == data.selectedCategory
                 val bgColor = if (isSelected) PipBoyGreen else Color.Transparent
                 val textColor = if (isSelected) PipBoyBg else PipBoyGreenDim
                 val borderColor = if (isSelected) PipBoyGreen else PipBoyGreenDim
@@ -119,7 +130,7 @@ fun KnowledgeScreen() {
                         .clickable(
                             interactionSource = remember { MutableInteractionSource() },
                             indication = null,
-                            onClick = { selectedCategory = category },
+                            onClick = { onSelectCategory(category) },
                         )
                         .padding(horizontal = 12.dp, vertical = 6.dp),
                     contentAlignment = Alignment.Center,
@@ -138,7 +149,7 @@ fun KnowledgeScreen() {
             modifier = Modifier.weight(1f),
             verticalArrangement = Arrangement.spacedBy(0.dp),
         ) {
-            items(mockArticles) { article ->
+            items(data.articles, key = { it.id }) { article ->
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -156,6 +167,14 @@ fun KnowledgeScreen() {
                                 fontFamily = FontFamily.Monospace,
                                 fontSize = 10.sp,
                             )
+                            if (article.isFavorite) {
+                                Text(
+                                    text = "★",
+                                    color = Color(0xFFFFB000),
+                                    fontFamily = FontFamily.Monospace,
+                                    fontSize = 12.sp,
+                                )
+                            }
                         }
                         Spacer(modifier = Modifier.height(2.dp))
                         Text(
@@ -163,12 +182,6 @@ fun KnowledgeScreen() {
                             color = PipBoyGreen,
                             fontFamily = FontFamily.Monospace,
                             fontSize = 14.sp,
-                        )
-                        Text(
-                            text = article.subtitle,
-                            color = PipBoyGreenDim,
-                            fontFamily = FontFamily.Monospace,
-                            fontSize = 12.sp,
                         )
                     }
                     Text(
@@ -182,7 +195,7 @@ fun KnowledgeScreen() {
         }
 
         Text(
-            text = "6 ARTICLES AVAILABLE | 2.1 GB LOADED",
+            text = "${data.articles.size} ARTICLES AVAILABLE",
             color = PipBoyGreenDim,
             fontFamily = FontFamily.Monospace,
             fontSize = 10.sp,

@@ -13,29 +13,31 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
-import com.nomad.android.ui.components.PipBoyAmber
 import com.nomad.android.ui.components.PipBoyBg
 import com.nomad.android.ui.components.PipBoyCard
 import com.nomad.android.ui.components.PipBoyDivider
+import com.nomad.android.ui.components.PipBoyEmptyScreen
+import com.nomad.android.ui.components.PipBoyErrorScreen
 import com.nomad.android.ui.components.PipBoyGreen
 import com.nomad.android.ui.components.PipBoyGreenDim
 import com.nomad.android.ui.components.PipBoyListTile
+import com.nomad.android.ui.components.PipBoyLoadingScreen
 import com.nomad.android.ui.components.PipBoyProgressBar
 import com.nomad.android.ui.components.PipBoyStatusIndicator
-import com.nomad.android.ui.components.PipBoySurface
 import com.nomad.android.ui.components.PipBoyText
 import com.nomad.android.ui.navigation.Routes
 
@@ -47,7 +49,29 @@ private data class QuickAccessItem(
 )
 
 @Composable
-fun DashboardScreen(navController: NavHostController) {
+fun DashboardScreen(
+    navController: NavHostController,
+    viewModel: DashboardViewModel = hiltViewModel()
+) {
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+
+    when {
+        uiState.isLoading -> PipBoyLoadingScreen("SCANNING SYSTEMS...")
+        uiState.error != null -> PipBoyErrorScreen(uiState.error) { viewModel.refreshStatus() }
+        else -> DashboardContent(
+            data = uiState.data,
+            navController = navController,
+            onRefresh = { viewModel.refreshStatus() }
+        )
+    }
+}
+
+@Composable
+private fun DashboardContent(
+    data: DashboardData,
+    navController: NavHostController,
+    onRefresh: () -> Unit
+) {
     val quickAccessItems = remember {
         listOf(
             QuickAccessItem("🗺", "OFFLINE MAPS", "3 regions loaded", Routes.MAPS),
@@ -84,12 +108,12 @@ fun DashboardScreen(navController: NavHostController) {
                 PipBoyText(
                     text = "SYSTEM STATUS",
                     style = TextStyle(fontSize = 14.sp, fontFamily = FontFamily.Monospace),
-                    color = PipBoyAmber,
+                    color = PipBoyGreen,
                 )
 
-                StatusRow("AI ENGINE", "ONLINE", true)
-                StatusRow("STORAGE", "45%", true)
-                StatusRow("CONTENT PACKS", "3 LOADED", true)
+                StatusRow("AI ENGINE", data.aiStatus?.modelName ?: "N/A", data.aiStatus?.isReady ?: false)
+                StatusRow("STORAGE", "${data.storageMetrics?.usedPercent ?: 0}%", true)
+                StatusRow("CONTENT PACKS", "${data.contentPackCount} LOADED", true)
             }
         }
 
@@ -97,7 +121,7 @@ fun DashboardScreen(navController: NavHostController) {
             PipBoyText(
                 text = "QUICK ACCESS",
                 style = TextStyle(fontSize = 14.sp, fontFamily = FontFamily.Monospace),
-                color = PipBoyAmber,
+                color = PipBoyGreen,
             )
 
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -128,42 +152,38 @@ fun DashboardScreen(navController: NavHostController) {
             }
         }
 
-        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            PipBoyText(
-                text = "RECENT ACTIVITY",
-                style = TextStyle(fontSize = 14.sp, fontFamily = FontFamily.Monospace),
-                color = PipBoyAmber,
-            )
+        if (data.recentActivity.isNotEmpty()) {
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                PipBoyText(
+                    text = "RECENT ACTIVITY",
+                    style = TextStyle(fontSize = 14.sp, fontFamily = FontFamily.Monospace),
+                    color = PipBoyGreen,
+                )
 
-            PipBoyListTile(
-                title = "Searched: Water purification",
-                subtitle = "2 hours ago",
-                onClick = {},
-            )
-            PipBoyListTile(
-                title = "Read: First Aid Basics",
-                subtitle = "5 hours ago",
-                onClick = {},
-            )
-            PipBoyListTile(
-                title = "Chat: How to build shelter",
-                subtitle = "1 day ago",
-                onClick = {},
-            )
+                data.recentActivity.forEach { activity ->
+                    PipBoyListTile(
+                        title = activity,
+                        subtitle = null,
+                        onClick = {},
+                    )
+                }
+            }
+        } else {
+            PipBoyEmptyScreen(message = "No recent activity")
         }
 
         PipBoyCard(modifier = Modifier.fillMaxWidth()) {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 PipBoyText(
-                    text = "AVAILABLE PACKS",
+                    text = "STORAGE",
                     style = TextStyle(fontSize = 14.sp, fontFamily = FontFamily.Monospace),
-                    color = PipBoyAmber,
+                    color = PipBoyGreen,
                 )
 
-                PipBoyProgressBar(progress = 0.65f)
+                PipBoyProgressBar(progress = data.storageMetrics?.usedPercent?.div(100f) ?: 0f)
 
                 PipBoyText(
-                    text = "3.2 GB / 5.0 GB USED",
+                    text = "${data.storageMetrics?.usedBytes?.div(1_000_000_000) ?: 0} GB / ${data.storageMetrics?.totalBytes?.div(1_000_000_000) ?: 0} GB USED",
                     style = TextStyle(fontSize = 12.sp, fontFamily = FontFamily.Monospace),
                     color = PipBoyGreen,
                 )
@@ -187,7 +207,7 @@ fun DashboardScreen(navController: NavHostController) {
                 PipBoyText(
                     text = "SYSTEM SETTINGS",
                     style = TextStyle(fontSize = 14.sp, fontFamily = FontFamily.Monospace),
-                    color = PipBoyAmber,
+                    color = PipBoyGreen,
                 )
                 Text(
                     text = "[ENTER] >",

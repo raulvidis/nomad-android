@@ -341,3 +341,163 @@ fun PipBoyListTile(
         )
     }
 }
+
+@Composable
+fun PipBoyLoadingScreen(
+    message: String = "INITIALIZING...",
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier.fillMaxSize().padding(24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Text(
+            text = message,
+            color = PipBoyGreen,
+            fontFamily = FontFamily.Monospace,
+            fontSize = 16.sp,
+        )
+        Spacer(modifier = Modifier.height(16.dp))
+        Text(
+            text = "[████████░░░░░░░░░░░░]",
+            color = PipBoyGreenDim,
+            fontFamily = FontFamily.Monospace,
+            fontSize = 14.sp,
+        )
+    }
+}
+
+@Composable
+fun PipBoyErrorScreen(
+    message: String,
+    onRetry: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier.fillMaxSize().padding(24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Text(
+            text = "ERROR: $message",
+            color = PipBoyDanger,
+            fontFamily = FontFamily.Monospace,
+            fontSize = 14.sp,
+        )
+        Spacer(modifier = Modifier.height(16.dp))
+        PipBoyButton(text = "RETRY", onClick = onRetry, variant = PipBoyButtonVariant.DANGER)
+    }
+}
+
+@Composable
+fun PipBoyEmptyScreen(
+    message: String,
+    modifier: Modifier = Modifier,
+    action: String? = null,
+    onAction: (() -> Unit)? = null
+) {
+    Column(
+        modifier = modifier.fillMaxSize().padding(24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Text(
+            text = "NO DATA FOUND",
+            color = PipBoyGreenDim,
+            fontFamily = FontFamily.Monospace,
+            fontSize = 14.sp,
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(
+            text = message,
+            color = PipBoyGreenDim,
+            fontFamily = FontFamily.Monospace,
+            fontSize = 12.sp,
+        )
+        if (action != null && onAction != null) {
+            Spacer(modifier = Modifier.height(16.dp))
+            PipBoyButton(text = action, onClick = onAction)
+        }
+    }
+}
+
+@Composable
+fun PipBoyLoadingScreen(
+    message: String = "INITIALIZING...",
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier.fillMaxSize().padding(24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Text(
+            text = message,
+            color = PipBoyGreen,
+            fontFamily = FontFamily.Monospace,
+            fontSize = 16.sp,
+        )
+        Spacer(modifier = Modifier.height(16.dp))
+        Text(
+            text = "[████████░░░░░░░░░░░░]",
+            color = PipBoyGreenDim,
+            fontFamily = FontFamily.Monospace,
+            fontSize = 14.sp,
+        )
+    }
+}
+
+@Composable
+fun PipBoyErrorScreen(
+    message: String,
+    onRetry: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier.fillMaxSize().padding(24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Text(
+            text = "ERROR: $message",
+            color = PipBoyDanger,
+            fontFamily = FontFamily.Monospace,
+            fontSize = 14.sp,
+        )
+        Spacer(modifier = Modifier.height(16.dp))
+        PipBoyButton(text = "RETRY", onClick = onRetry, variant = PipBoyButtonVariant.DANGER)
+    }
+}
+
+@Composable
+fun PipBoyEmptyScreen(
+    message: String,
+    modifier: Modifier = Modifier,
+    action: String? = null,
+    onAction: (() -> Unit)? = null
+) {
+    Column(
+        modifier = modifier.fillMaxSize().padding(24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Text(
+            text = "NO DATA FOUND",
+            color = PipBoyGreenDim,
+            fontFamily = FontFamily.Monospace,
+            fontSize = 14.sp,
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(
+            text = message,
+            color = PipBoyGreenDim,
+            fontFamily = FontFamily.Monospace,
+            fontSize = 12.sp,
+        )
+        if (action != null && onAction != null) {
+            Spacer(modifier = Modifier.height(16.dp))
+            PipBoyButton(text = action, onClick = onAction)
+        }
+    }
+}

@@ -16,59 +16,61 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.nomad.android.ui.components.PipBoyAmber
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.nomad.android.ui.components.PipBoyBg
 import com.nomad.android.ui.components.PipBoyButton
 import com.nomad.android.ui.components.PipBoyCard
 import com.nomad.android.ui.components.PipBoyDivider
 import com.nomad.android.ui.components.PipBoyGreen
 import com.nomad.android.ui.components.PipBoyGreenDim
 import com.nomad.android.ui.components.PipBoyProgressBar
+import com.nomad.android.ui.components.PipBoyText
 
 @Composable
-fun SettingsScreen() {
-    val selectedTheme = remember { mutableStateOf("CRT GREEN") }
-    val themes = listOf("CRT GREEN", "AMBER PHOSPHOR", "BLUE SCREEN")
+fun SettingsScreen(
+    viewModel: SettingsViewModel = hiltViewModel()
+) {
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFF0C0C0C))
+            .background(PipBoyBg)
             .padding(16.dp)
     ) {
-        Text(
+        PipBoyText(
             text = "ROBCO INDUSTRIES (TM)",
+            style = androidx.compose.ui.text.TextStyle(fontSize = 10.sp, fontFamily = FontFamily.Monospace),
             color = PipBoyGreenDim,
-            fontFamily = FontFamily.Monospace,
-            fontSize = 10.sp
         )
-        Text(
+        PipBoyText(
             text = "SYSTEM CONFIGURATION",
+            style = androidx.compose.ui.text.TextStyle(fontSize = 14.sp, fontFamily = FontFamily.Monospace),
             color = PipBoyGreen,
-            fontFamily = FontFamily.Monospace,
-            fontSize = 14.sp
         )
         PipBoyDivider()
         Spacer(modifier = Modifier.height(16.dp))
 
+        // AI Engine section
         PipBoyCard(modifier = Modifier.fillMaxWidth()) {
             SettingsSectionTitle("AI ENGINE")
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = "Engine: On-Device (Gemma)",
+                text = "Engine: ${uiState.data.aiStatus?.modelName ?: "N/A"}",
                 color = PipBoyGreen,
                 fontFamily = FontFamily.Monospace,
                 fontSize = 12.sp
             )
             Text(
-                text = "Model: Gemma 4 E2B",
+                text = "Type: ${uiState.data.aiStatus?.engineType?.displayName ?: "Unknown"}",
                 color = PipBoyGreen,
                 fontFamily = FontFamily.Monospace,
                 fontSize = 12.sp
@@ -77,12 +79,12 @@ fun SettingsScreen() {
                 Box(
                     modifier = Modifier
                         .size(8.dp)
-                        .border(1.dp, PipBoyGreen)
+                        .border(1.dp, if (uiState.data.aiStatus?.isReady == true) PipBoyGreen else PipBoyGreenDim)
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = "STATUS: READY",
-                    color = PipBoyGreen,
+                    text = "STATUS: ${if (uiState.data.aiStatus?.isReady == true) "READY" else "STANDBY"}",
+                    color = if (uiState.data.aiStatus?.isReady == true) PipBoyGreen else PipBoyGreenDim,
                     fontFamily = FontFamily.Monospace,
                     fontSize = 11.sp
                 )
@@ -91,21 +93,18 @@ fun SettingsScreen() {
 
         Spacer(modifier = Modifier.height(12.dp))
 
+        // Content Packs section
         PipBoyCard(modifier = Modifier.fillMaxWidth()) {
             SettingsSectionTitle("CONTENT PACKS")
             Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = "Essentials Pack .......... DOWNLOADED",
-                color = PipBoyGreen,
-                fontFamily = FontFamily.Monospace,
-                fontSize = 11.sp
-            )
-            Text(
-                text = "Wikipedia Mini ............ AVAILABLE",
-                color = PipBoyGreenDim,
-                fontFamily = FontFamily.Monospace,
-                fontSize = 11.sp
-            )
+            uiState.data.contentPacks.forEach { pack ->
+                Text(
+                    text = "${pack.name} .......... ${if (pack.isDownloaded) "DOWNLOADED" else "AVAILABLE"}",
+                    color = if (pack.isDownloaded) PipBoyGreen else PipBoyGreenDim,
+                    fontFamily = FontFamily.Monospace,
+                    fontSize = 11.sp
+                )
+            }
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.End
@@ -118,13 +117,17 @@ fun SettingsScreen() {
 
         Spacer(modifier = Modifier.height(12.dp))
 
+        // Storage section
         PipBoyCard(modifier = Modifier.fillMaxWidth()) {
             SettingsSectionTitle("STORAGE")
             Spacer(modifier = Modifier.height(8.dp))
-            PipBoyProgressBar(progress = 0.1f, modifier = Modifier.fillMaxWidth())
+            PipBoyProgressBar(
+                progress = uiState.data.storageMetrics?.usedPercent?.div(100f) ?: 0f,
+                modifier = Modifier.fillMaxWidth()
+            )
             Spacer(modifier = Modifier.height(4.dp))
             Text(
-                text = "3.2 GB / 32 GB USED",
+                text = "${uiState.data.storageMetrics?.usedBytes?.div(1_000_000_000) ?: 0} GB / ${uiState.data.storageMetrics?.totalBytes?.div(1_000_000_000) ?: 0} GB USED",
                 color = PipBoyGreenDim,
                 fontFamily = FontFamily.Monospace,
                 fontSize = 11.sp
@@ -133,21 +136,22 @@ fun SettingsScreen() {
 
         Spacer(modifier = Modifier.height(12.dp))
 
+        // Display/Theme section
         PipBoyCard(modifier = Modifier.fillMaxWidth()) {
             SettingsSectionTitle("DISPLAY")
             Spacer(modifier = Modifier.height(8.dp))
-            themes.forEach { theme ->
-                val isSelected = selectedTheme.value == theme
+            viewModel.availableThemes.forEach { theme ->
+                val isSelected = uiState.data.currentTheme == theme.id
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clickable { selectedTheme.value = theme }
+                        .clickable { viewModel.setTheme(theme.id) }
                         .padding(vertical = 4.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     val selectorChar = if (isSelected) "[X]" else "[ ]"
                     Text(
-                        text = "$selectorChar $theme",
+                        text = "$selectorChar ${theme.name}",
                         color = if (isSelected) PipBoyGreen else PipBoyGreenDim,
                         fontFamily = FontFamily.Monospace,
                         fontSize = 12.sp
@@ -158,11 +162,12 @@ fun SettingsScreen() {
 
         Spacer(modifier = Modifier.height(12.dp))
 
+        // About section
         PipBoyCard(modifier = Modifier.fillMaxWidth()) {
             SettingsSectionTitle("ABOUT")
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = "NOMAD v0.1.0",
+                text = "NOMAD v1.0.0",
                 color = PipBoyGreen,
                 fontFamily = FontFamily.Monospace,
                 fontSize = 12.sp
@@ -174,13 +179,7 @@ fun SettingsScreen() {
                 fontSize = 12.sp
             )
             Text(
-                text = "Powered by Gemma 4",
-                color = PipBoyGreenDim,
-                fontFamily = FontFamily.Monospace,
-                fontSize = 11.sp
-            )
-            Text(
-                text = "Open source — Apache 2.0 License",
+                text = "Offline-first survival knowledge",
                 color = PipBoyGreenDim,
                 fontFamily = FontFamily.Monospace,
                 fontSize = 11.sp
@@ -193,7 +192,7 @@ fun SettingsScreen() {
 private fun SettingsSectionTitle(title: String) {
     Text(
         text = title,
-        color = PipBoyAmber,
+        color = PipBoyGreen,
         fontFamily = FontFamily.Monospace,
         fontSize = 13.sp
     )
