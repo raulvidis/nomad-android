@@ -19,7 +19,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -29,8 +28,8 @@ import com.nomad.android.ui.theme.PipBoyBg
 import com.nomad.android.ui.components.PipBoyButton
 import com.nomad.android.ui.components.PipBoyCard
 import com.nomad.android.ui.components.PipBoyDivider
-import com.nomad.android.ui.theme.PipBoyGreen
-import com.nomad.android.ui.theme.PipBoyGreenDim
+import com.nomad.android.ui.components.PipBoyGreen
+import com.nomad.android.ui.components.PipBoyGreenDim
 import com.nomad.android.ui.components.PipBoyProgressBar
 import com.nomad.android.ui.components.PipBoyText
 
@@ -98,20 +97,55 @@ fun SettingsScreen(
             SettingsSectionTitle("CONTENT PACKS")
             Spacer(modifier = Modifier.height(8.dp))
             uiState.data.contentPacks.forEach { pack ->
-                Text(
-                    text = "${pack.name} .......... ${if (pack.isDownloaded) "DOWNLOADED" else "AVAILABLE"}",
-                    color = if (pack.isDownloaded) PipBoyGreen else PipBoyGreenDim,
-                    fontFamily = FontFamily.Monospace,
-                    fontSize = 11.sp
-                )
-            }
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.End
-            ) {
-                PipBoyButton(text = "DOWNLOAD", onClick = { })
-                Spacer(modifier = Modifier.width(8.dp))
-                PipBoyButton(text = "DELETE", onClick = { })
+                Column(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text(
+                            text = "${pack.name} (${pack.size})",
+                            color = if (pack.isDownloaded) PipBoyGreen else PipBoyGreenDim,
+                            fontFamily = FontFamily.Monospace,
+                            fontSize = 11.sp,
+                            modifier = Modifier.weight(1f)
+                        )
+                        val statusText = when {
+                            pack.isDownloaded -> "DOWNLOADED"
+                            pack.isDownloading -> "${(pack.downloadProgress * 100).toInt()}%"
+                            else -> "AVAILABLE"
+                        }
+                        Text(
+                            text = statusText,
+                            color = if (pack.isDownloaded) PipBoyGreen else PipBoyGreenDim,
+                            fontFamily = FontFamily.Monospace,
+                            fontSize = 11.sp
+                        )
+                    }
+                    if (pack.isDownloading) {
+                        Spacer(modifier = Modifier.height(4.dp))
+                        PipBoyProgressBar(progress = pack.downloadProgress)
+                    }
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.End,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        if (!pack.isDownloaded && !pack.isDownloading) {
+                            PipBoyButton(
+                                text = "DOWNLOAD",
+                                onClick = { viewModel.downloadPack(pack.id) }
+                            )
+                        }
+                        if (pack.isDownloaded) {
+                            Spacer(modifier = Modifier.width(8.dp))
+                            PipBoyButton(
+                                text = "DELETE",
+                                onClick = { viewModel.deletePack(pack.id) }
+                            )
+                        }
+                    }
+                }
             }
         }
 

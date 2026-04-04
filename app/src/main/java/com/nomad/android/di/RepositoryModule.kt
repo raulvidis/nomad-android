@@ -1,6 +1,7 @@
 package com.nomad.android.di
 
 import android.content.Context
+import com.nomad.android.data.content.ContentPackManager
 import com.nomad.android.data.local.dao.ContentPackDao
 import com.nomad.android.data.repository.ChatRepository
 import com.nomad.android.data.repository.ContentPackRepository
@@ -18,6 +19,13 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 object RepositoryModule {
+
+    @Provides
+    @Singleton
+    fun provideContentPackManager(
+        @ApplicationContext context: Context,
+        contentPackDao: ContentPackDao
+    ): ContentPackManager = ContentPackManager(context, contentPackDao)
 
     @Provides
     @Singleton
