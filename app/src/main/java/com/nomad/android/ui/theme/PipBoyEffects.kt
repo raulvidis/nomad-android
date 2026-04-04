@@ -86,10 +86,8 @@ fun Modifier.crtFlicker(): Modifier = this.then(
         Modifier.graphicsLayer { this.alpha = alpha }
     }
 )
-        Modifier.graphicsLayer { this.alpha = alpha }
-    }
-)
 
+@Composable
 @Composable
 fun CrtScreen(
     modifier: Modifier = Modifier,
