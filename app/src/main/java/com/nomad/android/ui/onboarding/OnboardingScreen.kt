@@ -86,27 +86,6 @@ fun OnboardingScreen(
     }
 }
 
-    var currentStep by remember { mutableIntStateOf(0) }
-
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(DarkBg),
-        contentAlignment = Alignment.Center
-    ) {
-        when (currentStep) {
-            0 -> BootSequenceStep { currentStep = 1 }
-            1 -> DeviceScanStep { currentStep = 2 }
-            2 -> ModelSelectionStep(
-                selectedModel = uiState.data.selectedModel,
-                onSelectModel = { viewModel.selectModel(it) }
-            ) { currentStep = 3 }
-            3 -> DownloadPackStep { currentStep = 4 }
-            else -> WelcomeStep { viewModel.completeOnboarding() }
-        }
-    }
-}
-
 @Composable
 private fun BootSequenceStep(onAdvance: () -> Unit) {
     val lines = listOf(
