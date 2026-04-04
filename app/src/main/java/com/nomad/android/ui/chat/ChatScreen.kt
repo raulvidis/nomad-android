@@ -1,7 +1,6 @@
 package com.nomad.android.ui.chat
 
 import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateIntAsState
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
@@ -231,7 +230,7 @@ private fun MessageBubble(isUser: Boolean, text: String) {
 @Composable
 private fun TypingIndicator() {
     val infiniteTransition = rememberInfiniteTransition(label = "typing")
-    val dotCount by infiniteTransition.animateIntAsState(
+    val dotCount by infiniteTransition.animateInt(
         initialValue = 1,
         targetValue = 4,
         animationSpec = infiniteRepeatable(
