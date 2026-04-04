@@ -33,7 +33,7 @@ Create repositories in `app/src/main/java/com/nomad/android/data/repository/`:
 
 | Repository | Responsibilities | Dependencies |
 |---|---|---|
-| `ChatRepository` | Chat session CRUD, message persistence, recent sessions | `ChatMessageDao`, `ChatSessionDao`, `AIEngine` |
+| `ChatRepository` | Chat session CRUD, message persistence, recent sessions | `ChatMessageDao`, `ChatSessionDao` |
 | `ContentPackRepository` | Pack listing, download with progress, pause/resume, deletion | `ContentPackDao`, `OkHttp`, `WorkManager` |
 | `SearchRepository` | Article search, category filtering, search history, ZIM reading | `SearchHistoryDao`, `KiwixManager`, `ContentPackDao` |
 | `SettingsRepository` | Key-value settings, onboarding state, theme persistence, storage metrics | `SettingsDao`, `DataStore Preferences`, `ContentPackDao` |
@@ -98,7 +98,7 @@ Screens collect `StateFlow<UiState<T>>` via `collectAsStateWithLifecycle()`.
 
 **Fallback** (`FallbackEngine`):
 - If no LiteRT-LM model can load, provide a local rule-based response system
-- Uses bundled `survival_content.json` for keyword-matched responses
+- Uses the same `res/raw/survival_content.json` bundled with the app for keyword-matched responses
 - Clearly indicates to user that AI model is unavailable
 
 **`AIEngine` interface** (updated):
@@ -120,7 +120,7 @@ interface AIEngine {
 fun provideAIEngine(...): AIEngine {
     return when {
         totalRamMB >= 6144 -> LiteRTLMEngine(ModelVariant.E2B)
-        totalRamMB >= 20448 -> LiteRTLMEngine(ModelVariant.ONE_B)
+        totalRamMB >= 2048 -> LiteRTLMEngine(ModelVariant.ONE_B)
         else -> FallbackEngine()
     }
 }
@@ -145,7 +145,7 @@ fun provideAIEngine(...): AIEngine {
 ### 3.3 Real Maps
 
 **MapLibre GL Native integration**:
-- Add `org.maplibre.gl:android-sdk` dependency
+- Add `org.maplibre.gl:android-sdk:10.3.0` dependency (stable v10 API)
 - `MapView` wrapped in `AndroidView` composable
 - Offline tile management:
   - Pre-bundled tiles in `assets/maps/` for initial offline capability
@@ -172,6 +172,13 @@ fun provideAIEngine(...): AIEngine {
 - Real full-text search through Room FTS or ZIM index
 - Search history persisted in `SearchHistoryEntity`
 - Results ranked by relevance
+
+**RAGEngine vector search**:
+- Replace raw `SQLiteDatabase` vector store with Room-backed table
+- Store embeddings as BLOB columns in a `VectorEmbeddingEntity` table
+- Cosine similarity computed in Kotlin on retrieved vectors
+- Text chunking (512 words, 128 overlap) feeds into embedding pipeline
+- Used by `ChatRepository` to provide context-aware AI responses from local knowledge base
 
 ---
 
@@ -285,10 +292,9 @@ fun Modifier.crtFlicker(): Modifier = this.then(Modifier.graphicsLayer {
 })
 ```
 
-**After** (proper Compose animation):
+**After** (proper Compose animation using Modifier.composed):
 ```kotlin
-@Composable
-fun Modifier.crtFlicker(): Modifier {
+fun Modifier.crtFlicker(): Modifier = this.then(Modifier.composed {
     val infiniteTransition = rememberInfiniteTransition()
     val alpha by infiniteTransition.animateFloat(
         initialValue = 0.95f,
@@ -298,8 +304,8 @@ fun Modifier.crtFlicker(): Modifier {
             repeatMode = RepeatMode.Reverse
         )
     )
-    return this.then(Modifier.graphicsLayer { this.alpha = alpha })
-}
+    Modifier.graphicsLayer { this.alpha = alpha }
+})
 ```
 
 Same pattern for `PipBoyStatusBar` clock — replace `while(true)` with `LaunchedEffect` + `delay(1000)` updating a `remember` state.
@@ -475,7 +481,7 @@ app/src/main/java/com/nomad/android/
 │   │   ├── AIEngine.kt                  # Updated interface
 │   │   ├── LiteRTLMEngine.kt            # Real implementation
 │   │   ├── FallbackEngine.kt            # NEW — rule-based fallback
-│   │   └── RAGEngine.kt                 # Updated (real vector search)
+│   │   └── RAGEngine.kt                 # Updated (Room-backed vector store with cosine similarity)
 │   ├── content/
 │   │   ├── ContentPackManager.kt        # Updated (real downloads)
 │   │   └── KiwixManager.kt             # Updated (real ZIM handling)
@@ -527,7 +533,7 @@ app/src/main/java/com/nomad/android/
 
 ## 9. Migration Plan
 
-The refactor is implemented as a single cohesive change set:
+The refactor is implemented as a single cohesive change set, applied in sequential order within one branch. Each step builds on the previous and compiles independently:
 
 1. **Foundation** — Build config, dependencies, proguard, color dedup, CRT fixes
 2. **Data layer** — Repositories, updated Room config, real download pipeline
@@ -549,4 +555,4 @@ The refactor is implemented as a single cohesive change set:
 | MapLibre native libs increase APK size | Use ABI splits, proguard shrinks unused code |
 | libkiwix JNI may have build complexity | Start with bundled JSON content, add ZIM incrementally |
 | Large refactor may introduce regressions | Comprehensive test coverage, CI catches failures |
-| compileSdk 35 may lack some APIs used by 36 | Audit all API usage, use compat libraries where needed |
+| compileSdk 35 downgrade from 36 | Audit all API usage, ensure no 36-only APIs are used |
