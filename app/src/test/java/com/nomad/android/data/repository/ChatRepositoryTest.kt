@@ -50,7 +50,6 @@ class ChatRepositoryTest {
     }
 
     @Test
-    @Test
     fun `getRecentSessions returns sessions from DAO`() = runTest {
         val sessions = listOf(
             ChatSessionEntity(id = "s1", title = "Session 1", createdAt = 1000, updatedAt = 2000)
