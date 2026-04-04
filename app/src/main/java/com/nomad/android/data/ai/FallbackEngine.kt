@@ -1,12 +1,9 @@
 package com.nomad.android.data.ai
 
-import android.content.Context
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 
-class FallbackEngine(
-    private val context: Context
-) : AIEngine {
+class FallbackEngine : AIEngine {
 
     private val survivalKeywords = mapOf(
         "cpr" to "To perform CPR: 1) Check responsiveness. 2) Call emergency services. 3) Push hard and fast in the center of the chest at 100-120 compressions per minute. 4) Give rescue breaths if trained. 5) Continue until help arrives.",

@@ -3,8 +3,10 @@ package com.nomad.android.data.content
 import android.content.Context
 import com.nomad.android.data.local.dao.ContentPackDao
 import com.nomad.android.data.local.entity.ContentPackEntity
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
+import java.io.File
 
 data class ContentPack(
     val id: String,
@@ -21,9 +23,20 @@ class ContentPackManager(
     private val context: Context,
     private val contentPackDao: ContentPackDao
 ) {
+    private val downloadDir by lazy {
+        File(context.filesDir, "contentPacks").also { it.mkdirs() }
+    }
+
     fun getAvailablePacks(): Flow<List<ContentPack>> = flow {
-        // TODO: Fetch from remote manifest
-        emit(getBundledPacks())
+        val bundled = getBundledPacks()
+        val downloadedIds = downloadDir.listFiles()?.map { it.name } ?: emptyList()
+
+        val packs = bundled.map { pack ->
+            pack.copy(
+                status = if (downloadedIds.contains(pack.id)) PackStatus.DOWNLOADED else pack.status
+            )
+        }
+        emit(packs)
     }
 
     private fun getBundledPacks(): List<ContentPack> = listOf(
@@ -38,13 +51,40 @@ class ContentPackManager(
     )
 
     fun downloadPack(packId: String): Flow<Float> = flow {
-        // TODO: Implement with WorkManager
         emit(0f)
+
+        val pack = getBundledPacks().find { it.id == packId }
+            ?: throw IllegalArgumentException("Unknown pack: $packId")
+
+        val destFile = File(downloadDir, packId)
+        if (destFile.exists()) {
+            emit(1f)
+            return@flow
+        }
+
+        // Simulate download progress for now (replace with OkHttp + WorkManager when backend is ready)
+        val steps = 20
+        for (i in 1..steps) {
+            delay(100)
+            emit(i.toFloat() / steps)
+        }
+
+        // Create placeholder file to mark as downloaded
+        destFile.createNewFile()
         emit(1f)
     }
 
     suspend fun deletePack(packId: String) {
+        val file = File(downloadDir, packId)
+        if (file.exists()) file.delete()
         contentPackDao.deleteById(packId)
+    }
+
+    fun isPackDownloaded(packId: String): Boolean = File(downloadDir, packId).exists()
+
+    fun getDownloadedPackSize(packId: String): Long {
+        val file = File(downloadDir, packId)
+        return if (file.exists()) file.length() else 0L
     }
 
     fun formatSize(bytes: Long): String = when {

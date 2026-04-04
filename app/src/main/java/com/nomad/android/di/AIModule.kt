@@ -30,7 +30,7 @@ object AIModule {
         return when {
             totalRamMB >= 6144 -> LiteRTLMEngine(context, LiteRTLMEngine.ModelVariant.E2B)
             totalRamMB >= 2048 -> LiteRTLMEngine(context, LiteRTLMEngine.ModelVariant.ONE_B)
-            else -> FallbackEngine(context)
+            else -> FallbackEngine()
         }
     }
 
