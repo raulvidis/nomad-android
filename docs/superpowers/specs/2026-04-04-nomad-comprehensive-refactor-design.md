@@ -33,11 +33,11 @@ Create repositories in `app/src/main/java/com/nomad/android/data/repository/`:
 
 | Repository | Responsibilities | Dependencies |
 |---|---|---|
-| `ChatRepository` | Chat session CRUD, message persistence, recent sessions | `ChatMessageDao`, `ChatSessionDao` |
+| `ChatRepository` | Chat session CRUD, message persistence, recent sessions, RAG context retrieval | `ChatMessageDao`, `ChatSessionDao`, `RAGEngine` |
 | `ContentPackRepository` | Pack listing, download with progress, pause/resume, deletion | `ContentPackDao`, `OkHttp`, `WorkManager` |
 | `SearchRepository` | Article search, category filtering, search history, ZIM reading | `SearchHistoryDao`, `KiwixManager`, `ContentPackDao` |
 | `SettingsRepository` | Key-value settings, onboarding state, theme persistence, storage metrics | `SettingsDao`, `DataStore Preferences`, `ContentPackDao` |
-| `MapsRepository` | Offline tile management, layer configuration, map state | `MapLibre`, local tile storage |
+| `MapsRepository` | Offline tile management, layer configuration, map state | Local tile storage, WorkManager |
 
 Each repository:
 - Annotated with `@Singleton` and `@Inject` constructor
@@ -61,7 +61,8 @@ Create ViewModels in `app/src/main/java/com/nomad/android/ui/<feature>/`:
 
 ### 2.3 State Pattern
 
-Each ViewModel exposes:
+Each ViewModel exposes a `StateFlow<UiState<T>>` where `UiState` is a generic wrapper:
+
 ```kotlin
 data class UiState<out T>(
     val data: T? = null,
@@ -69,6 +70,11 @@ data class UiState<out T>(
     val error: String? = null
 )
 ```
+
+Each screen defines its own dedicated data class for the `T` type parameter:
+- `DashboardData`, `MapsData`, `KnowledgeData`, `ChatData`, `EmergencyData`, `SettingsData`, `OnboardingData`
+
+The generic `UiState` wraps these screen-specific data classes, providing consistent loading/error handling across all screens.
 
 Screens collect `StateFlow<UiState<T>>` via `collectAsStateWithLifecycle()`.
 
@@ -272,7 +278,7 @@ implementation("com.squareup.okhttp3:okhttp:4.12.0")
 implementation("androidx.work:work-runtime-ktx:2.9.0")
 
 // Maps
-implementation("org.maplibre.gl:android-sdk:11.0.0")
+implementation("org.maplibre.gl:android-sdk:10.3.0")
 
 // DataStore
 implementation("androidx.datastore:datastore-preferences:1.1.1")
