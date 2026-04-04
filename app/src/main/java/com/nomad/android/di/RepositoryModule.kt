@@ -2,6 +2,8 @@ package com.nomad.android.di
 
 import android.content.Context
 import com.nomad.android.data.content.ContentPackManager
+import com.nomad.android.data.content.KiwixManager
+import com.nomad.android.data.content.KiwixManager
 import com.nomad.android.data.local.dao.ContentPackDao
 import com.nomad.android.data.repository.ChatRepository
 import com.nomad.android.data.repository.ContentPackRepository
@@ -26,6 +28,18 @@ object RepositoryModule {
         @ApplicationContext context: Context,
         contentPackDao: ContentPackDao
     ): ContentPackManager = ContentPackManager(context, contentPackDao)
+
+    @Provides
+    @Singleton
+    fun provideKiwixManager(
+        @ApplicationContext context: Context
+    ): KiwixManager = KiwixManager(context)
+
+    @Provides
+    @Singleton
+    fun provideKiwixManager(
+        @ApplicationContext context: Context
+    ): KiwixManager = KiwixManager(context)
 
     @Provides
     @Singleton

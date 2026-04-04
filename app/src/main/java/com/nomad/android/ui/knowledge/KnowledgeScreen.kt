@@ -20,11 +20,13 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState as rememberHScrollState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import kotlinx.coroutines.delay
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
@@ -54,6 +56,18 @@ fun KnowledgeScreen(
         uiState.isLoading -> PipBoyLoadingScreen("INDEXING ARCHIVES...")
         uiState.error != null -> PipBoyErrorScreen(message = uiState.error ?: "Unknown error", onRetry = { viewModel.loadArticles() })
         uiState.data.articles.isEmpty() -> PipBoyEmptyScreen(
+            message = "No articles available. Download content packs in Settings."
+        )
+        uiState.data.filteredArticles.isEmpty() && uiState.data.searchQuery.isNotBlank() -> PipBoyEmptyScreen(
+            message = "No articles match '${uiState.data.searchQuery}'"
+        )
+        uiState.data.filteredArticles.isEmpty() -> PipBoyEmptyScreen(
+            message = "No articles available. Download content packs in Settings."
+        )
+        uiState.data.filteredArticles.isEmpty() && uiState.data.searchQuery.isNotBlank() -> PipBoyEmptyScreen(
+            message = "No articles match '${uiState.data.searchQuery}'"
+        )
+        uiState.data.filteredArticles.isEmpty() -> PipBoyEmptyScreen(
             message = "No articles in this category. Download content packs in Settings."
         )
         else -> KnowledgeContent(
@@ -73,6 +87,16 @@ private fun KnowledgeContent(
     onToggleFavorite: (String) -> Unit
 ) {
     var searchText by remember { mutableStateOf("") }
+
+    LaunchedEffect(searchText) {
+        delay(300)
+        onSearch(searchText)
+    }
+
+    LaunchedEffect(searchText) {
+        delay(300)
+        onSearch(searchText)
+    }
 
     val categoryColor = mapOf(
         "Survival" to PipBoyGreen,
@@ -149,7 +173,7 @@ private fun KnowledgeContent(
             modifier = Modifier.weight(1f),
             verticalArrangement = Arrangement.spacedBy(0.dp),
         ) {
-            items(data.articles, key = { it.id }) { article ->
+            items(data.filteredArticles, key = { it.id }) { article ->
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -195,7 +219,7 @@ private fun KnowledgeContent(
         }
 
         Text(
-            text = "${data.articles.size} ARTICLES AVAILABLE",
+            text = "${data.filteredArticles.size} / ${data.articles.size} ARTICLES",
             color = PipBoyGreenDim,
             fontFamily = FontFamily.Monospace,
             fontSize = 10.sp,
