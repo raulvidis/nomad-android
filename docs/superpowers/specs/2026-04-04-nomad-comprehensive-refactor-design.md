@@ -42,8 +42,10 @@ Create repositories in `app/src/main/java/com/nomad/android/data/repository/`:
 Each repository:
 - Annotated with `@Singleton` and `@Inject` constructor
 - Exposes data as `Flow<T>` or `suspend fun`
-- Handles error wrapping in sealed `Result<T>` types
+- Handles error wrapping in sealed `Result<T>` types (Success/Error)
 - No direct DAO exposure to UI layer
+- ViewModels map repository `Result<T>` → `UiState<T>` (Success.data → UiState.data, Error.message → UiState.error)
+- ViewModels map repository `Result<T>` → `UiState<T>` (Success.data → UiState.data, Error.message → UiState.error)
 
 ### 2.2 ViewModel Layer
 
@@ -283,6 +285,18 @@ implementation("org.maplibre.gl:android-sdk:10.3.0")
 // DataStore
 implementation("androidx.datastore:datastore-preferences:1.1.1")
 
+// AI / LiteRT-LM (MediaPipe)
+implementation("com.google.ai.edge:litesdk-llm:1.0.0")
+
+// ZIM / Kiwix (libkiwix JNI)
+implementation("org.kiwix:kiwix-android:3.0.0")
+
+// AI / LiteRT-LM (MediaPipe)
+implementation("com.google.ai.edge:litesdk-llm:1.0.0")
+
+// ZIM / Kiwix (libkiwix JNI)
+implementation("org.kiwix:kiwix-android:3.0.0")
+
 // Testing
 testImplementation("app.cash.turbine:turbine:1.2.0")
 androidTestImplementation("androidx.compose.ui:ui-test-junit4")
@@ -476,7 +490,8 @@ jobs:
 
 ```
 app/src/main/java/com/nomad/android/
-├── NomadApp.kt                          # Application class + root Composable (updated)
+├── NomadApplication.kt                    # NEW — Application class (@HiltAndroidApp)
+├── NomadApp.kt                          # Root Composable (onboarding + main app)
 ├── MainActivity.kt                      # Single Activity entry point
 ├── di/
 │   ├── AIModule.kt                      # Updated (no AICore, proper thresholds)
