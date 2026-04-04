@@ -59,7 +59,7 @@ class ChatViewModel @Inject constructor(
         loadRecentSessions()
     }
 
-    private fun loadRecentSessions() {
+    fun loadRecentSessions() {
         _uiState.update { it.copy(isLoading = true, error = null) }
 
         viewModelScope.launch {

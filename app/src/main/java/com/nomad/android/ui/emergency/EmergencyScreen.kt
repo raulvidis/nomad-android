@@ -35,14 +35,14 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.nomad.android.ui.components.PipBoyAmber
-import com.nomad.android.ui.components.PipBoyBg
+import com.nomad.android.ui.theme.PipBoyAmber
+import com.nomad.android.ui.theme.PipBoyBg
 import com.nomad.android.ui.components.PipBoyCard
-import com.nomad.android.ui.components.PipBoyDanger
+import com.nomad.android.ui.theme.PipBoyDanger
 import com.nomad.android.ui.components.PipBoyDivider
-import com.nomad.android.ui.components.PipBoyGreen
-import com.nomad.android.ui.components.PipBoyGreenDim
-import com.nomad.android.ui.components.PipBoySurface
+import com.nomad.android.ui.theme.PipBoyGreen
+import com.nomad.android.ui.theme.PipBoyGreenDim
+import com.nomad.android.ui.theme.PipBoySurface
 import com.nomad.android.ui.components.PipBoyText
 
 private data class EmergencyQuickAccess(

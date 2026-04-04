@@ -34,12 +34,12 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.material3.Text
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.nomad.android.ui.components.PipBoyBg
+import com.nomad.android.ui.theme.PipBoyBg
 import com.nomad.android.ui.components.PipBoyDivider
 import com.nomad.android.ui.components.PipBoyEmptyScreen
 import com.nomad.android.ui.components.PipBoyErrorScreen
-import com.nomad.android.ui.components.PipBoyGreen
-import com.nomad.android.ui.components.PipBoyGreenDim
+import com.nomad.android.ui.theme.PipBoyGreen
+import com.nomad.android.ui.theme.PipBoyGreenDim
 import com.nomad.android.ui.components.PipBoyLoadingScreen
 import com.nomad.android.ui.components.PipBoyText
 import com.nomad.android.ui.components.PipBoyTextField

@@ -43,7 +43,7 @@ object AIModule {
     fun provideAIEngineStatus(engine: AIEngine): AIEngineStatus {
         return AIEngineStatus(
             engineType = when (engine) {
-                is LiteRTLMEngine -> if (engine.modelVariant == LiteRTLMEngine.ModelVariant.E2B) AIEngineType.LITERTLM_E2B else AIEngineType.LITERTLM_1B
+                is LiteRTLMEngine -> if (engine.getModelName().contains("E2B")) AIEngineType.LITERTLM_E2B else AIEngineType.LITERTLM_1B
                 is FallbackEngine -> AIEngineType.FALLBACK
                 else -> AIEngineType.NONE
             },
