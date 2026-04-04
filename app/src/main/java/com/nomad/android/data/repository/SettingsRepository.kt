@@ -8,7 +8,6 @@ import com.nomad.android.data.local.dao.SettingsDao
 import com.nomad.android.data.local.entity.SettingsEntity
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 import javax.inject.Singleton

@@ -303,7 +303,10 @@ private fun ModelSelectionStep(
 
         PipBoyButton(
             text = "CONFIRM SELECTION",
-            onClick = { onAdvance() },
+            onClick = {
+                onSelectModel(models[selectedIndex].first)
+                onAdvance()
+            },
             modifier = Modifier.fillMaxWidth()
         )
     }

@@ -159,10 +159,39 @@ class ChatViewModel @Inject constructor(
 
     fun sendMessage(content: String) {
         val sessionId = _uiState.value.data.currentSessionId ?: run {
-            newSession()
+            val newId = UUID.randomUUID().toString()
+            val session = ChatSession(
+                id = newId,
+                title = content.take(50),
+                createdAt = System.currentTimeMillis(),
+                updatedAt = System.currentTimeMillis()
+            )
+            viewModelScope.launch {
+                chatRepository.insertSession(
+                    ChatSessionEntity(
+                        id = session.id,
+                        title = session.title,
+                        createdAt = session.createdAt,
+                        updatedAt = session.updatedAt
+                    )
+                )
+                _uiState.update {
+                    it.copy(
+                        data = it.data.copy(
+                            currentSessionId = newId,
+                            sessions = listOf(session) + it.data.sessions
+                        )
+                    )
+                }
+                sendUserMessage(newId, content)
+            }
             return
         }
 
+        sendUserMessage(sessionId, content)
+    }
+
+    private fun sendUserMessage(sessionId: String, content: String) {
         val userMessage = ChatMessage(
             sessionId = sessionId,
             role = "user",

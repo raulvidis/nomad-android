@@ -62,12 +62,6 @@ fun KnowledgeScreen(
             message = "No articles match '${uiState.data.searchQuery}'"
         )
         uiState.data.filteredArticles.isEmpty() -> PipBoyEmptyScreen(
-            message = "No articles available. Download content packs in Settings."
-        )
-        uiState.data.filteredArticles.isEmpty() && uiState.data.searchQuery.isNotBlank() -> PipBoyEmptyScreen(
-            message = "No articles match '${uiState.data.searchQuery}'"
-        )
-        uiState.data.filteredArticles.isEmpty() -> PipBoyEmptyScreen(
             message = "No articles in this category. Download content packs in Settings."
         )
         else -> KnowledgeContent(
@@ -87,11 +81,6 @@ private fun KnowledgeContent(
     onToggleFavorite: (String) -> Unit
 ) {
     var searchText by remember { mutableStateOf("") }
-
-    LaunchedEffect(searchText) {
-        delay(300)
-        onSearch(searchText)
-    }
 
     LaunchedEffect(searchText) {
         delay(300)

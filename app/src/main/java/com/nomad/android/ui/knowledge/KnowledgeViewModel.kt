@@ -3,7 +3,6 @@ package com.nomad.android.ui.knowledge
 import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.nomad.android.data.Result
 import com.nomad.android.data.content.KiwixManager
 import com.nomad.android.data.local.entity.SearchHistoryEntity
 import com.nomad.android.data.repository.SearchRepository
