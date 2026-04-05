@@ -44,6 +44,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import androidx.navigation.NavGraph.Companion.findStartDestination
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -252,10 +253,15 @@ fun TerminalBottomNav(
                         if (currentRoute != tab.route) {
                             navController.navigate(tab.route) {
                                 popUpTo(navController.graph.findStartDestination().id) {
-                                    saveState = true
+                                    this.saveState = true
                                 }
-                                launchSingleTop = true
-                                restoreState = true
+                                this.launchSingleTop = true
+                                this.restoreState = true
+                            }
+                        }
+                    }
+                                this.launchSingleTop = true
+                                this.restoreState = true
                             }
                         }
                     }
