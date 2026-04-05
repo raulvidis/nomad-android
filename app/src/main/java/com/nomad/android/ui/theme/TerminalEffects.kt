@@ -260,11 +260,6 @@ fun TerminalBottomNav(
                             }
                         }
                     }
-                                this.launchSingleTop = true
-                                this.restoreState = true
-                            }
-                        }
-                    }
                     .padding(horizontal = 4.dp, vertical = 8.dp),
                 contentAlignment = Alignment.Center,
             ) {
