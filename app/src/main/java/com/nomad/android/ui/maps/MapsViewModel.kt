@@ -16,7 +16,8 @@ import javax.inject.Inject
 data class MapsData(
     val layers: List<MapsRepository.MapLayer> = emptyList(),
     val hasOfflineTiles: Boolean = false,
-    val isMapInitialized: Boolean = false
+    val isMapInitialized: Boolean = false,
+    val regionName: String? = null
 )
 
 data class MapsUiState(
@@ -50,7 +51,8 @@ class MapsViewModel @Inject constructor(
                             data = MapsData(
                                 layers = result.data,
                                 hasOfflineTiles = mapsRepository.hasOfflineTiles(),
-                                isMapInitialized = true
+                                isMapInitialized = true,
+                                regionName = mapsRepository.getDownloadedRegionName()
                             )
                         )
                     }

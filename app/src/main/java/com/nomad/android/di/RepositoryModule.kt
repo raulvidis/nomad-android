@@ -69,6 +69,7 @@ object RepositoryModule {
     @Provides
     @Singleton
     fun provideMapsRepository(
-        @ApplicationContext context: Context
-    ): MapsRepository = MapsRepository(context)
+        @ApplicationContext context: Context,
+        contentPackManager: ContentPackManager
+    ): MapsRepository = MapsRepository(context, contentPackManager)
 }

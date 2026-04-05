@@ -141,15 +141,15 @@ private fun MapsContent(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceEvenly
         ) {
-            listOf("BASEMAP", "POI", "TOPO", "EMERGENCY").forEach { label ->
-                PipBoyButton(text = label, onClick = { }, modifier = Modifier.padding(4.dp))
+            listOf("BASEMAP" to "basemap", "POI" to "poi", "TOPO" to "topo", "EMERGENCY" to "emergency").forEach { (label, layerId) ->
+                PipBoyButton(text = label, onClick = { onToggleLayer(layerId) }, modifier = Modifier.padding(4.dp))
             }
         }
 
         Spacer(modifier = Modifier.height(16.dp))
 
         Text(
-            text = "REGION: NOT SELECTED | ${if (data.hasOfflineTiles) "TILES LOADED" else "0 TILES LOADED"}",
+            text = "REGION: ${data.regionName ?: "NOT SELECTED"} | ${if (data.hasOfflineTiles) "TILES LOADED" else "0 TILES LOADED"}",
             color = PipBoyGreenDim,
             fontFamily = FontFamily.Monospace,
             fontSize = 11.sp
