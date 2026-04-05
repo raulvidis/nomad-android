@@ -34,6 +34,7 @@ object DatabaseModule {
             NomadDatabase::class.java,
             "nomad.db"
         )
+            .addMigrations(NomadDatabase.MIGRATION_1_2)
             .fallbackToDestructiveMigration()
             .build()
     }
@@ -42,4 +43,6 @@ object DatabaseModule {
     @Provides fun provideChatMessageDao(db: NomadDatabase) = db.chatMessageDao()
     @Provides fun provideSearchHistoryDao(db: NomadDatabase) = db.searchHistoryDao()
     @Provides fun provideSettingsDao(db: NomadDatabase) = db.settingsDao()
+    @Provides fun provideLocationSnapshotDao(db: NomadDatabase) = db.locationSnapshotDao()
+    @Provides fun provideLocationSavedPointDao(db: NomadDatabase) = db.locationSavedPointDao()
 }

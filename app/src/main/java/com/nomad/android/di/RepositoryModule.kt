@@ -5,13 +5,17 @@ import com.nomad.android.data.content.ContentPackManager
 import com.nomad.android.data.content.KiwixManager
 import com.nomad.android.data.local.dao.ChatMessageDao
 import com.nomad.android.data.local.dao.ContentPackDao
+import com.nomad.android.data.local.dao.LocationSavedPointDao
+import com.nomad.android.data.local.dao.LocationSnapshotDao
 import com.nomad.android.data.local.dao.SearchHistoryDao
 import com.nomad.android.data.local.dao.SettingsDao
 import com.nomad.android.data.repository.ChatRepository
 import com.nomad.android.data.repository.ContentPackRepository
+import com.nomad.android.data.repository.LocationRepository
 import com.nomad.android.data.repository.MapsRepository
 import com.nomad.android.data.repository.SearchRepository
 import com.nomad.android.data.repository.SettingsRepository
+import com.nomad.android.util.LocationTrackerService
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -72,4 +76,18 @@ object RepositoryModule {
         @ApplicationContext context: Context,
         contentPackManager: ContentPackManager
     ): MapsRepository = MapsRepository(context, contentPackManager)
+
+    @Provides
+    @Singleton
+    fun provideLocationTrackerService(
+        @ApplicationContext context: Context
+    ): LocationTrackerService = LocationTrackerService(context as android.app.Application)
+
+    @Provides
+    @Singleton
+    fun provideLocationRepository(
+        locationSnapshotDao: LocationSnapshotDao,
+        locationSavedPointDao: LocationSavedPointDao,
+        locationTrackerService: LocationTrackerService
+    ): LocationRepository = LocationRepository(locationSnapshotDao, locationSavedPointDao, locationTrackerService)
 }
