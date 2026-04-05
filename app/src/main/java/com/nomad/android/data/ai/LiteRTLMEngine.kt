@@ -39,7 +39,30 @@ class LiteRTLMEngine(
     private var llmInference: LlmInference? = null
     private var isModelLoaded = false
 
+    private val stopTokens = setOf(
+        "<end_of_turn>", "<eos>", "<start_of_turn>",
+        "</start_of_turn>", "</end_of_turn>",
+        "<tool_response>", "</tool_response>",
+        "<channel>", "</channel>"
+    )
+
+    private val controlTokenPattern = Regex(
+        "</?(?:start_of_turn|end_of_turn|eos|turn|bos|tool_response|channel)\\s*[^>]*>"
+    )
+
     fun getModelFile(): File = File(modelDir, modelVariant.fileName)
+
+    private fun cleanToken(token: String): String? {
+        // Check if the entire token is a stop/control token
+        val trimmed = token.trim()
+        if (trimmed.isEmpty()) return null
+        if (stopTokens.any { trimmed.contains(it) }) return null
+        if (trimmed.startsWith("Thinking Process")) return null
+
+        // Strip any embedded control tokens
+        val cleaned = controlTokenPattern.replace(token, "").trim()
+        return cleaned.ifEmpty { null }
+    }
 
     override suspend fun generate(prompt: String, context: List<String>): String = withContext(Dispatchers.IO) {
         if (!isModelLoaded) {
@@ -62,7 +85,8 @@ class LiteRTLMEngine(
         val fullPrompt = buildPromptWithContext(prompt, context)
 
         try {
-            inference.generateResponse(fullPrompt)
+            val raw = inference.generateResponse(fullPrompt)
+            controlTokenPattern.replace(raw, "").trim()
         } catch (e: Exception) {
             Log.e(TAG, "Generation failed", e)
             "AI generation error. The model may be corrupt — try re-downloading in Settings."
@@ -88,14 +112,29 @@ class LiteRTLMEngine(
         }
 
         val fullPrompt = buildPromptWithContext(prompt, context)
+        var shouldStop = false
 
         try {
             inference.generateResponseAsync(fullPrompt) { partialResult, done ->
-                if (partialResult.isNotEmpty()) {
-                    trySend(partialResult)
+                if (shouldStop || done) {
+                    if (!isClosedForSend) close()
+                    return@generateResponseAsync
                 }
-                if (done) {
-                    close()
+
+                // Check for stop tokens in the raw partial result
+                if (stopTokens.any { partialResult.contains(it) }) {
+                    shouldStop = true
+                    // Send any clean text before the stop token
+                    val beforeStop = partialResult.split(Regex("<(?:end_of_turn|eos|start_of_turn)>")).firstOrNull()
+                    val cleaned = beforeStop?.let { controlTokenPattern.replace(it, "") }?.trim()
+                    if (!cleaned.isNullOrEmpty()) trySend(cleaned)
+                    if (!isClosedForSend) close()
+                    return@generateResponseAsync
+                }
+
+                val cleaned = cleanToken(partialResult)
+                if (cleaned != null) {
+                    trySend(cleaned)
                 }
             }
         } catch (e: Exception) {

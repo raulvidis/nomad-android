@@ -36,6 +36,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.nomad.android.R
 import com.nomad.android.ui.components.TerminalButton
+import com.nomad.android.ui.components.TerminalButtonSize
 import com.nomad.android.ui.components.TerminalDivider
 import com.nomad.android.ui.components.TerminalEmptyScreen
 import com.nomad.android.ui.components.TerminalErrorScreen
@@ -61,10 +62,10 @@ fun ChatScreen(
             onRetry = { viewModel.loadRecentSessions() },
         )
         uiState.data.messages.isEmpty() && uiState.data.currentSessionId == null -> {
-            TerminalEmptyScreen(
-                message = "No active session. Start a new conversation.",
-                action = "New Session",
-                onAction = { viewModel.newSession() },
+            SessionListScreen(
+                sessions = uiState.data.sessions,
+                onNewSession = { viewModel.newSession() },
+                onLoadSession = { viewModel.loadSession(it) },
             )
         }
         else -> ChatContent(
@@ -72,8 +73,105 @@ fun ChatScreen(
             onSendMessage = { viewModel.sendMessage(it) },
             onNewSession = { viewModel.newSession() },
             onSelectFilter = { viewModel.selectFilter(it) },
+            onSetThinkingPower = { viewModel.setThinkingPower(it) },
+            onCompact = { viewModel.compactContext() },
         )
     }
+}
+
+@Composable
+private fun SessionListScreen(
+    sessions: List<ChatSession>,
+    onNewSession: () -> Unit,
+    onLoadSession: (String) -> Unit,
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(TerminalBg)
+            .padding(16.dp),
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = "CHAT SESSIONS",
+                color = TerminalGreen,
+                fontFamily = androidx.compose.ui.text.font.FontFamily(
+                    androidx.compose.ui.text.font.Font(R.font.jetbrains_mono_bold, FontWeight.Bold),
+                ),
+                fontSize = 18.sp,
+            )
+            TerminalButton(
+                text = "+ NEW",
+                onClick = onNewSession,
+                size = TerminalButtonSize.SMALL,
+            )
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
+        TerminalDivider()
+        Spacer(modifier = Modifier.height(8.dp))
+
+        if (sessions.isEmpty()) {
+            Box(
+                modifier = Modifier.weight(1f).fillMaxWidth(),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    text = "No sessions yet",
+                    color = TerminalGreenDim,
+                    fontFamily = androidx.compose.ui.text.font.FontFamily(
+                        androidx.compose.ui.text.font.Font(R.font.jetbrains_mono_regular, FontWeight.Normal),
+                    ),
+                    fontSize = 13.sp,
+                )
+            }
+        } else {
+            LazyColumn(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(6.dp),
+            ) {
+                items(sessions, key = { it.id }) { session ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(TerminalSurface, RoundedCornerShape(6.dp))
+                            .border(1.dp, TerminalGreenDim, RoundedCornerShape(6.dp))
+                            .clickable { onLoadSession(session.id) }
+                            .padding(12.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(
+                            text = session.title,
+                            color = TerminalGreen,
+                            fontFamily = androidx.compose.ui.text.font.FontFamily(
+                                androidx.compose.ui.text.font.Font(R.font.jetbrains_mono_regular, FontWeight.Normal),
+                            ),
+                            fontSize = 13.sp,
+                            modifier = Modifier.weight(1f),
+                        )
+                        Text(
+                            text = formatTimestamp(session.updatedAt),
+                            color = TerminalGreenDim,
+                            fontFamily = androidx.compose.ui.text.font.FontFamily(
+                                androidx.compose.ui.text.font.Font(R.font.jetbrains_mono_regular, FontWeight.Normal),
+                            ),
+                            fontSize = 10.sp,
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+private fun formatTimestamp(millis: Long): String {
+    val sdf = java.text.SimpleDateFormat("MM/dd HH:mm", java.util.Locale.US)
+    return sdf.format(java.util.Date(millis))
 }
 
 @Composable
@@ -82,6 +180,8 @@ private fun ChatContent(
     onSendMessage: (String) -> Unit,
     onNewSession: () -> Unit,
     onSelectFilter: (String) -> Unit,
+    onSetThinkingPower: (ThinkingPower) -> Unit,
+    onCompact: () -> Unit,
 ) {
     var inputText by remember { mutableStateOf("") }
 
@@ -90,20 +190,30 @@ private fun ChatContent(
             .fillMaxSize()
             .background(TerminalBg),
     ) {
-        Column(
+        // Header with session title + context counter
+        Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 12.dp),
+                .padding(horizontal = 16.dp, vertical = 10.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-            TerminalText(
-                text = data.sessions.firstOrNull()?.title ?: "AI Terminal",
+            Text(
+                text = data.sessions.find { it.id == data.currentSessionId }?.title ?: "New Session",
                 color = TerminalGreen,
-                style = androidx.compose.ui.text.TextStyle(
-                    fontSize = 18.sp,
-                    fontFamily = androidx.compose.ui.text.font.FontFamily(
-                        androidx.compose.ui.text.font.Font(R.font.jetbrains_mono_bold, FontWeight.Bold),
-                    ),
+                fontFamily = androidx.compose.ui.text.font.FontFamily(
+                    androidx.compose.ui.text.font.Font(R.font.jetbrains_mono_bold, FontWeight.Bold),
                 ),
+                fontSize = 16.sp,
+                modifier = Modifier.weight(1f),
+            )
+            Text(
+                text = "${data.contextTokenCount}tk",
+                color = TerminalGreenDim,
+                fontFamily = androidx.compose.ui.text.font.FontFamily(
+                    androidx.compose.ui.text.font.Font(R.font.jetbrains_mono_regular, FontWeight.Normal),
+                ),
+                fontSize = 10.sp,
             )
         }
 
@@ -115,7 +225,7 @@ private fun ChatContent(
                 contentAlignment = Alignment.Center,
             ) {
                 Text(
-                    text = "No messages — start a new session",
+                    text = "Type a message to begin",
                     color = TerminalGreenDim,
                     fontFamily = androidx.compose.ui.text.font.FontFamily(
                         androidx.compose.ui.text.font.Font(R.font.jetbrains_mono_regular, FontWeight.Normal),
@@ -126,10 +236,9 @@ private fun ChatContent(
         } else {
             val listState = rememberLazyListState()
 
-            LaunchedEffect(data.messages.size, data.isStreaming) {
+            LaunchedEffect(data.messages.lastOrNull()?.content) {
                 if (data.messages.isNotEmpty()) {
-                    val targetIndex = data.messages.size - 1 + if (data.isStreaming) 1 else 0
-                    listState.animateScrollToItem(targetIndex)
+                    listState.animateScrollToItem(data.messages.size - 1)
                 }
             }
 
@@ -141,30 +250,94 @@ private fun ChatContent(
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 items(data.messages, key = { "${it.sessionId}_${it.timestamp}_${it.role}" }) { message ->
-                    MessageBubble(
-                        isUser = message.role == "user",
-                        text = message.content,
-                    )
+                    if (message.content.isNotEmpty()) {
+                        MessageBubble(
+                            isUser = message.role == "user",
+                            text = message.content,
+                        )
+                    }
                 }
-                if (data.isStreaming) {
+                if (data.isStreaming && (data.messages.lastOrNull()?.content?.isEmpty() == true)) {
                     item { TypingIndicator() }
                 }
             }
         }
 
+        // Bottom controls
         Column {
             TerminalDivider(color = TerminalGreen)
+            Spacer(modifier = Modifier.height(6.dp))
 
-            Spacer(modifier = Modifier.height(8.dp))
+            // Thinking power + compact row
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 12.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                    ThinkingPower.entries.forEach { power ->
+                        val isSelected = data.thinkingPower == power
+                        Box(
+                            modifier = Modifier
+                                .border(
+                                    width = if (isSelected) 2.dp else 1.dp,
+                                    color = if (isSelected) TerminalAmber else TerminalGreenDim,
+                                    shape = RoundedCornerShape(4.dp),
+                                )
+                                .background(
+                                    if (isSelected) TerminalAmber.copy(alpha = 0.15f) else TerminalSurface,
+                                    RoundedCornerShape(4.dp),
+                                )
+                                .clickable(
+                                    interactionSource = remember { MutableInteractionSource() },
+                                    indication = null,
+                                    onClick = { onSetThinkingPower(power) },
+                                )
+                                .padding(horizontal = 8.dp, vertical = 4.dp),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Text(
+                                text = power.label,
+                                color = if (isSelected) TerminalAmber else TerminalGreenDim,
+                                fontFamily = androidx.compose.ui.text.font.FontFamily(
+                                    androidx.compose.ui.text.font.Font(R.font.jetbrains_mono_regular, FontWeight.Normal),
+                                ),
+                                fontSize = 10.sp,
+                            )
+                        }
+                    }
+                }
 
-            ContextFilterRow(
-                filters = data.contextFilters,
-                selectedFilter = data.selectedFilter,
-                onFilterSelected = onSelectFilter,
-            )
+                if (data.messages.size > 6) {
+                    Box(
+                        modifier = Modifier
+                            .border(1.dp, TerminalGreenDim, RoundedCornerShape(4.dp))
+                            .background(TerminalSurface, RoundedCornerShape(4.dp))
+                            .clickable(
+                                interactionSource = remember { MutableInteractionSource() },
+                                indication = null,
+                                onClick = onCompact,
+                            )
+                            .padding(horizontal = 8.dp, vertical = 4.dp),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Text(
+                            text = "Compact",
+                            color = TerminalGreenDim,
+                            fontFamily = androidx.compose.ui.text.font.FontFamily(
+                                androidx.compose.ui.text.font.Font(R.font.jetbrains_mono_regular, FontWeight.Normal),
+                            ),
+                            fontSize = 10.sp,
+                        )
+                    }
+                }
+            }
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(6.dp))
 
+            // Input row
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -250,62 +423,17 @@ private fun TypingIndicator() {
         }
     }
 
-    val dots = ".".repeat(dotCount)
-
     Row(
         modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
-            text = "Processing$dots",
+            text = "Processing${".".repeat(dotCount)}",
             color = TerminalAmber,
             fontFamily = androidx.compose.ui.text.font.FontFamily(
                 androidx.compose.ui.text.font.Font(R.font.jetbrains_mono_medium, FontWeight.Medium),
             ),
             fontSize = 12.sp,
         )
-    }
-}
-
-@Composable
-private fun ContextFilterRow(
-    filters: List<String>,
-    selectedFilter: String,
-    onFilterSelected: (String) -> Unit,
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 12.dp),
-        horizontalArrangement = Arrangement.spacedBy(6.dp),
-    ) {
-        filters.forEach { label ->
-            val isSelected = label == selectedFilter
-            val borderColor = if (isSelected) TerminalGreen else TerminalGreenDim
-            val bgColor = if (isSelected) TerminalGreen.copy(alpha = 0.15f) else TerminalSurface
-            val textColor = if (isSelected) TerminalGreen else TerminalGreenDim
-
-            Box(
-                modifier = Modifier
-                    .border(2.dp, borderColor, RoundedCornerShape(6.dp))
-                    .background(bgColor, RoundedCornerShape(6.dp))
-                    .clickable(
-                        interactionSource = remember { MutableInteractionSource() },
-                        indication = null,
-                        onClick = { onFilterSelected(label) },
-                    )
-                    .padding(horizontal = 10.dp, vertical = 6.dp),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(
-                    text = label,
-                    color = textColor,
-                    fontFamily = androidx.compose.ui.text.font.FontFamily(
-                        androidx.compose.ui.text.font.Font(R.font.jetbrains_mono_regular, FontWeight.Normal),
-                    ),
-                    fontSize = 11.sp,
-                )
-            }
-        }
     }
 }

@@ -8,6 +8,7 @@ import com.nomad.android.data.local.entity.ChatMessageEntity
 import com.nomad.android.data.local.entity.ChatSessionEntity
 import com.nomad.android.data.repository.ChatRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -19,7 +20,7 @@ import javax.inject.Inject
 data class ChatMessage(
     val id: Long = 0,
     val sessionId: String,
-    val role: String, // "user" or "assistant"
+    val role: String,
     val content: String,
     val timestamp: Long = System.currentTimeMillis()
 )
@@ -31,13 +32,21 @@ data class ChatSession(
     val updatedAt: Long
 )
 
+enum class ThinkingPower(val label: String, val maxTokens: Int, val topK: Int) {
+    LOW("Low", 64, 5),
+    MEDIUM("Med", 256, 10),
+    HIGH("High", 512, 10)
+}
+
 data class ChatData(
     val currentSessionId: String? = null,
     val messages: List<ChatMessage> = emptyList(),
     val sessions: List<ChatSession> = emptyList(),
     val isStreaming: Boolean = false,
     val contextFilters: List<String> = listOf("Wikipedia", "Survival", "First Aid", "All"),
-    val selectedFilter: String = "All"
+    val selectedFilter: String = "All",
+    val thinkingPower: ThinkingPower = ThinkingPower.LOW,
+    val contextTokenCount: Int = 0
 )
 
 data class ChatUiState(
@@ -54,6 +63,7 @@ class ChatViewModel @Inject constructor(
 
     private val _uiState = MutableStateFlow(ChatUiState(isLoading = true))
     val uiState: StateFlow<ChatUiState> = _uiState.asStateFlow()
+    private var streamingJob: Job? = null
 
     init {
         loadRecentSessions()
@@ -108,7 +118,8 @@ class ChatViewModel @Inject constructor(
                     data = it.data.copy(
                         currentSessionId = sessionId,
                         messages = emptyList(),
-                        sessions = listOf(session) + it.data.sessions
+                        sessions = listOf(session) + it.data.sessions,
+                        contextTokenCount = 0
                     )
                 )
             }
@@ -136,7 +147,8 @@ class ChatViewModel @Inject constructor(
                                 isLoading = false,
                                 data = it.data.copy(
                                     currentSessionId = sessionId,
-                                    messages = messages
+                                    messages = messages,
+                                    contextTokenCount = estimateTokenCount(messages)
                                 )
                             )
                         }
@@ -165,7 +177,6 @@ class ChatViewModel @Inject constructor(
                 createdAt = System.currentTimeMillis(),
                 updatedAt = System.currentTimeMillis()
             )
-            // Set currentSessionId immediately to prevent duplicate session creation
             _uiState.update {
                 it.copy(
                     data = it.data.copy(
@@ -195,7 +206,6 @@ class ChatViewModel @Inject constructor(
             content = content
         )
 
-        // Add user message + placeholder assistant message for streaming
         val streamingMessage = ChatMessage(
             sessionId = sessionId,
             role = "assistant",
@@ -211,8 +221,7 @@ class ChatViewModel @Inject constructor(
             )
         }
 
-        viewModelScope.launch {
-            // Save user message
+        streamingJob = viewModelScope.launch {
             chatRepository.insertMessage(
                 ChatMessageEntity(
                     sessionId = sessionId,
@@ -222,10 +231,9 @@ class ChatViewModel @Inject constructor(
                 )
             )
 
-            // Stream AI response token by token
             val responseBuilder = StringBuilder()
             try {
-                aiEngine.generateStream(content, emptyList()).collect { token ->
+                aiEngine.generateStream(content, buildContext()).collect { token ->
                     responseBuilder.append(token)
                     val currentResponse = responseBuilder.toString()
                     _uiState.update { state ->
@@ -235,9 +243,21 @@ class ChatViewModel @Inject constructor(
                     }
                 }
 
-                val finalResponse = responseBuilder.toString()
+                val finalResponse = responseBuilder.toString().trim()
 
-                // Save assistant message
+                // Update the final message
+                _uiState.update { state ->
+                    val messages = state.data.messages.toMutableList()
+                    messages[messages.lastIndex] = streamingMessage.copy(content = finalResponse)
+                    state.copy(
+                        data = state.data.copy(
+                            messages = messages,
+                            isStreaming = false,
+                            contextTokenCount = estimateTokenCount(messages)
+                        )
+                    )
+                }
+
                 chatRepository.insertMessage(
                     ChatMessageEntity(
                         sessionId = sessionId,
@@ -247,9 +267,7 @@ class ChatViewModel @Inject constructor(
                     )
                 )
 
-                _uiState.update {
-                    it.copy(data = it.data.copy(isStreaming = false))
-                }
+                autoCompactIfNeeded()
             } catch (e: Exception) {
                 _uiState.update {
                     it.copy(
@@ -259,6 +277,76 @@ class ChatViewModel @Inject constructor(
                 }
             }
         }
+    }
+
+    fun setThinkingPower(power: ThinkingPower) {
+        _uiState.update { it.copy(data = it.data.copy(thinkingPower = power)) }
+    }
+
+    fun compactContext() {
+        val messages = _uiState.value.data.messages
+        if (messages.size <= 4) return
+
+        // Keep first 2 messages (initial context) and last 4 (recent conversation)
+        val compacted = messages.take(2) + ChatMessage(
+            sessionId = messages.first().sessionId,
+            role = "assistant",
+            content = "[${messages.size - 6} earlier messages compacted]",
+            timestamp = messages[messages.size / 2].timestamp
+        ) + messages.takeLast(4)
+
+        _uiState.update {
+            it.copy(
+                data = it.data.copy(
+                    messages = compacted,
+                    contextTokenCount = estimateTokenCount(compacted)
+                )
+            )
+        }
+    }
+
+    private fun buildContext(): List<String> {
+        val messages = _uiState.value.data.messages
+        val power = _uiState.value.data.thinkingPower
+        val maxContextTokens = when (power) {
+            ThinkingPower.LOW -> 8_000
+            ThinkingPower.MEDIUM -> 32_000
+            ThinkingPower.HIGH -> 100_000
+        }
+
+        // Walk backwards from recent messages, accumulating tokens until budget is hit
+        val history = messages.dropLast(2) // exclude current user msg + empty assistant placeholder
+        val selected = mutableListOf<String>()
+        var tokenBudget = maxContextTokens
+
+        for (msg in history.reversed()) {
+            val line = "${msg.role}: ${msg.content}"
+            val tokens = estimateTokenCount(line)
+            if (tokenBudget - tokens < 0) break
+            tokenBudget -= tokens
+            selected.add(0, line)
+        }
+        return selected
+    }
+
+    private fun estimateTokenCount(messages: List<ChatMessage>): Int {
+        return messages.sumOf { estimateTokenCount(it.content) }
+    }
+
+    private fun estimateTokenCount(text: String): Int {
+        // Gemma tokenizer averages ~3.5 chars per token for English
+        return (text.length / 3.5).toInt().coerceAtLeast(1)
+    }
+
+    private fun autoCompactIfNeeded() {
+        val tokens = _uiState.value.data.contextTokenCount
+        if (tokens > AUTO_COMPACT_THRESHOLD) {
+            compactContext()
+        }
+    }
+
+    companion object {
+        private const val AUTO_COMPACT_THRESHOLD = 100_000
     }
 
     fun selectFilter(filter: String) {
