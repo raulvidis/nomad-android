@@ -3,7 +3,6 @@ package com.nomad.android.ui.maps
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -14,13 +13,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -30,33 +24,34 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.nomad.android.R
 import com.nomad.android.data.local.entity.LocationSavedPointEntity
-import com.nomad.android.ui.theme.PipBoyBg
-import com.nomad.android.ui.components.PipBoyButton
-import com.nomad.android.ui.components.PipBoyButtonVariant
-import com.nomad.android.ui.components.PipBoyCard
-import com.nomad.android.ui.components.PipBoyDivider
-import com.nomad.android.ui.components.PipBoyEmptyScreen
-import com.nomad.android.ui.components.PipBoyErrorScreen
-import com.nomad.android.ui.components.PipBoyText
-import com.nomad.android.ui.theme.PipBoyAmber
-import com.nomad.android.ui.theme.PipBoyGreen
-import com.nomad.android.ui.theme.PipBoyGreenDim
-import com.nomad.android.ui.components.PipBoyLoadingScreen
+import com.nomad.android.ui.components.TerminalButton
+import com.nomad.android.ui.components.TerminalButtonSize
+import com.nomad.android.ui.components.TerminalButtonVariant
+import com.nomad.android.ui.components.TerminalCard
+import com.nomad.android.ui.components.TerminalEmptyScreen
+import com.nomad.android.ui.components.TerminalErrorScreen
+import com.nomad.android.ui.components.TerminalLoadingScreen
+import com.nomad.android.ui.components.TerminalText
+import com.nomad.android.ui.components.TerminalTextField
+import com.nomad.android.ui.theme.TerminalAmber
+import com.nomad.android.ui.theme.TerminalBg
+import com.nomad.android.ui.theme.TerminalGreen
+import com.nomad.android.ui.theme.TerminalGreenDim
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
 @Composable
 fun MapsScreen(
-    viewModel: MapsViewModel = hiltViewModel()
+    viewModel: MapsViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
@@ -68,18 +63,16 @@ fun MapsScreen(
     }
 
     when {
-        uiState.isLoading -> PipBoyLoadingScreen("LOADING CARTOGRAPHY...")
-        uiState.error != null -> PipBoyErrorScreen(
+        uiState.isLoading -> TerminalLoadingScreen("LOADING CARTOGRAPHY...")
+        uiState.error != null -> TerminalErrorScreen(
             message = uiState.error ?: "Unknown error",
-            onRetry = { viewModel.loadMapData() }
+            onRetry = { viewModel.loadMapData() },
         )
-
-        !uiState.data.isMapInitialized -> PipBoyEmptyScreen(
+        !uiState.data.isMapInitialized -> TerminalEmptyScreen(
             message = "Map module not initialized",
             action = "INITIALIZE",
-            onAction = { viewModel.loadMapData() }
+            onAction = { viewModel.loadMapData() },
         )
-
         else -> MapsContent(
             data = uiState.data,
             onToggleLayer = { viewModel.toggleLayer(it) },
@@ -89,7 +82,7 @@ fun MapsScreen(
                     arrayOf(
                         android.Manifest.permission.ACCESS_FINE_LOCATION,
                         android.Manifest.permission.ACCESS_COARSE_LOCATION,
-                    )
+                    ),
                 )
             },
             onStartTracking = { viewModel.startTracking() },
@@ -116,217 +109,143 @@ private fun MapsContent(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(PipBoyBg)
+            .background(TerminalBg)
             .verticalScroll(rememberScrollState())
             .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+        verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        PipBoyText(
-            text = "ROBCO INDUSTRIES (TM) TERMLINK PROTOCOL",
-            style = TextStyle(fontSize = 10.sp, fontFamily = FontFamily.Monospace),
-            color = PipBoyGreenDim,
+        TerminalText(
+            text = "Offline Cartography",
+            color = TerminalGreen,
+            style = TextStyle(
+                fontSize = 20.sp,
+                fontFamily = androidx.compose.ui.text.font.FontFamily(
+                    androidx.compose.ui.text.font.Font(R.font.jetbrains_mono_bold, FontWeight.Bold),
+                ),
+            ),
         )
-        PipBoyText(
-            text = "TACTICAL MAP — OFFLINE CARTOGRAPHY",
-            style = TextStyle(fontSize = 14.sp, fontFamily = FontFamily.Monospace),
-            color = PipBoyGreen,
-        )
-        PipBoyDivider()
 
-        // Permission gate
         if (!hasPermission) {
-            PipBoyCard(modifier = Modifier.fillMaxWidth()) {
+            TerminalCard(header = "Location Permission Required") {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    PipBoyText(
-                        text = "LOCATION PERMISSION REQUIRED",
-                        style = TextStyle(fontSize = 12.sp, fontFamily = FontFamily.Monospace),
-                        color = PipBoyAmber,
+                    TerminalText(
+                        text = "GPS access is needed for coordinates and tracking",
+                        color = TerminalAmber,
+                        style = TextStyle(fontSize = 12.sp),
                     )
-                    PipBoyText(
-                        text = "GPS access needed for coordinates and tracking",
-                        style = TextStyle(fontSize = 11.sp, fontFamily = FontFamily.Monospace),
-                        color = PipBoyGreenDim,
-                    )
-                    PipBoyButton(
-                        text = "GRANT PERMISSION",
-                        onClick = onRequestPermission
-                    )
+                    TerminalButton(text = "Grant Permission", onClick = onRequestPermission)
                 }
             }
         }
 
-        // GPS Coordinates
-        PipBoyCard(modifier = Modifier.fillMaxWidth()) {
+        TerminalCard(header = "GPS Coordinates") {
             Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                PipBoyText(
-                    text = "GPS COORDINATES",
-                    style = TextStyle(fontSize = 12.sp, fontFamily = FontFamily.Monospace),
-                    color = PipBoyGreen,
-                )
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    PipBoyText(
+                    TerminalText(
                         text = data.currentLocationText,
+                        color = if (data.currentLocationText == "NO FIX") TerminalGreenDim else TerminalGreen,
                         style = TextStyle(
                             fontSize = if (data.currentLocationText == "NO FIX") 14.sp else 18.sp,
-                            fontFamily = FontFamily.Monospace
+                            fontFamily = androidx.compose.ui.text.font.FontFamily(
+                                androidx.compose.ui.text.font.Font(R.font.jetbrains_mono_medium, FontWeight.Medium),
+                            ),
                         ),
-                        color = if (data.currentLocationText == "NO FIX") PipBoyGreenDim else PipBoyGreen,
                     )
                     if (hasPermission) {
-                        PipBoyButton(
-                            text = "REFRESH",
+                        TerminalButton(
+                            text = "Refresh",
                             onClick = onRefreshLocation,
-                            modifier = Modifier.width(100.dp)
+                            modifier = Modifier.width(100.dp),
                         )
                     }
                 }
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
+                    horizontalArrangement = Arrangement.SpaceBetween,
                 ) {
-                    val (latIcon, lonIcon) = if (hasPermission && data.currentLocationText != "NO FIX") {
-                        "📡" to "📡"
-                    } else {
-                        "⚠" to "⚠"
-                    }
-                    PipBoyText(
-                        text = "$latIcon ${data.currentLatitude ?: "---"}",
-                        style = TextStyle(fontSize = 11.sp, fontFamily = FontFamily.Monospace),
-                        color = PipBoyGreenDim,
+                    val statusIcon = if (hasPermission && data.currentLocationText != "NO FIX") "OK" else "--"
+                    TerminalText(
+                        text = "$statusIcon ${data.currentLatitude ?: "---"}",
+                        color = TerminalGreenDim,
+                        style = TextStyle(fontSize = 11.sp),
                     )
-                    PipBoyText(
-                        text = "$lonIcon ${data.currentLongitude ?: "---"}",
-                        style = TextStyle(fontSize = 11.sp, fontFamily = FontFamily.Monospace),
-                        color = PipBoyGreenDim,
+                    TerminalText(
+                        text = "$statusIcon ${data.currentLongitude ?: "---"}",
+                        color = TerminalGreenDim,
+                        style = TextStyle(fontSize = 11.sp),
                     )
                 }
             }
         }
 
-        // Tracking Control
         if (hasPermission) {
-            PipBoyCard(modifier = Modifier.fillMaxWidth()) {
+            TerminalCard(header = "Location Tracking") {
                 Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    PipBoyText(
-                        text = "LOCATION TRACKING",
-                        style = TextStyle(fontSize = 12.sp, fontFamily = FontFamily.Monospace),
-                        color = PipBoyGreen,
-                    )
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
+                        verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        val statusText = if (data.isTracking) "● TRACKING (60s intervals)" else "○ IDLE"
-                        val statusColor = if (data.isTracking) PipBoyGreen else PipBoyGreenDim
-                        PipBoyText(
+                        val statusText = if (data.isTracking) "TRACKING (60s)" else "IDLE"
+                        val statusColor = if (data.isTracking) TerminalGreen else TerminalGreenDim
+                        TerminalText(
                             text = statusText,
-                            style = TextStyle(fontSize = 11.sp, fontFamily = FontFamily.Monospace),
                             color = statusColor,
+                            style = TextStyle(fontSize = 11.sp),
                         )
-                        PipBoyText(
+                        TerminalText(
                             text = "${data.snapshotCount} snapshots",
-                            style = TextStyle(fontSize = 11.sp, fontFamily = FontFamily.Monospace),
-                            color = PipBoyGreenDim,
+                            color = TerminalGreenDim,
+                            style = TextStyle(fontSize = 11.sp),
                         )
                     }
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
                         if (data.isTracking) {
-                            PipBoyButton(
-                                text = "STOP TRACKING",
+                            TerminalButton(
+                                text = "Stop Tracking",
                                 onClick = onStopTracking,
-                                variant = PipBoyButtonVariant.DANGER,
-                                modifier = Modifier.weight(1f)
+                                variant = TerminalButtonVariant.DANGER,
+                                modifier = Modifier.weight(1f),
                             )
                         } else {
-                            PipBoyButton(
-                                text = "START TRACKING",
+                            TerminalButton(
+                                text = "Start Tracking",
                                 onClick = onStartTracking,
-                                modifier = Modifier.weight(1f)
+                                modifier = Modifier.weight(1f),
                             )
                         }
                     }
                 }
             }
 
-            // Save Current Location
-            PipBoyCard(modifier = Modifier.fillMaxWidth()) {
+            TerminalCard(header = "Save Location") {
                 var saveName by remember { mutableStateOf("") }
                 var saveNotes by remember { mutableStateOf("") }
 
-                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    PipBoyText(
-                        text = "SAVE LOCATION",
-                        style = TextStyle(fontSize = 12.sp, fontFamily = FontFamily.Monospace),
-                        color = PipBoyGreen,
-                    )
-                    BasicTextField(
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    TerminalTextField(
                         value = saveName,
                         onValueChange = { saveName = it },
-                        textStyle = TextStyle(
-                            color = PipBoyGreen,
-                            fontSize = 12.sp,
-                            fontFamily = FontFamily.Monospace
-                        ),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .border(
-                                1.dp,
-                                if (saveName.isNotEmpty()) PipBoyGreen else PipBoyGreenDim,
-                                RoundedCornerShape(4.dp)
-                            )
-                            .background(Color(0xFF0A140A))
-                            .padding(8.dp),
-                        decorationBox = { innerTextField ->
-                            if (saveName.isEmpty()) {
-                                Text(
-                                    text = "Location name...",
-                                    color = PipBoyGreenDim,
-                                    fontFamily = FontFamily.Monospace,
-                                    fontSize = 12.sp
-                                )
-                            }
-                            innerTextField()
-                        }
+                        placeholder = "Location name",
+                        label = "Name",
+                        singleLine = true,
                     )
-                    BasicTextField(
+                    TerminalTextField(
                         value = saveNotes,
                         onValueChange = { saveNotes = it },
-                        textStyle = TextStyle(
-                            color = PipBoyGreen,
-                            fontSize = 11.sp,
-                            fontFamily = FontFamily.Monospace
-                        ),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .border(
-                                1.dp,
-                                if (saveNotes.isNotEmpty()) PipBoyGreen else PipBoyGreenDim,
-                                RoundedCornerShape(4.dp)
-                            )
-                            .background(Color(0xFF0A140A))
-                            .padding(8.dp),
-                        decorationBox = { innerTextField ->
-                            if (saveNotes.isEmpty()) {
-                                Text(
-                                    text = "Notes (optional)...",
-                                    color = PipBoyGreenDim,
-                                    fontFamily = FontFamily.Monospace,
-                                    fontSize = 11.sp
-                                )
-                            }
-                            innerTextField()
-                        }
+                        placeholder = "Notes (optional)",
+                        label = "Notes",
+                        singleLine = false,
                     )
-                    PipBoyButton(
-                        text = "SAVE CURRENT POSITION",
+                    TerminalButton(
+                        text = "Save Current Position",
                         onClick = {
                             if (saveName.isNotBlank()) {
                                 onSaveLocation(saveName.trim(), saveNotes.trim())
@@ -335,83 +254,62 @@ private fun MapsContent(
                             }
                         },
                         enabled = saveName.isNotBlank(),
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(),
+                        size = TerminalButtonSize.LARGE,
                     )
                 }
             }
         }
 
-        // Map Layer Toggles
-        data.layers.forEach { layer ->
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable { onToggleLayer(layer.id) }
-                    .padding(vertical = 4.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                val selector = if (layer.isEnabled) "[X]" else "[ ]"
-                Text(
-                    text = "$selector ${layer.name.uppercase()}",
-                    color = if (layer.isEnabled) PipBoyGreen else PipBoyGreenDim,
-                    fontFamily = FontFamily.Monospace,
-                    fontSize = 12.sp
-                )
-            }
-        }
-
-        // Map Buttons
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceEvenly
-        ) {
-            listOf(
-                "BASEMAP" to "basemap",
-                "POI" to "poi",
-                "TOPO" to "topo",
-                "EMERGENCY" to "emergency"
-            ).forEach { (label, layerId) ->
-                PipBoyButton(
-                    text = label,
-                    onClick = { onToggleLayer(layerId) },
-                    modifier = Modifier.padding(4.dp)
-                )
-            }
-        }
-
-        // Offline Tiles Status
-        Text(
-            text = "REGION: ${data.regionName ?: "NOT SELECTED"} | ${if (data.hasOfflineTiles) "TILES LOADED" else "0 TILES LOADED"}",
-            color = PipBoyGreenDim,
-            fontFamily = FontFamily.Monospace,
-            fontSize = 11.sp
-        )
-
-        // Saved Locations
-        if (hasPermission && data.savedPoints.isNotEmpty()) {
-            PipBoyCard(modifier = Modifier.fillMaxWidth()) {
-                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    PipBoyText(
-                        text = "SAVED LOCATIONS (${data.savedPoints.size})",
-                        style = TextStyle(fontSize = 12.sp, fontFamily = FontFamily.Monospace),
-                        color = PipBoyGreen,
+        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            data.layers.forEach { layer ->
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { onToggleLayer(layer.id) }
+                        .padding(vertical = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    val selector = if (layer.isEnabled) "[X]" else "[ ]"
+                    Text(
+                        text = "$selector ${layer.name.uppercase()}",
+                        color = if (layer.isEnabled) TerminalGreen else TerminalGreenDim,
+                        fontFamily = androidx.compose.ui.text.font.FontFamily(
+                            androidx.compose.ui.text.font.Font(R.font.jetbrains_mono_regular, FontWeight.Normal),
+                        ),
+                        fontSize = 12.sp,
                     )
-                    PipBoyDivider(color = PipBoyGreenDim.copy(alpha = 0.3f))
+                }
+            }
+        }
+
+        if (hasPermission && data.savedPoints.isNotEmpty()) {
+            TerminalCard(header = "Saved Locations (${data.savedPoints.size})") {
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     data.savedPoints.forEach { point ->
                         SavedLocationRow(point = point, onDelete = onDeletePoint)
                     }
                 }
             }
         } else if (hasPermission) {
-            PipBoyEmptyScreen(message = "No saved locations yet — save one above")
+            TerminalEmptyScreen(message = "No saved locations yet — save one above")
         }
+
+        Text(
+            text = "Region: ${data.regionName ?: "Not selected"} | ${if (data.hasOfflineTiles) "Tiles loaded" else "0 tiles loaded"}",
+            color = TerminalGreenDim,
+            fontFamily = androidx.compose.ui.text.font.FontFamily(
+                androidx.compose.ui.text.font.Font(R.font.jetbrains_mono_regular, FontWeight.Normal),
+            ),
+            fontSize = 11.sp,
+        )
     }
 }
 
 @Composable
 private fun SavedLocationRow(
     point: LocationSavedPointEntity,
-    onDelete: (String) -> Unit
+    onDelete: (String) -> Unit,
 ) {
     val df = remember { SimpleDateFormat("dd.MM HH:mm", Locale.getDefault()) }
     val timeStr = df.format(Date(point.timestamp))
@@ -419,46 +317,55 @@ private fun SavedLocationRow(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 4.dp)
+            .padding(vertical = 4.dp),
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = point.name.uppercase(),
-                    color = PipBoyGreen,
-                    fontFamily = FontFamily.Monospace,
-                    fontSize = 12.sp
+                    color = TerminalGreen,
+                    fontFamily = androidx.compose.ui.text.font.FontFamily(
+                        androidx.compose.ui.text.font.Font(R.font.jetbrains_mono_medium, FontWeight.Medium),
+                    ),
+                    fontSize = 13.sp,
                 )
                 Text(
                     text = "${"%.6f".format(point.latitude)}, ${"%.6f".format(point.longitude)}",
-                    color = PipBoyGreenDim,
-                    fontFamily = FontFamily.Monospace,
-                    fontSize = 10.sp
+                    color = TerminalGreenDim,
+                    fontFamily = androidx.compose.ui.text.font.FontFamily(
+                        androidx.compose.ui.text.font.Font(R.font.jetbrains_mono_regular, FontWeight.Normal),
+                    ),
+                    fontSize = 11.sp,
                 )
                 Text(
-                    text = "$timeStr | ALT: ${"%.1f".format(point.altitude)}m",
-                    color = PipBoyGreenDim.copy(alpha = 0.7f),
-                    fontFamily = FontFamily.Monospace,
-                    fontSize = 10.sp
+                    text = "$timeStr | Alt: ${"%.1f".format(point.altitude)}m",
+                    color = TerminalGreenDim.copy(alpha = 0.7f),
+                    fontFamily = androidx.compose.ui.text.font.FontFamily(
+                        androidx.compose.ui.text.font.Font(R.font.jetbrains_mono_regular, FontWeight.Normal),
+                    ),
+                    fontSize = 10.sp,
                 )
                 if (point.notes.isNotBlank()) {
                     Text(
-                        text = "NOTE: ${point.notes}",
-                        color = PipBoyAmber.copy(alpha = 0.8f),
-                        fontFamily = FontFamily.Monospace,
-                        fontSize = 10.sp
+                        text = "Note: ${point.notes}",
+                        color = TerminalAmber.copy(alpha = 0.8f),
+                        fontFamily = androidx.compose.ui.text.font.FontFamily(
+                            androidx.compose.ui.text.font.Font(R.font.jetbrains_mono_regular, FontWeight.Normal),
+                        ),
+                        fontSize = 10.sp,
                     )
                 }
             }
             Spacer(modifier = Modifier.width(8.dp))
-            PipBoyButton(
-                text = "DEL",
+            TerminalButton(
+                text = "Del",
                 onClick = { onDelete(point.id) },
-                variant = PipBoyButtonVariant.DANGER
+                variant = TerminalButtonVariant.DANGER,
+                size = TerminalButtonSize.SMALL,
             )
         }
     }

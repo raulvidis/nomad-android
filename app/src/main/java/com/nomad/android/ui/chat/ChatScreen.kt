@@ -29,50 +29,49 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.nomad.android.ui.components.PipBoyButton
-import com.nomad.android.ui.components.PipBoyCard
-import com.nomad.android.ui.components.PipBoyDivider
-import com.nomad.android.ui.components.PipBoyEmptyScreen
-import com.nomad.android.ui.components.PipBoyErrorScreen
-import com.nomad.android.ui.components.PipBoyLoadingScreen
-import com.nomad.android.ui.components.PipBoyText
-import com.nomad.android.ui.components.PipBoyTextField
-import com.nomad.android.ui.theme.PipBoyAmber
-import com.nomad.android.ui.theme.PipBoyBg
-import com.nomad.android.ui.theme.PipBoyGreen
-import com.nomad.android.ui.theme.PipBoyGreenDim
-import com.nomad.android.ui.theme.PipBoySurface
+import com.nomad.android.R
+import com.nomad.android.ui.components.TerminalButton
+import com.nomad.android.ui.components.TerminalDivider
+import com.nomad.android.ui.components.TerminalEmptyScreen
+import com.nomad.android.ui.components.TerminalErrorScreen
+import com.nomad.android.ui.components.TerminalLoadingScreen
+import com.nomad.android.ui.components.TerminalText
+import com.nomad.android.ui.components.TerminalTextField
+import com.nomad.android.ui.theme.TerminalAmber
+import com.nomad.android.ui.theme.TerminalBg
+import com.nomad.android.ui.theme.TerminalGreen
+import com.nomad.android.ui.theme.TerminalGreenDim
+import com.nomad.android.ui.theme.TerminalSurface
 
 @Composable
 fun ChatScreen(
-    viewModel: ChatViewModel = hiltViewModel()
+    viewModel: ChatViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     when {
-        uiState.isLoading -> PipBoyLoadingScreen("ESTABLISHING NEURAL LINK...")
-        uiState.error != null -> PipBoyErrorScreen(
+        uiState.isLoading -> TerminalLoadingScreen("ESTABLISHING NEURAL LINK...")
+        uiState.error != null -> TerminalErrorScreen(
             message = uiState.error ?: "Unknown error",
-            onRetry = { viewModel.loadRecentSessions() }
+            onRetry = { viewModel.loadRecentSessions() },
         )
         uiState.data.messages.isEmpty() && uiState.data.currentSessionId == null -> {
-            PipBoyEmptyScreen(
+            TerminalEmptyScreen(
                 message = "No active session. Start a new conversation.",
-                action = "NEW SESSION",
-                onAction = { viewModel.newSession() }
+                action = "New Session",
+                onAction = { viewModel.newSession() },
             )
         }
         else -> ChatContent(
             data = uiState.data,
             onSendMessage = { viewModel.sendMessage(it) },
             onNewSession = { viewModel.newSession() },
-            onSelectFilter = { viewModel.selectFilter(it) }
+            onSelectFilter = { viewModel.selectFilter(it) },
         )
     }
 }
@@ -82,29 +81,46 @@ private fun ChatContent(
     data: ChatData,
     onSendMessage: (String) -> Unit,
     onNewSession: () -> Unit,
-    onSelectFilter: (String) -> Unit
+    onSelectFilter: (String) -> Unit,
 ) {
     var inputText by remember { mutableStateOf("") }
 
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(PipBoyBg),
+            .background(TerminalBg),
     ) {
-        TerminalHeader(modelName = data.sessions.firstOrNull()?.title ?: "AI TERMINAL")
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 12.dp),
+        ) {
+            TerminalText(
+                text = data.sessions.firstOrNull()?.title ?: "AI Terminal",
+                color = TerminalGreen,
+                style = androidx.compose.ui.text.TextStyle(
+                    fontSize = 18.sp,
+                    fontFamily = androidx.compose.ui.text.font.FontFamily(
+                        androidx.compose.ui.text.font.Font(R.font.jetbrains_mono_bold, FontWeight.Bold),
+                    ),
+                ),
+            )
+        }
 
-        PipBoyDivider(modifier = Modifier.padding(bottom = 4.dp))
+        TerminalDivider(modifier = Modifier.padding(bottom = 4.dp))
 
         if (data.messages.isEmpty()) {
             Box(
                 modifier = Modifier.weight(1f).fillMaxWidth(),
-                contentAlignment = Alignment.Center
+                contentAlignment = Alignment.Center,
             ) {
                 Text(
-                    text = "NO MESSAGES — START A NEW SESSION",
-                    color = PipBoyGreenDim,
-                    fontFamily = FontFamily.Monospace,
-                    fontSize = 12.sp,
+                    text = "No messages — start a new session",
+                    color = TerminalGreenDim,
+                    fontFamily = androidx.compose.ui.text.font.FontFamily(
+                        androidx.compose.ui.text.font.Font(R.font.jetbrains_mono_regular, FontWeight.Normal),
+                    ),
+                    fontSize = 13.sp,
                 )
             }
         } else {
@@ -121,13 +137,13 @@ private fun ChatContent(
                 state = listState,
                 modifier = Modifier
                     .weight(1f)
-                    .padding(horizontal = 8.dp),
+                    .padding(horizontal = 12.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 items(data.messages, key = { "${it.sessionId}_${it.timestamp}_${it.role}" }) { message ->
                     MessageBubble(
                         isUser = message.role == "user",
-                        text = message.content
+                        text = message.content,
                     )
                 }
                 if (data.isStreaming) {
@@ -137,7 +153,7 @@ private fun ChatContent(
         }
 
         Column {
-            PipBoyDivider(color = PipBoyGreen)
+            TerminalDivider(color = TerminalGreen)
 
             Spacer(modifier = Modifier.height(8.dp))
 
@@ -152,10 +168,10 @@ private fun ChatContent(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 8.dp, vertical = 4.dp),
+                    .padding(horizontal = 12.dp, vertical = 4.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                PipBoyTextField(
+                TerminalTextField(
                     value = inputText,
                     onValueChange = { inputText = it },
                     modifier = Modifier.weight(1f),
@@ -165,8 +181,8 @@ private fun ChatContent(
 
                 Spacer(modifier = Modifier.width(8.dp))
 
-                PipBoyButton(
-                    text = "SEND",
+                TerminalButton(
+                    text = "Send",
                     onClick = {
                         if (inputText.isNotBlank()) {
                             onSendMessage(inputText)
@@ -183,37 +199,15 @@ private fun ChatContent(
 }
 
 @Composable
-private fun TerminalHeader(modelName: String) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 12.dp, vertical = 8.dp),
-    ) {
-        PipBoyText(
-            text = "ROBCO INDUSTRIES (TM) TERMLINK PROTOCOL",
-            color = PipBoyGreenDim,
-            glow = false,
-            style = TextStyle(fontSize = 10.sp, fontFamily = FontFamily.Monospace),
-        )
-        PipBoyText(
-            text = modelName.uppercase(),
-            color = PipBoyGreen,
-            glow = true,
-            style = TextStyle(fontSize = 14.sp, fontFamily = FontFamily.Monospace),
-        )
-    }
-}
-
-@Composable
 private fun MessageBubble(isUser: Boolean, text: String) {
-    val borderColor = if (isUser) PipBoyGreen else PipBoyAmber
-    val prefix = if (isUser) "> QUERY:" else "RESPONSE:"
-    val prefixColor = if (isUser) PipBoyGreen else PipBoyAmber
+    val borderColor = if (isUser) TerminalGreen else TerminalAmber
+    val prefix = if (isUser) "QUERY" else "RESPONSE"
+    val prefixColor = if (isUser) TerminalGreen else TerminalAmber
 
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .background(PipBoySurface, RoundedCornerShape(4.dp))
+            .background(TerminalSurface, RoundedCornerShape(6.dp))
             .drawBehind {
                 drawLine(
                     color = borderColor,
@@ -222,20 +216,26 @@ private fun MessageBubble(isUser: Boolean, text: String) {
                     strokeWidth = 3.dp.toPx(),
                 )
             }
-            .padding(start = 12.dp, end = 8.dp, top = 8.dp, bottom = 8.dp),
+            .padding(start = 12.dp, end = 12.dp, top = 10.dp, bottom = 10.dp),
     ) {
-        PipBoyText(
+        Text(
             text = prefix,
             color = prefixColor,
-            glow = true,
-            style = TextStyle(fontSize = 10.sp, fontFamily = FontFamily.Monospace),
+            fontFamily = androidx.compose.ui.text.font.FontFamily(
+                androidx.compose.ui.text.font.Font(R.font.jetbrains_mono_medium, FontWeight.Medium),
+            ),
+            fontSize = 10.sp,
+            letterSpacing = 1.sp,
         )
         Spacer(modifier = Modifier.height(4.dp))
-        PipBoyText(
+        Text(
             text = text,
-            color = if (isUser) PipBoyGreen else PipBoyAmber,
-            glow = false,
-            style = TextStyle(fontSize = 13.sp, fontFamily = FontFamily.Monospace),
+            color = if (isUser) TerminalGreen else TerminalAmber,
+            fontFamily = androidx.compose.ui.text.font.FontFamily(
+                androidx.compose.ui.text.font.Font(R.font.jetbrains_mono_regular, FontWeight.Normal),
+            ),
+            fontSize = 13.sp,
+            lineHeight = 18.sp,
         )
     }
 }
@@ -256,11 +256,13 @@ private fun TypingIndicator() {
         modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        PipBoyText(
-            text = "PROCESSING$dots",
-            color = PipBoyAmber,
-            glow = true,
-            style = TextStyle(fontSize = 12.sp, fontFamily = FontFamily.Monospace),
+        Text(
+            text = "Processing$dots",
+            color = TerminalAmber,
+            fontFamily = androidx.compose.ui.text.font.FontFamily(
+                androidx.compose.ui.text.font.Font(R.font.jetbrains_mono_medium, FontWeight.Medium),
+            ),
+            fontSize = 12.sp,
         )
     }
 }
@@ -274,32 +276,34 @@ private fun ContextFilterRow(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 8.dp),
+            .padding(horizontal = 12.dp),
         horizontalArrangement = Arrangement.spacedBy(6.dp),
     ) {
         filters.forEach { label ->
             val isSelected = label == selectedFilter
-            val borderColor = if (isSelected) PipBoyGreen else PipBoyGreenDim
-            val bgColor = if (isSelected) PipBoyGreen.copy(alpha = 0.15f) else PipBoySurface
-            val textColor = if (isSelected) PipBoyGreen else PipBoyGreenDim
+            val borderColor = if (isSelected) TerminalGreen else TerminalGreenDim
+            val bgColor = if (isSelected) TerminalGreen.copy(alpha = 0.15f) else TerminalSurface
+            val textColor = if (isSelected) TerminalGreen else TerminalGreenDim
 
             Box(
                 modifier = Modifier
-                    .border(1.dp, borderColor, RoundedCornerShape(4.dp))
-                    .background(bgColor, RoundedCornerShape(4.dp))
+                    .border(2.dp, borderColor, RoundedCornerShape(6.dp))
+                    .background(bgColor, RoundedCornerShape(6.dp))
                     .clickable(
                         interactionSource = remember { MutableInteractionSource() },
                         indication = null,
                         onClick = { onFilterSelected(label) },
                     )
-                    .padding(horizontal = 8.dp, vertical = 4.dp),
+                    .padding(horizontal = 10.dp, vertical = 6.dp),
                 contentAlignment = Alignment.Center,
             ) {
                 Text(
                     text = label,
                     color = textColor,
-                    fontFamily = FontFamily.Monospace,
-                    fontSize = 10.sp,
+                    fontFamily = androidx.compose.ui.text.font.FontFamily(
+                        androidx.compose.ui.text.font.Font(R.font.jetbrains_mono_regular, FontWeight.Normal),
+                    ),
+                    fontSize = 11.sp,
                 )
             }
         }

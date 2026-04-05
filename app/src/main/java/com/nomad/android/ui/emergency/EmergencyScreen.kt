@@ -25,23 +25,23 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-
-import com.nomad.android.ui.theme.PipBoyAmber
-import com.nomad.android.ui.theme.PipBoyBg
-import com.nomad.android.ui.components.PipBoyCard
-import com.nomad.android.ui.components.PipBoyDivider
-import com.nomad.android.ui.theme.PipBoyGreen
-import com.nomad.android.ui.theme.PipBoyGreenDim
-import com.nomad.android.ui.theme.PipBoySurface
-import com.nomad.android.ui.components.PipBoyText
+import com.nomad.android.R
+import com.nomad.android.ui.components.TerminalCard
+import com.nomad.android.ui.components.TerminalDivider
+import com.nomad.android.ui.components.TerminalSectionHeader
+import com.nomad.android.ui.components.TerminalText
+import com.nomad.android.ui.theme.TerminalAmber
+import com.nomad.android.ui.theme.TerminalBg
+import com.nomad.android.ui.theme.TerminalGreen
+import com.nomad.android.ui.theme.TerminalGreenDim
+import com.nomad.android.ui.theme.TerminalSurface
 
 private data class FirstAidTopic(
     val title: String,
-    val steps: List<String>
+    val steps: List<String>,
 )
 
 private val firstAidTopics = listOf(
@@ -52,7 +52,7 @@ private val firstAidTopics = listOf(
         "Push hard and fast: 100-120 compressions/min",
         "Depth: at least 2 inches for adults",
         "Give 2 rescue breaths every 30 compressions if trained",
-        "Continue until help arrives or person recovers"
+        "Continue until help arrives or person recovers",
     )),
     FirstAidTopic("Severe Bleeding", listOf(
         "Apply direct pressure with clean cloth",
@@ -61,7 +61,7 @@ private val firstAidTopics = listOf(
         "Do NOT remove soaked cloths — add more on top",
         "Apply tourniquet only as last resort (limb injuries)",
         "Keep victim warm and calm",
-        "Seek medical help immediately"
+        "Seek medical help immediately",
     )),
     FirstAidTopic("Burns", listOf(
         "Cool burn under running water for 20 minutes",
@@ -70,7 +70,7 @@ private val firstAidTopics = listOf(
         "Do NOT apply ice, butter, or ointments",
         "Do NOT pop blisters",
         "For chemical burns: flush with water for 20+ minutes",
-        "Seek medical help for large or deep burns"
+        "Seek medical help for large or deep burns",
     )),
     FirstAidTopic("Fractures", listOf(
         "Do NOT move the injured limb",
@@ -79,7 +79,7 @@ private val firstAidTopics = listOf(
         "Apply cold pack wrapped in cloth (20 min on, 20 min off)",
         "Elevate if possible to reduce swelling",
         "Check circulation below injury (pulse, color, warmth)",
-        "Seek medical help — do not attempt to realign bone"
+        "Seek medical help — do not attempt to realign bone",
     )),
     FirstAidTopic("Shock", listOf(
         "Lay person flat on their back",
@@ -88,7 +88,7 @@ private val firstAidTopics = listOf(
         "Do NOT give food or water",
         "Loosen tight clothing",
         "Turn on side if vomiting or bleeding from mouth",
-        "Begin CPR if no breathing — seek help immediately"
+        "Begin CPR if no breathing — seek help immediately",
     )),
     FirstAidTopic("Choking", listOf(
         "Ask: 'Are you choking?' — if they can't speak, act",
@@ -97,7 +97,7 @@ private val firstAidTopics = listOf(
         "Alternate 5 back blows and 5 thrusts",
         "For infants: face down, 5 back blows, then chest thrusts",
         "If person becomes unconscious: begin CPR",
-        "Call emergency services as soon as possible"
+        "Call emergency services as soon as possible",
     )),
     FirstAidTopic("Hypothermia", listOf(
         "Move to warm, dry shelter",
@@ -106,7 +106,7 @@ private val firstAidTopics = listOf(
         "Do NOT rewarm too quickly (no hot water)",
         "Do NOT give alcohol",
         "Warm core first (chest, neck, head, groin)",
-        "Seek medical help — hypothermia is life-threatening"
+        "Seek medical help — hypothermia is life-threatening",
     )),
     FirstAidTopic("Snake Bite", listOf(
         "Stay calm — keep heart rate low",
@@ -115,51 +115,51 @@ private val firstAidTopics = listOf(
         "Clean wound gently with soap and water",
         "Cover with clean, dry dressing",
         "Do NOT cut wound, suck venom, or apply tourniquet",
-        "Seek medical help — note snake appearance if possible"
-    ))
+        "Seek medical help — note snake appearance if possible",
+    )),
 )
 
-private data class ChecklistItem(
-    val category: String,
-    val items: List<Pair<String, Boolean>>
+private data class ChecklistCategory(
+    val name: String,
+    val items: List<Pair<String, Boolean>>,
 )
 
 private val survivalChecklist = listOf(
-    ChecklistItem("Water", listOf(
+    ChecklistCategory("Water", listOf(
         "Water bottles or containers" to false,
         "Water purification tablets" to false,
         "Portable water filter" to false,
-        "Metal pot for boiling" to false
+        "Metal pot for boiling" to false,
     )),
-    ChecklistItem("Food", listOf(
+    ChecklistCategory("Food", listOf(
         "Non-perishable food (3-day supply)" to false,
         "Manual can opener" to false,
         "High-energy snacks (nuts, bars)" to false,
-        "Fishing kit or snares" to false
+        "Fishing kit or snares" to false,
     )),
-    ChecklistItem("Shelter", listOf(
+    ChecklistCategory("Shelter", listOf(
         "Emergency blanket or tarp" to false,
         "Rope or paracord (50ft minimum)" to false,
         "Duct tape" to false,
-        "Knife or multi-tool" to false
+        "Knife or multi-tool" to false,
     )),
-    ChecklistItem("First Aid", listOf(
+    ChecklistCategory("First Aid", listOf(
         "Bandages and gauze" to false,
         "Antiseptic wipes" to false,
         "Pain relievers" to false,
-        "Personal medications" to false
+        "Personal medications" to false,
     )),
-    ChecklistItem("Navigation", listOf(
+    ChecklistCategory("Navigation", listOf(
         "Physical map of area" to false,
         "Compass" to false,
         "Whistle (signal)" to false,
-        "Flashlight with extra batteries" to false
+        "Flashlight with extra batteries" to false,
     )),
-    ChecklistItem("Fire", listOf(
+    ChecklistCategory("Fire", listOf(
         "Waterproof matches or lighter" to false,
         "Fire starter (ferro rod, tinder)" to false,
-        "Candle (fire starter + light)" to false
-    ))
+        "Candle (fire starter + light)" to false,
+    )),
 )
 
 @Composable
@@ -170,79 +170,71 @@ fun EmergencyScreen() {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(PipBoyBg)
+            .background(TerminalBg)
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        PipBoyText(
-            text = "ROBCO INDUSTRIES (TM) TERMLINK PROTOCOL",
-            style = TextStyle(fontSize = 10.sp, fontFamily = FontFamily.Monospace),
-            color = PipBoyGreenDim,
-        )
-
-        PipBoyText(
-            text = "SURVIVAL REFERENCE — OFFLINE",
-            style = TextStyle(fontSize = 16.sp, fontFamily = FontFamily.Monospace),
-            color = PipBoyAmber,
-        )
-
-        PipBoyDivider()
-
-        // First Aid Section
-        PipBoyText(
-            text = "FIRST AID — CONDITIONS A-Z",
-            style = TextStyle(fontSize = 14.sp, fontFamily = FontFamily.Monospace),
-            color = PipBoyGreen,
+        TerminalText(
+            text = "Survival Reference",
+            color = TerminalAmber,
+            style = androidx.compose.ui.text.TextStyle(
+                fontSize = 20.sp,
+                fontFamily = androidx.compose.ui.text.font.FontFamily(
+                    androidx.compose.ui.text.font.Font(R.font.jetbrains_mono_bold, FontWeight.Bold),
+                ),
+            ),
         )
 
         LazyColumn(
             modifier = Modifier
                 .weight(1f)
                 .fillMaxWidth(),
-            verticalArrangement = Arrangement.spacedBy(4.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
+            item {
+                TerminalSectionHeader(text = "First Aid — Conditions A-Z")
+            }
+
             items(firstAidTopics) { topic ->
                 val isExpanded = expandedTopic == topic.title
                 FirstAidRow(
                     topic = topic,
                     isExpanded = isExpanded,
-                    onToggle = { expandedTopic = if (isExpanded) null else topic.title }
+                    onToggle = { expandedTopic = if (isExpanded) null else topic.title },
                 )
             }
 
             item {
-                Spacer(modifier = Modifier.height(16.dp))
-                PipBoyText(
-                    text = "SURVIVAL CHECKLIST",
-                    style = TextStyle(fontSize = 14.sp, fontFamily = FontFamily.Monospace),
-                    color = PipBoyGreen,
-                )
+                Spacer(modifier = Modifier.height(8.dp))
+                TerminalSectionHeader(text = "Survival Checklist")
                 Spacer(modifier = Modifier.height(8.dp))
             }
 
             items(checkedItems) { checklist ->
-                ChecklistCategory(
-                    category = checklist.category,
+                ChecklistSection(
+                    category = checklist.name,
                     items = checklist.items,
                     onToggle = { itemIndex ->
                         checkedItems = checkedItems.map { c ->
-                            if (c.category == checklist.category) {
+                            if (c.name == checklist.name) {
                                 c.copy(items = c.items.mapIndexed { i, pair ->
                                     if (i == itemIndex) pair.first to !pair.second else pair
                                 })
                             } else c
                         }
-                    }
+                    },
                 )
             }
 
             item {
                 Spacer(modifier = Modifier.height(16.dp))
-                PipBoyCard(modifier = Modifier.fillMaxWidth()) {
+                TerminalCard {
                     Text(
-                        text = "ALL CONTENT AVAILABLE OFFLINE — NO NETWORK REQUIRED",
-                        color = PipBoyGreenDim,
-                        fontFamily = FontFamily.Monospace,
+                        text = "All content available offline — no network required",
+                        color = TerminalGreenDim,
+                        fontFamily = androidx.compose.ui.text.font.FontFamily(
+                            androidx.compose.ui.text.font.Font(R.font.jetbrains_mono_regular, FontWeight.Normal),
+                        ),
                         fontSize = 11.sp,
                     )
                 }
@@ -255,7 +247,7 @@ fun EmergencyScreen() {
 private fun FirstAidRow(
     topic: FirstAidTopic,
     isExpanded: Boolean,
-    onToggle: () -> Unit
+    onToggle: () -> Unit,
 ) {
     Column(
         modifier = Modifier
@@ -263,10 +255,10 @@ private fun FirstAidRow(
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = null,
-                onClick = onToggle
+                onClick = onToggle,
             )
-            .background(PipBoySurface, RoundedCornerShape(4.dp))
-            .border(1.dp, PipBoyAmber, RoundedCornerShape(4.dp))
+            .background(TerminalSurface, RoundedCornerShape(6.dp))
+            .border(2.dp, TerminalAmber, RoundedCornerShape(6.dp))
             .padding(12.dp),
         verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
@@ -277,14 +269,18 @@ private fun FirstAidRow(
         ) {
             Text(
                 text = topic.title.uppercase(),
-                color = PipBoyAmber,
-                fontFamily = FontFamily.Monospace,
+                color = TerminalAmber,
+                fontFamily = androidx.compose.ui.text.font.FontFamily(
+                    androidx.compose.ui.text.font.Font(R.font.jetbrains_mono_medium, FontWeight.Medium),
+                ),
                 fontSize = 13.sp,
             )
             Text(
                 text = if (isExpanded) "[-]" else "[+]",
-                color = PipBoyGreen,
-                fontFamily = FontFamily.Monospace,
+                color = TerminalGreen,
+                fontFamily = androidx.compose.ui.text.font.FontFamily(
+                    androidx.compose.ui.text.font.Font(R.font.jetbrains_mono_regular, FontWeight.Normal),
+                ),
                 fontSize = 12.sp,
             )
         }
@@ -298,14 +294,18 @@ private fun FirstAidRow(
                 ) {
                     Text(
                         text = "${i + 1}.",
-                        color = PipBoyGreenDim,
-                        fontFamily = FontFamily.Monospace,
+                        color = TerminalGreenDim,
+                        fontFamily = androidx.compose.ui.text.font.FontFamily(
+                            androidx.compose.ui.text.font.Font(R.font.jetbrains_mono_regular, FontWeight.Normal),
+                        ),
                         fontSize = 11.sp,
                     )
                     Text(
                         text = step,
-                        color = PipBoyGreen,
-                        fontFamily = FontFamily.Monospace,
+                        color = TerminalGreen,
+                        fontFamily = androidx.compose.ui.text.font.FontFamily(
+                            androidx.compose.ui.text.font.Font(R.font.jetbrains_mono_regular, FontWeight.Normal),
+                        ),
                         fontSize = 11.sp,
                         modifier = Modifier.weight(1f),
                     )
@@ -316,22 +316,24 @@ private fun FirstAidRow(
 }
 
 @Composable
-private fun ChecklistCategory(
+private fun ChecklistSection(
     category: String,
     items: List<Pair<String, Boolean>>,
-    onToggle: (Int) -> Unit
+    onToggle: (Int) -> Unit,
 ) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 4.dp),
-        verticalArrangement = Arrangement.spacedBy(2.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
         Text(
             text = category.uppercase(),
-            color = PipBoyGreen,
-            fontFamily = FontFamily.Monospace,
-            fontSize = 12.sp,
+            color = TerminalGreen,
+            fontFamily = androidx.compose.ui.text.font.FontFamily(
+                androidx.compose.ui.text.font.Font(R.font.jetbrains_mono_medium, FontWeight.Medium),
+            ),
+            fontSize = 13.sp,
         )
         items.forEachIndexed { index, (item, checked) ->
             Row(
@@ -340,25 +342,29 @@ private fun ChecklistCategory(
                     .clickable(
                         interactionSource = remember { MutableInteractionSource() },
                         indication = null,
-                        onClick = { onToggle(index) }
+                        onClick = { onToggle(index) },
                     )
-                    .padding(horizontal = 8.dp, vertical = 2.dp),
+                    .padding(horizontal = 8.dp, vertical = 6.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 val checkbox = if (checked) "[X]" else "[ ]"
-                val color = if (checked) PipBoyGreen else PipBoyGreenDim
+                val color = if (checked) TerminalGreen else TerminalGreenDim
                 Text(
                     text = checkbox,
                     color = color,
-                    fontFamily = FontFamily.Monospace,
-                    fontSize = 11.sp,
+                    fontFamily = androidx.compose.ui.text.font.FontFamily(
+                        androidx.compose.ui.text.font.Font(R.font.jetbrains_mono_regular, FontWeight.Normal),
+                    ),
+                    fontSize = 12.sp,
                 )
                 Text(
                     text = item,
                     color = color,
-                    fontFamily = FontFamily.Monospace,
-                    fontSize = 11.sp,
+                    fontFamily = androidx.compose.ui.text.font.FontFamily(
+                        androidx.compose.ui.text.font.Font(R.font.jetbrains_mono_regular, FontWeight.Normal),
+                    ),
+                    fontSize = 12.sp,
                 )
             }
         }

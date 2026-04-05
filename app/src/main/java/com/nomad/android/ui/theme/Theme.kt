@@ -5,25 +5,25 @@ import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
 
 private val NomadColorScheme = darkColorScheme(
-    primary = Primary,
-    onPrimary = Background,
-    primaryContainer = PrimaryDim,
-    onPrimaryContainer = Primary,
-    secondary = Accent,
-    onSecondary = Background,
-    secondaryContainer = Accent.copy(alpha = 0.15f),
-    onSecondaryContainer = Accent,
-    tertiary = Primary,
-    error = Danger,
-    onError = Background,
-    background = Background,
-    onBackground = OnBackground,
-    surface = Surface,
-    onSurface = OnSurface,
-    surfaceVariant = Surface.copy(alpha = 0.8f),
-    onSurfaceVariant = OnSurface.copy(alpha = 0.7f),
-    outline = PrimaryDim,
-    outlineVariant = Primary.copy(alpha = 0.3f)
+    primary = TerminalGreen,
+    onPrimary = TerminalBg,
+    primaryContainer = TerminalGreenDim,
+    onPrimaryContainer = TerminalGreen,
+    secondary = TerminalAmber,
+    onSecondary = TerminalBg,
+    secondaryContainer = TerminalAmber.copy(alpha = 0.15f),
+    onSecondaryContainer = TerminalAmber,
+    tertiary = TerminalBlue,
+    error = TerminalDanger,
+    onError = TerminalBg,
+    background = TerminalBg,
+    onBackground = TerminalOnBg,
+    surface = TerminalSurface,
+    onSurface = TerminalOnSurface,
+    surfaceVariant = TerminalSurface.copy(alpha = 0.8f),
+    onSurfaceVariant = TerminalOnSurface.copy(alpha = 0.7f),
+    outline = TerminalGreenDim,
+    outlineVariant = TerminalGreen.copy(alpha = 0.3f),
 )
 
 @Composable
@@ -31,6 +31,6 @@ fun NomadTheme(content: @Composable () -> Unit) {
     MaterialTheme(
         colorScheme = NomadColorScheme,
         typography = NomadTypography,
-        content = content
+        content = content,
     )
 }

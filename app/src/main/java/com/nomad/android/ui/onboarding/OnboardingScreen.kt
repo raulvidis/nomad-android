@@ -18,7 +18,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -31,31 +30,29 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.nomad.android.ui.components.PipBoyButton
-import com.nomad.android.ui.components.PipBoyProgressBar
+import com.nomad.android.R
+import com.nomad.android.ui.components.TerminalButton
+import com.nomad.android.ui.components.TerminalProgressBar
+import com.nomad.android.ui.theme.TerminalAmber
+import com.nomad.android.ui.theme.TerminalBg
+import com.nomad.android.ui.theme.TerminalGreen
+import com.nomad.android.ui.theme.TerminalGreenDim
+import com.nomad.android.ui.theme.TerminalSurface
 import kotlinx.coroutines.delay
-
-private val TerminalGreen = Color(0xFF14FF14)
-private val DimGreen = Color(0xFF0A7A0A)
-private val Amber = Color(0xFFFFB000)
-private val DarkBg = Color(0xFF0A0A0A)
-private val CardBg = Color(0xFF0D1A0D)
-private val BrightGreen = Color(0xFF00FF41)
 
 @Composable
 fun OnboardingScreen(
     viewModel: OnboardingViewModel = hiltViewModel(),
-    onComplete: () -> Unit = {}
+    onComplete: () -> Unit = {},
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val isComplete by viewModel.isOnboardingComplete.collectAsStateWithLifecycle(initialValue = false)
@@ -70,18 +67,18 @@ fun OnboardingScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(DarkBg),
-        contentAlignment = Alignment.Center
+            .background(TerminalBg),
+        contentAlignment = Alignment.Center,
     ) {
         when (currentStep) {
             0 -> BootSequenceStep { viewModel.nextStep() }
             1 -> DeviceScanStep(
                 hardwareInfo = uiState.data.hardwareInfo,
-                onAdvance = { viewModel.nextStep() }
+                onAdvance = { viewModel.nextStep() },
             )
             2 -> ModelSelectionStep(
                 selectedModel = uiState.data.selectedModel,
-                onSelectModel = { viewModel.selectModel(it) }
+                onSelectModel = { viewModel.selectModel(it) },
             ) { viewModel.nextStep() }
             3 -> DownloadPackStep { viewModel.nextStep() }
             else -> WelcomeStep { viewModel.completeOnboarding() }
@@ -92,11 +89,11 @@ fun OnboardingScreen(
 @Composable
 private fun BootSequenceStep(onAdvance: () -> Unit) {
     val lines = listOf(
-        "ROBCO INDUSTRIES (TM) TERMLINK PROTOCOL",
-        "INITIATING VAULT SURVIVAL SYSTEM...",
-        "FIRMWARE v4.0.1 LOADED",
-        "SYSTEM CHECK: PASS",
-        "POWER ON: [OK]"
+        "NOMAD SURVIVAL SYSTEM",
+        "Initializing core modules...",
+        "Firmware v1.0.0 loaded",
+        "System check: pass",
+        "Power on: [OK]",
     )
 
     var visibleLines by remember { mutableIntStateOf(0) }
@@ -124,24 +121,28 @@ private fun BootSequenceStep(onAdvance: () -> Unit) {
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 32.dp),
-        verticalArrangement = Arrangement.Center
+        verticalArrangement = Arrangement.Center,
     ) {
         for (i in 0 until visibleLines) {
             val isLastLine = i == visibleLines - 1
             Text(
                 text = if (isLastLine) currentText else lines[i],
                 color = TerminalGreen,
-                fontFamily = FontFamily.Monospace,
+                fontFamily = androidx.compose.ui.text.font.FontFamily(
+                    androidx.compose.ui.text.font.Font(R.font.jetbrains_mono_regular, FontWeight.Normal),
+                ),
                 fontSize = 14.sp,
-                modifier = Modifier.padding(bottom = 8.dp)
+                modifier = Modifier.padding(bottom = 8.dp),
             )
         }
         if (visibleLines > 0 && currentText.length < (lines.getOrNull(visibleLines - 1)?.length ?: 0)) {
             Text(
                 text = "_",
                 color = TerminalGreen,
-                fontFamily = FontFamily.Monospace,
-                fontSize = 14.sp
+                fontFamily = androidx.compose.ui.text.font.FontFamily(
+                    androidx.compose.ui.text.font.Font(R.font.jetbrains_mono_regular, FontWeight.Normal),
+                ),
+                fontSize = 14.sp,
             )
         }
     }
@@ -150,7 +151,7 @@ private fun BootSequenceStep(onAdvance: () -> Unit) {
 @Composable
 private fun DeviceScanStep(
     hardwareInfo: HardwareInfo?,
-    onAdvance: () -> Unit
+    onAdvance: () -> Unit,
 ) {
     val ramMB = hardwareInfo?.totalRamMB ?: 0
     val storageMB = hardwareInfo?.availableStorageMB ?: 0
@@ -163,7 +164,7 @@ private fun DeviceScanStep(
         "STORAGE: $storageGB GB AVAILABLE [OK]" to 400L,
         "AI CAPABILITY: LITERT-LM SUPPORTED [OK]" to 600L,
         "GPU: ${if (hasGPU) "DETECTED" else "NOT FOUND"} [${if (hasGPU) "OK" else "WARN"}]" to 350L,
-        "NPU: ${if (hasNPU) "AVAILABLE" else "NOT AVAILABLE"} [${if (hasNPU) "OK" else "WARN"}]" to 300L
+        "NPU: ${if (hasNPU) "AVAILABLE" else "NOT AVAILABLE"} [${if (hasNPU) "OK" else "WARN"}]" to 300L,
     )
 
     var visibleCount by remember { mutableIntStateOf(0) }
@@ -185,32 +186,34 @@ private fun DeviceScanStep(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 32.dp),
-        verticalArrangement = Arrangement.Center
+        verticalArrangement = Arrangement.Center,
     ) {
         AnimatedVisibility(
             visible = headerVisible,
-            enter = fadeIn(tween(300))
+            enter = fadeIn(tween(300)),
         ) {
             Text(
                 text = "SCANNING HARDWARE...",
                 color = TerminalGreen,
-                fontFamily = FontFamily.Monospace,
+                fontFamily = androidx.compose.ui.text.font.FontFamily(
+                    androidx.compose.ui.text.font.Font(R.font.jetbrains_mono_medium, FontWeight.Medium),
+                ),
                 fontSize = 16.sp,
-                modifier = Modifier.padding(bottom = 16.dp)
+                modifier = Modifier.padding(bottom = 16.dp),
             )
         }
 
         for (i in 0 until visibleCount) {
             AnimatedVisibility(
                 visible = i < visibleCount,
-                enter = slideInVertically(tween(200)) + fadeIn(tween(200))
+                enter = slideInVertically(tween(200)) + fadeIn(tween(200)),
             ) {
                 val text = specs[i].first
                 val annotated = buildAnnotatedString {
                     val okIndex = text.lastIndexOf("[OK]")
                     if (okIndex >= 0) {
                         append(text.substring(0, okIndex))
-                        withStyle(SpanStyle(color = BrightGreen)) {
+                        withStyle(SpanStyle(color = TerminalGreen)) {
                             append("[OK]")
                         }
                     } else {
@@ -219,10 +222,12 @@ private fun DeviceScanStep(
                 }
                 Text(
                     text = annotated,
-                    color = DimGreen,
-                    fontFamily = FontFamily.Monospace,
+                    color = TerminalGreenDim,
+                    fontFamily = androidx.compose.ui.text.font.FontFamily(
+                        androidx.compose.ui.text.font.Font(R.font.jetbrains_mono_regular, FontWeight.Normal),
+                    ),
                     fontSize = 13.sp,
-                    modifier = Modifier.padding(bottom = 6.dp)
+                    modifier = Modifier.padding(bottom = 6.dp),
                 )
             }
         }
@@ -233,12 +238,12 @@ private fun DeviceScanStep(
 private fun ModelSelectionStep(
     selectedModel: String,
     onSelectModel: (String) -> Unit,
-    onAdvance: () -> Unit
+    onAdvance: () -> Unit,
 ) {
     val models = remember {
         listOf(
             Triple("GEMMA 4 E2B", "2.0 GB", "On-device LLM — download in Settings after setup"),
-            Triple("FALLBACK", "N/A", "Rule-based offline responses — no download required")
+            Triple("FALLBACK", "N/A", "Rule-based offline responses — no download required"),
         )
     }
 
@@ -248,63 +253,73 @@ private fun ModelSelectionStep(
         modifier = Modifier
             .fillMaxSize()
             .padding(24.dp),
-        verticalArrangement = Arrangement.Center
+        verticalArrangement = Arrangement.Center,
     ) {
         Text(
             text = "SELECT AI MODEL:",
-            color = Amber,
-            fontFamily = FontFamily.Monospace,
+            color = TerminalAmber,
+            fontFamily = androidx.compose.ui.text.font.FontFamily(
+                androidx.compose.ui.text.font.Font(R.font.jetbrains_mono_bold, FontWeight.Bold),
+            ),
             fontSize = 18.sp,
-            modifier = Modifier.padding(bottom = 20.dp)
+            modifier = Modifier.padding(bottom = 20.dp),
         )
 
         models.forEachIndexed { index, (name, size, desc) ->
             val isSelected = index == selectedIndex
-            val borderColor = if (isSelected) BrightGreen else DimGreen
-            val textColor = if (isSelected) TerminalGreen else DimGreen
+            val borderColor = if (isSelected) TerminalGreen else TerminalGreenDim
+            val textColor = if (isSelected) TerminalGreen else TerminalGreenDim
 
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .border(
                         width = if (isSelected) 2.dp else 1.dp,
-                        color = borderColor
+                        color = borderColor,
                     )
-                    .background(CardBg)
+                    .background(TerminalSurface)
                     .clickable { selectedIndex = index }
                     .padding(16.dp)
-                    .padding(bottom = 12.dp)
+                    .padding(bottom = 12.dp),
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
                         text = name,
                         color = textColor,
-                        fontFamily = FontFamily.Monospace,
-                        fontSize = 15.sp
+                        fontFamily = androidx.compose.ui.text.font.FontFamily(
+                            androidx.compose.ui.text.font.Font(R.font.jetbrains_mono_medium, FontWeight.Medium),
+                        ),
+                        fontSize = 15.sp,
                     )
                     Spacer(modifier = Modifier.width(12.dp))
                     Text(
                         text = "— $size",
-                        color = if (isSelected) Amber else DimGreen,
-                        fontFamily = FontFamily.Monospace,
-                        fontSize = 13.sp
+                        color = if (isSelected) TerminalAmber else TerminalGreenDim,
+                        fontFamily = androidx.compose.ui.text.font.FontFamily(
+                            androidx.compose.ui.text.font.Font(R.font.jetbrains_mono_regular, FontWeight.Normal),
+                        ),
+                        fontSize = 13.sp,
                     )
                     if (index == 0 && isSelected) {
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
                             text = "[RECOMMENDED]",
-                            color = Amber,
-                            fontFamily = FontFamily.Monospace,
-                            fontSize = 11.sp
+                            color = TerminalAmber,
+                            fontFamily = androidx.compose.ui.text.font.FontFamily(
+                                androidx.compose.ui.text.font.Font(R.font.jetbrains_mono_regular, FontWeight.Normal),
+                            ),
+                            fontSize = 11.sp,
                         )
                     }
                 }
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
                     text = desc,
-                    color = if (isSelected) DimGreen else Color(0xFF063F06),
-                    fontFamily = FontFamily.Monospace,
-                    fontSize = 12.sp
+                    color = if (isSelected) TerminalGreenDim else TerminalGreenDim.copy(alpha = 0.4f),
+                    fontFamily = androidx.compose.ui.text.font.FontFamily(
+                        androidx.compose.ui.text.font.Font(R.font.jetbrains_mono_regular, FontWeight.Normal),
+                    ),
+                    fontSize = 12.sp,
                 )
             }
             Spacer(modifier = Modifier.height(8.dp))
@@ -312,13 +327,13 @@ private fun ModelSelectionStep(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        PipBoyButton(
+        TerminalButton(
             text = "CONFIRM SELECTION",
             onClick = {
                 onSelectModel(models[selectedIndex].first)
                 onAdvance()
             },
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
         )
     }
 }
@@ -328,7 +343,7 @@ private fun DownloadPackStep(onAdvance: () -> Unit) {
     val files = listOf(
         "first_aid.json" to 0.1f,
         "survival.json" to 0.3f,
-        "maps_region.pmtiles" to 0.7f
+        "maps_region.pmtiles" to 0.7f,
     )
 
     var progress by remember { mutableFloatStateOf(0f) }
@@ -337,7 +352,7 @@ private fun DownloadPackStep(onAdvance: () -> Unit) {
     val animatedProgress by animateFloatAsState(
         targetValue = progress,
         animationSpec = tween(durationMillis = 800, easing = LinearEasing),
-        label = "downloadProgress"
+        label = "downloadProgress",
     )
 
     LaunchedEffect(Unit) {
@@ -355,29 +370,33 @@ private fun DownloadPackStep(onAdvance: () -> Unit) {
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 32.dp),
-        verticalArrangement = Arrangement.Center
+        verticalArrangement = Arrangement.Center,
     ) {
         Text(
             text = "INITIAL DATA PACK",
-            color = Amber,
-            fontFamily = FontFamily.Monospace,
+            color = TerminalAmber,
+            fontFamily = androidx.compose.ui.text.font.FontFamily(
+                androidx.compose.ui.text.font.Font(R.font.jetbrains_mono_bold, FontWeight.Bold),
+            ),
             fontSize = 18.sp,
-            modifier = Modifier.padding(bottom = 8.dp)
+            modifier = Modifier.padding(bottom = 8.dp),
         )
 
         Text(
             text = "Downloading essential survival content...",
-            color = DimGreen,
-            fontFamily = FontFamily.Monospace,
+            color = TerminalGreenDim,
+            fontFamily = androidx.compose.ui.text.font.FontFamily(
+                androidx.compose.ui.text.font.Font(R.font.jetbrains_mono_regular, FontWeight.Normal),
+            ),
             fontSize = 13.sp,
-            modifier = Modifier.padding(bottom = 20.dp)
+            modifier = Modifier.padding(bottom = 20.dp),
         )
 
-        PipBoyProgressBar(
+        TerminalProgressBar(
             progress = animatedProgress,
             modifier = Modifier
                 .fillMaxWidth()
-                .height(20.dp)
+                .height(20.dp),
         )
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -385,16 +404,18 @@ private fun DownloadPackStep(onAdvance: () -> Unit) {
         for (i in 0 until visibleFiles) {
             val annotated = buildAnnotatedString {
                 append(files[i].first + " ")
-                withStyle(SpanStyle(color = BrightGreen)) {
+                withStyle(SpanStyle(color = TerminalGreen)) {
                     append("[OK]")
                 }
             }
             Text(
                 text = annotated,
-                color = DimGreen,
-                fontFamily = FontFamily.Monospace,
+                color = TerminalGreenDim,
+                fontFamily = androidx.compose.ui.text.font.FontFamily(
+                    androidx.compose.ui.text.font.Font(R.font.jetbrains_mono_regular, FontWeight.Normal),
+                ),
                 fontSize = 12.sp,
-                modifier = Modifier.padding(bottom = 4.dp)
+                modifier = Modifier.padding(bottom = 4.dp),
             )
         }
     }
@@ -411,48 +432,54 @@ private fun WelcomeStep(onComplete: () -> Unit) {
 
     AnimatedVisibility(
         visible = visible,
-        enter = fadeIn(tween(800))
+        enter = fadeIn(tween(800)),
     ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(32.dp),
             verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally
+            horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Text(
                 text = "NOMAD",
-                color = BrightGreen,
-                fontFamily = FontFamily.Monospace,
+                color = TerminalGreen,
+                fontFamily = androidx.compose.ui.text.font.FontFamily(
+                    androidx.compose.ui.text.font.Font(R.font.jetbrains_mono_bold, FontWeight.Bold),
+                ),
                 fontSize = 48.sp,
-                letterSpacing = 8.sp
+                letterSpacing = 8.sp,
             )
 
             Spacer(modifier = Modifier.height(8.dp))
 
             Text(
-                text = "VAULT SURVIVAL SYSTEM READY",
-                color = Amber,
-                fontFamily = FontFamily.Monospace,
+                text = "SURVIVAL SYSTEM READY",
+                color = TerminalAmber,
+                fontFamily = androidx.compose.ui.text.font.FontFamily(
+                    androidx.compose.ui.text.font.Font(R.font.jetbrains_mono_medium, FontWeight.Medium),
+                ),
                 fontSize = 14.sp,
-                letterSpacing = 2.sp
+                letterSpacing = 2.sp,
             )
 
             Spacer(modifier = Modifier.height(24.dp))
 
             Text(
-                text = "All systems operational. Stay safe out there, Wanderer.",
-                color = DimGreen,
-                fontFamily = FontFamily.Monospace,
-                fontSize = 13.sp
+                text = "All systems operational. Stay safe out there.",
+                color = TerminalGreenDim,
+                fontFamily = androidx.compose.ui.text.font.FontFamily(
+                    androidx.compose.ui.text.font.Font(R.font.jetbrains_mono_regular, FontWeight.Normal),
+                ),
+                fontSize = 13.sp,
             )
 
             Spacer(modifier = Modifier.height(40.dp))
 
-            PipBoyButton(
-                text = "ENTER THE WASTELAND",
+            TerminalButton(
+                text = "GET STARTED",
                 onClick = onComplete,
-                modifier = Modifier.fillMaxWidth(0.8f)
+                modifier = Modifier.fillMaxWidth(0.8f),
             )
         }
     }

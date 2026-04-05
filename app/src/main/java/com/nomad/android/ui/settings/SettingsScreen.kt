@@ -21,240 +21,238 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.nomad.android.ui.theme.PipBoyAmber
-import com.nomad.android.ui.theme.PipBoyBg
-import com.nomad.android.ui.theme.PipBoyGreen
-import com.nomad.android.ui.theme.PipBoyGreenDim
-import com.nomad.android.ui.components.PipBoyButton
-import com.nomad.android.ui.components.PipBoyCard
-import com.nomad.android.ui.components.PipBoyDivider
-import com.nomad.android.ui.components.PipBoyProgressBar
-import com.nomad.android.ui.components.PipBoyText
+import com.nomad.android.R
+import com.nomad.android.ui.components.TerminalButton
+import com.nomad.android.ui.components.TerminalButtonSize
+import com.nomad.android.ui.components.TerminalButtonVariant
+import com.nomad.android.ui.components.TerminalCard
+import com.nomad.android.ui.components.TerminalDivider
+import com.nomad.android.ui.components.TerminalProgressBar
+import com.nomad.android.ui.components.TerminalSectionHeader
+import com.nomad.android.ui.components.TerminalText
+import com.nomad.android.ui.theme.TerminalAmber
+import com.nomad.android.ui.theme.TerminalBg
+import com.nomad.android.ui.theme.TerminalDanger
+import com.nomad.android.ui.theme.TerminalGreen
+import com.nomad.android.ui.theme.TerminalGreenDim
 
 @Composable
 fun SettingsScreen(
-    viewModel: SettingsViewModel = hiltViewModel()
+    viewModel: SettingsViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(PipBoyBg)
+            .background(TerminalBg)
             .verticalScroll(rememberScrollState())
-            .padding(16.dp)
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        PipBoyText(
-            text = "ROBCO INDUSTRIES (TM)",
-            style = androidx.compose.ui.text.TextStyle(fontSize = 10.sp, fontFamily = FontFamily.Monospace),
-            color = PipBoyGreenDim,
+        TerminalText(
+            text = "System Configuration",
+            color = TerminalGreen,
+            style = androidx.compose.ui.text.TextStyle(
+                fontSize = 20.sp,
+                fontFamily = androidx.compose.ui.text.font.FontFamily(
+                    androidx.compose.ui.text.font.Font(R.font.jetbrains_mono_bold, FontWeight.Bold),
+                ),
+            ),
         )
-        PipBoyText(
-            text = "SYSTEM CONFIGURATION",
-            style = androidx.compose.ui.text.TextStyle(fontSize = 14.sp, fontFamily = FontFamily.Monospace),
-            color = PipBoyGreen,
-        )
-        PipBoyDivider()
-        Spacer(modifier = Modifier.height(16.dp))
 
-        // Error banner
         if (uiState.error != null) {
-            PipBoyCard(modifier = Modifier.fillMaxWidth()) {
+            TerminalCard {
                 Text(
-                    text = "ERROR: ${uiState.error}",
-                    color = com.nomad.android.ui.theme.PipBoyDanger,
-                    fontFamily = FontFamily.Monospace,
-                    fontSize = 11.sp
-                )
-            }
-            Spacer(modifier = Modifier.height(12.dp))
-        }
-
-        // AI Engine section
-        PipBoyCard(modifier = Modifier.fillMaxWidth()) {
-            SettingsSectionTitle("AI ENGINE")
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = "Engine: ${uiState.data.aiStatus?.modelName ?: "N/A"}",
-                color = PipBoyGreen,
-                fontFamily = FontFamily.Monospace,
-                fontSize = 12.sp
-            )
-            Text(
-                text = "Type: ${uiState.data.aiStatus?.engineType?.displayName ?: "Unknown"}",
-                color = PipBoyGreen,
-                fontFamily = FontFamily.Monospace,
-                fontSize = 12.sp
-            )
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(
-                    modifier = Modifier
-                        .size(8.dp)
-                        .border(1.dp, if (uiState.data.aiStatus?.isReady == true) PipBoyGreen else PipBoyGreenDim)
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = "STATUS: ${if (uiState.data.aiStatus?.isReady == true) "READY" else "STANDBY"}",
-                    color = if (uiState.data.aiStatus?.isReady == true) PipBoyGreen else PipBoyGreenDim,
-                    fontFamily = FontFamily.Monospace,
-                    fontSize = 11.sp
+                    text = "Error: ${uiState.error}",
+                    color = TerminalDanger,
+                    fontFamily = androidx.compose.ui.text.font.FontFamily(
+                        androidx.compose.ui.text.font.Font(R.font.jetbrains_mono_regular, FontWeight.Normal),
+                    ),
+                    fontSize = 12.sp,
                 )
             }
         }
 
-        Spacer(modifier = Modifier.height(12.dp))
-
-        // Content Packs section
-        PipBoyCard(modifier = Modifier.fillMaxWidth()) {
-            SettingsSectionTitle("CONTENT PACKS")
-            Spacer(modifier = Modifier.height(8.dp))
-            uiState.data.contentPacks.forEachIndexed { index, pack ->
-                Row(
-                    modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(6.dp)
-                        ) {
-                            Text(
-                                text = pack.name,
-                                color = if (pack.isDownloaded) PipBoyGreen else PipBoyGreenDim,
-                                fontFamily = FontFamily.Monospace,
-                                fontSize = 12.sp
-                            )
-                            if (pack.isDownloaded) {
-                                Text(
-                                    text = "[OK]",
-                                    color = PipBoyGreen,
-                                    fontFamily = FontFamily.Monospace,
-                                    fontSize = 10.sp
-                                )
-                            }
-                        }
-                        Text(
-                            text = "${pack.type.uppercase()} — ${pack.size}",
-                            color = PipBoyGreenDim,
-                            fontFamily = FontFamily.Monospace,
-                            fontSize = 10.sp
-                        )
-                        if (pack.isDownloading) {
-                            Spacer(modifier = Modifier.height(4.dp))
-                            PipBoyProgressBar(progress = pack.downloadProgress)
-                            Text(
-                                text = "DOWNLOADING... ${(pack.downloadProgress * 100).toInt()}%",
-                                color = PipBoyAmber,
-                                fontFamily = FontFamily.Monospace,
-                                fontSize = 10.sp
-                            )
-                        }
-                    }
+        TerminalCard(header = "AI Engine") {
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Text(
+                    text = "Engine: ${uiState.data.aiStatus?.modelName ?: "N/A"}",
+                    color = TerminalGreen,
+                    fontFamily = androidx.compose.ui.text.font.FontFamily(
+                        androidx.compose.ui.text.font.Font(R.font.jetbrains_mono_regular, FontWeight.Normal),
+                    ),
+                    fontSize = 12.sp,
+                )
+                Text(
+                    text = "Type: ${uiState.data.aiStatus?.engineType?.displayName ?: "Unknown"}",
+                    color = TerminalGreen,
+                    fontFamily = androidx.compose.ui.text.font.FontFamily(
+                        androidx.compose.ui.text.font.Font(R.font.jetbrains_mono_regular, FontWeight.Normal),
+                    ),
+                    fontSize = 12.sp,
+                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        modifier = Modifier
+                            .size(8.dp)
+                            .border(1.dp, if (uiState.data.aiStatus?.isReady == true) TerminalGreen else TerminalGreenDim),
+                    )
                     Spacer(modifier = Modifier.width(8.dp))
-                    when {
-                        pack.isDownloading -> {} // progress shown inline
-                        pack.isDownloaded -> PipBoyButton(
-                            text = "DELETE",
-                            onClick = { viewModel.deletePack(pack.id) },
-                            variant = com.nomad.android.ui.components.PipBoyButtonVariant.DANGER
-                        )
-                        else -> PipBoyButton(
-                            text = "GET",
-                            onClick = { viewModel.downloadPack(pack.id) }
-                        )
-                    }
-                }
-                if (index < uiState.data.contentPacks.lastIndex) {
-                    PipBoyDivider(color = PipBoyGreenDim.copy(alpha = 0.3f))
-                }
-            }
-        }
-
-        Spacer(modifier = Modifier.height(12.dp))
-
-        // Storage section
-        PipBoyCard(modifier = Modifier.fillMaxWidth()) {
-            SettingsSectionTitle("STORAGE")
-            Spacer(modifier = Modifier.height(8.dp))
-            PipBoyProgressBar(
-                progress = uiState.data.storageMetrics?.usedPercent?.div(100f) ?: 0f,
-                modifier = Modifier.fillMaxWidth()
-            )
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = "${uiState.data.storageMetrics?.usedBytes?.div(1_000_000_000) ?: 0} GB / ${uiState.data.storageMetrics?.totalBytes?.div(1_000_000_000) ?: 0} GB USED",
-                color = PipBoyGreenDim,
-                fontFamily = FontFamily.Monospace,
-                fontSize = 11.sp
-            )
-        }
-
-        Spacer(modifier = Modifier.height(12.dp))
-
-        // Display/Theme section
-        PipBoyCard(modifier = Modifier.fillMaxWidth()) {
-            SettingsSectionTitle("DISPLAY")
-            Spacer(modifier = Modifier.height(8.dp))
-            viewModel.availableThemes.forEach { theme ->
-                val isSelected = uiState.data.currentTheme == theme.id
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable { viewModel.setTheme(theme.id) }
-                        .padding(vertical = 4.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    val selectorChar = if (isSelected) "[X]" else "[ ]"
                     Text(
-                        text = "$selectorChar ${theme.name}",
-                        color = if (isSelected) PipBoyGreen else PipBoyGreenDim,
-                        fontFamily = FontFamily.Monospace,
-                        fontSize = 12.sp
+                        text = "Status: ${if (uiState.data.aiStatus?.isReady == true) "Ready" else "Standby"}",
+                        color = if (uiState.data.aiStatus?.isReady == true) TerminalGreen else TerminalGreenDim,
+                        fontFamily = androidx.compose.ui.text.font.FontFamily(
+                            androidx.compose.ui.text.font.Font(R.font.jetbrains_mono_regular, FontWeight.Normal),
+                        ),
+                        fontSize = 11.sp,
                     )
                 }
             }
         }
 
-        Spacer(modifier = Modifier.height(12.dp))
+        TerminalCard(header = "Content Packs") {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                uiState.data.contentPacks.forEachIndexed { index, pack ->
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                            ) {
+                                Text(
+                                    text = pack.name,
+                                    color = if (pack.isDownloaded) TerminalGreen else TerminalGreenDim,
+                                    fontFamily = androidx.compose.ui.text.font.FontFamily(
+                                        androidx.compose.ui.text.font.Font(R.font.jetbrains_mono_medium, FontWeight.Medium),
+                                    ),
+                                    fontSize = 13.sp,
+                                )
+                                if (pack.isDownloaded) {
+                                    Text(
+                                        text = "[OK]",
+                                        color = TerminalGreen,
+                                        fontFamily = androidx.compose.ui.text.font.FontFamily(
+                                            androidx.compose.ui.text.font.Font(R.font.jetbrains_mono_regular, FontWeight.Normal),
+                                        ),
+                                        fontSize = 10.sp,
+                                    )
+                                }
+                            }
+                            Text(
+                                text = "${pack.type.uppercase()} — ${pack.size}",
+                                color = TerminalGreenDim,
+                                fontFamily = androidx.compose.ui.text.font.FontFamily(
+                                    androidx.compose.ui.text.font.Font(R.font.jetbrains_mono_regular, FontWeight.Normal),
+                                ),
+                                fontSize = 11.sp,
+                            )
+                            if (pack.isDownloading) {
+                                Spacer(modifier = Modifier.height(4.dp))
+                                TerminalProgressBar(progress = pack.downloadProgress)
+                                Text(
+                                    text = "Downloading... ${(pack.downloadProgress * 100).toInt()}%",
+                                    color = TerminalAmber,
+                                    fontFamily = androidx.compose.ui.text.font.FontFamily(
+                                        androidx.compose.ui.text.font.Font(R.font.jetbrains_mono_regular, FontWeight.Normal),
+                                    ),
+                                    fontSize = 10.sp,
+                                )
+                            }
+                        }
+                        Spacer(modifier = Modifier.width(8.dp))
+                        when {
+                            pack.isDownloading -> {}
+                            pack.isDownloaded -> TerminalButton(
+                                text = "Delete",
+                                onClick = { viewModel.deletePack(pack.id) },
+                                variant = TerminalButtonVariant.DANGER,
+                                size = TerminalButtonSize.SMALL,
+                            )
+                            else -> TerminalButton(
+                                text = "Get",
+                                onClick = { viewModel.downloadPack(pack.id) },
+                                size = TerminalButtonSize.SMALL,
+                            )
+                        }
+                    }
+                    if (index < uiState.data.contentPacks.lastIndex) {
+                        TerminalDivider(color = TerminalGreenDim.copy(alpha = 0.3f))
+                    }
+                }
+            }
+        }
 
-        // About section
-        PipBoyCard(modifier = Modifier.fillMaxWidth()) {
-            SettingsSectionTitle("ABOUT")
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = "NOMAD v1.0.0",
-                color = PipBoyGreen,
-                fontFamily = FontFamily.Monospace,
-                fontSize = 12.sp
-            )
-            Text(
-                text = "VAULT-TEC SURVIVAL SYSTEMS",
-                color = PipBoyGreen,
-                fontFamily = FontFamily.Monospace,
-                fontSize = 12.sp
-            )
-            Text(
-                text = "Offline-first survival knowledge",
-                color = PipBoyGreenDim,
-                fontFamily = FontFamily.Monospace,
-                fontSize = 11.sp
-            )
+        TerminalCard(header = "Storage") {
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                TerminalProgressBar(
+                    progress = uiState.data.storageMetrics?.usedPercent?.div(100f) ?: 0f,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                Text(
+                    text = "${uiState.data.storageMetrics?.usedBytes?.div(1_000_000_000) ?: 0} GB / ${uiState.data.storageMetrics?.totalBytes?.div(1_000_000_000) ?: 0} used",
+                    color = TerminalGreenDim,
+                    fontFamily = androidx.compose.ui.text.font.FontFamily(
+                        androidx.compose.ui.text.font.Font(R.font.jetbrains_mono_regular, FontWeight.Normal),
+                    ),
+                    fontSize = 11.sp,
+                )
+            }
+        }
+
+        TerminalCard(header = "Display") {
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                viewModel.availableThemes.forEach { theme ->
+                    val isSelected = uiState.data.currentTheme == theme.id
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { viewModel.setTheme(theme.id) }
+                            .padding(vertical = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        val selectorChar = if (isSelected) "[X]" else "[ ]"
+                        Text(
+                            text = "$selectorChar ${theme.name}",
+                            color = if (isSelected) TerminalGreen else TerminalGreenDim,
+                            fontFamily = androidx.compose.ui.text.font.FontFamily(
+                                androidx.compose.ui.text.font.Font(R.font.jetbrains_mono_regular, FontWeight.Normal),
+                            ),
+                            fontSize = 12.sp,
+                        )
+                    }
+                }
+            }
+        }
+
+        TerminalCard(header = "About") {
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text(
+                    text = "NOMAD v1.0.0",
+                    color = TerminalGreen,
+                    fontFamily = androidx.compose.ui.text.font.FontFamily(
+                        androidx.compose.ui.text.font.Font(R.font.jetbrains_mono_medium, FontWeight.Medium),
+                    ),
+                    fontSize = 13.sp,
+                )
+                Text(
+                    text = "Offline-first survival knowledge",
+                    color = TerminalGreenDim,
+                    fontFamily = androidx.compose.ui.text.font.FontFamily(
+                        androidx.compose.ui.text.font.Font(R.font.jetbrains_mono_regular, FontWeight.Normal),
+                    ),
+                    fontSize = 11.sp,
+                )
+            }
         }
     }
-}
-
-@Composable
-private fun SettingsSectionTitle(title: String) {
-    Text(
-        text = title,
-        color = PipBoyGreen,
-        fontFamily = FontFamily.Monospace,
-        fontSize = 13.sp
-    )
 }

@@ -2,8 +2,7 @@ package com.nomad.android
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Scaffold
+import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
@@ -15,8 +14,8 @@ import com.nomad.android.ui.onboarding.OnboardingScreen
 import com.nomad.android.ui.onboarding.OnboardingViewModel
 import com.nomad.android.ui.theme.CrtScreen
 import com.nomad.android.ui.theme.NomadTheme
-import com.nomad.android.ui.theme.PipBoyStatusBar
-import com.nomad.android.ui.theme.PipBoyBottomNav
+import com.nomad.android.ui.theme.TerminalStatusBar
+import com.nomad.android.ui.theme.TerminalBottomNav
 import com.nomad.android.ui.navigation.NomadNavHost
 
 @Composable
@@ -29,26 +28,26 @@ fun NomadApp() {
     val currentRoute = navBackStackEntry?.destination?.route ?: "dashboard"
 
     NomadTheme {
-        Scaffold(
-            containerColor = androidx.compose.ui.graphics.Color.Transparent
-        ) { innerPadding ->
-            CrtScreen(modifier = Modifier.padding(innerPadding)) {
-                if (!isOnboardingComplete) {
-                    OnboardingScreen(viewModel = onboardingViewModel)
-                } else {
-                    Column(modifier = Modifier.fillMaxSize()) {
-                        PipBoyStatusBar(
-                            isAiOnline = onboardingState.data.selectedModel.isNotEmpty(),
-                            storagePercent = onboardingState.data.hardwareInfo?.let {
-                                val stat = android.os.StatFs(android.os.Environment.getDataDirectory().path)
-                                val total = stat.blockCountLong * stat.blockSizeLong
-                                val avail = stat.availableBlocksLong * stat.blockSizeLong
-                                if (total > 0) ((total - avail).toFloat() / total.toFloat() * 100).toInt() else 0
-                            } ?: 0
-                        )
-                        NomadNavHost(navController = navController, modifier = Modifier.weight(1f))
-                        PipBoyBottomNav(navController = navController, currentRoute = currentRoute)
-                    }
+        CrtScreen {
+            if (!isOnboardingComplete) {
+                OnboardingScreen(viewModel = onboardingViewModel)
+            } else {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .systemBarsPadding(),
+                ) {
+                    TerminalStatusBar(
+                        isAiOnline = onboardingState.data.selectedModel.isNotEmpty(),
+                        storagePercent = onboardingState.data.hardwareInfo?.let {
+                            val stat = android.os.StatFs(android.os.Environment.getDataDirectory().path)
+                            val total = stat.blockCountLong * stat.blockSizeLong
+                            val avail = stat.availableBlocksLong * stat.blockSizeLong
+                            if (total > 0) ((total - avail).toFloat() / total.toFloat() * 100).toInt() else 0
+                        } ?: 0,
+                    )
+                    NomadNavHost(navController = navController, modifier = Modifier.weight(1f))
+                    TerminalBottomNav(navController = navController, currentRoute = currentRoute)
                 }
             }
         }
