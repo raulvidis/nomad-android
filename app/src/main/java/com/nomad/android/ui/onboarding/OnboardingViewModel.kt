@@ -119,11 +119,11 @@ class OnboardingViewModel @Inject constructor(
     }
 
     fun completeOnboarding() {
+        _uiState.update {
+            it.copy(data = it.data.copy(isComplete = true))
+        }
         viewModelScope.launch {
             settingsRepository.completeOnboarding()
-            _uiState.update {
-                it.copy(data = it.data.copy(isComplete = true))
-            }
         }
     }
 }

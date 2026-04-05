@@ -45,11 +45,11 @@ abstract class NomadDatabase : RoomDatabase() {
                 db.execSQL(
                     """
                     CREATE TABLE IF NOT EXISTS location_snapshots (
-                        id TEXT PRIMARY KEY,
+                        id TEXT NOT NULL PRIMARY KEY,
                         latitude REAL NOT NULL,
                         longitude REAL NOT NULL,
-                        altitude REAL NOT NULL DEFAULT 0,
-                        accuracy REAL NOT NULL DEFAULT 0,
+                        altitude REAL NOT NULL,
+                        accuracy REAL NOT NULL,
                         timestamp INTEGER NOT NULL,
                         isTracking INTEGER NOT NULL
                     )
@@ -58,13 +58,13 @@ abstract class NomadDatabase : RoomDatabase() {
                 db.execSQL(
                     """
                     CREATE TABLE IF NOT EXISTS location_saved_points (
-                        id TEXT PRIMARY KEY,
+                        id TEXT NOT NULL PRIMARY KEY,
                         name TEXT NOT NULL,
                         latitude REAL NOT NULL,
                         longitude REAL NOT NULL,
-                        altitude REAL NOT NULL DEFAULT 0,
+                        altitude REAL NOT NULL,
                         timestamp INTEGER NOT NULL,
-                        notes TEXT NOT NULL DEFAULT ''
+                        notes TEXT NOT NULL
                     )
                     """.trimIndent()
                 )

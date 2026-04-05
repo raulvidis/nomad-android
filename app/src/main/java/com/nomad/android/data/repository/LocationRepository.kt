@@ -1,17 +1,14 @@
 package com.nomad.android.data.repository
 
+import com.nomad.android.data.Result
 import com.nomad.android.data.local.dao.LocationSavedPointDao
 import com.nomad.android.data.local.dao.LocationSnapshotDao
 import com.nomad.android.data.local.entity.LocationSavedPointEntity
+import com.nomad.android.data.local.entity.LocationSnapshotEntity
 import com.nomad.android.util.LocationTrackerService
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.stateIn
 import java.util.UUID
 import javax.inject.Singleton
 
@@ -22,9 +19,7 @@ class LocationRepository(
     private val trackerService: LocationTrackerService
 ) {
 
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-
-    val recentSnapshots: Flow<List<com.nomad.android.data.local.entity.LocationSnapshotEntity>> =
+    val recentSnapshots: Flow<List<LocationSnapshotEntity>> =
         snapshotDao.getRecent(limit = 100)
 
     val savedPoints: Flow<List<LocationSavedPointEntity>> =
@@ -36,40 +31,63 @@ class LocationRepository(
     val isTracking: StateFlow<Boolean> =
         trackerService.isTracking
 
-    val trackingCount: Flow<Int> = snapshotDao.getRecent(limit = Int.MAX_VALUE).map { it.size }
+    val trackingCount: Flow<Int> = snapshotDao.observeCount()
 
-    fun startTracking() {
-        trackerService.startTracking()
+    fun startTracking(): Result<Unit> {
+        return try {
+            trackerService.startTracking()
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.error("Failed to start tracking", e)
+        }
     }
 
-    fun stopTracking() {
-        trackerService.stopTracking()
+    fun stopTracking(): Result<Unit> {
+        return try {
+            trackerService.stopTracking()
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.error("Failed to stop tracking", e)
+        }
     }
 
-    fun requestCurrentLocation() {
-        trackerService.requestSingleUpdate()
+    fun requestCurrentLocation(): Result<Unit> {
+        return try {
+            trackerService.requestSingleUpdate()
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.error("Failed to request location", e)
+        }
     }
 
-    suspend fun saveCurrentLocation(name: String, notes: String) {
-        val location = trackerService.currentLocation.value ?: return
-        val point = LocationSavedPointEntity(
-            id = UUID.randomUUID().toString(),
-            name = name,
-            latitude = location.latitude,
-            longitude = location.longitude,
-            altitude = location.altitude,
-            timestamp = System.currentTimeMillis(),
-            notes = notes
-        )
-        savedPointDao.insert(point)
+    suspend fun saveCurrentLocation(name: String, notes: String): Result<Unit> {
+        return try {
+            val location = trackerService.currentLocation.value
+                ?: return Result.error("No current location available")
+            val point = LocationSavedPointEntity(
+                id = UUID.randomUUID().toString(),
+                name = name,
+                latitude = location.latitude,
+                longitude = location.longitude,
+                altitude = location.altitude,
+                timestamp = System.currentTimeMillis(),
+                notes = notes
+            )
+            savedPointDao.insert(point)
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.error("Failed to save location", e)
+        }
     }
 
-    suspend fun deleteSavedPoint(id: String) {
-        savedPointDao.deleteById(id)
+    suspend fun deleteSavedPoint(id: String): Result<Unit> {
+        return Result.runCatching { savedPointDao.deleteById(id) }
     }
 
-    suspend fun cleanOldSnapshots(daysOld: Int = 30) {
-        val cutoff = System.currentTimeMillis() - (daysOld.toLong() * 24 * 60 * 60 * 1000)
-        snapshotDao.deleteOlderThan(cutoff)
+    suspend fun cleanOldSnapshots(daysOld: Int = 30): Result<Unit> {
+        return Result.runCatching {
+            val cutoff = System.currentTimeMillis() - (daysOld.toLong() * 24 * 60 * 60 * 1000)
+            snapshotDao.deleteOlderThan(cutoff)
+        }
     }
 }

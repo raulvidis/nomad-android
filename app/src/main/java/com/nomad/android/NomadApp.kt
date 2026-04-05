@@ -23,13 +23,14 @@ fun NomadApp() {
     val onboardingViewModel: OnboardingViewModel = hiltViewModel()
     val isOnboardingComplete by onboardingViewModel.isOnboardingComplete.collectAsStateWithLifecycle(initialValue = false)
     val onboardingState by onboardingViewModel.uiState.collectAsStateWithLifecycle()
+    val showOnboarding = !isOnboardingComplete && !onboardingState.data.isComplete
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route ?: "dashboard"
 
     NomadTheme {
         CrtScreen {
-            if (!isOnboardingComplete) {
+            if (showOnboarding) {
                 OnboardingScreen(viewModel = onboardingViewModel)
             } else {
                 Column(

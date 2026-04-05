@@ -21,7 +21,6 @@ data class DeviceInfo(
 
 enum class AIEngineType(val displayName: String) {
     LITERTLM_E2B("LiteRT-LM (Gemma 4 E2B)"),
-    LITERTLM_1B("LiteRT-LM (Gemma 3 1B)"),
     FALLBACK("Fallback (Rule-Based)"),
     NONE("No AI Engine Available")
 }

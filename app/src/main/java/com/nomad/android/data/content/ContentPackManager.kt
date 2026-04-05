@@ -62,7 +62,7 @@ class ContentPackManager(
     }.flowOn(Dispatchers.IO)
 
     private fun getBundledPacks(): List<ContentPack> {
-        val gemma4 = LiteRTLMEngine.ModelVariant.GEMMA4_E2B
+        val gemma = LiteRTLMEngine.ModelVariant.GEMMA4_E2B
 
         return listOf(
             ContentPack("essentials", "Essentials Pack", "survival", 524288000L, "First aid, survival guides, SOS protocols", PackStatus.DOWNLOADED),
@@ -72,12 +72,12 @@ class ContentPackManager(
             ContentPack("map_world", "Map - World", "maps", 128849018880L, "Global basemap + POIs", PackStatus.AVAILABLE),
             ContentPack(
                 id = "ai_gemma4",
-                name = gemma4.displayName,
+                name = gemma.displayName,
                 type = "ai_model",
-                sizeBytes = gemma4.sizeMB.toLong() * 1_048_576,
+                sizeBytes = gemma.sizeMB.toLong() * 1_048_576,
                 description = "On-device LLM (2.0 GB download)",
                 status = PackStatus.AVAILABLE,
-                downloadUrl = gemma4.downloadUrl
+                downloadUrl = gemma.downloadUrl
             ),
             ContentPack("books", "Classic Books Pack", "books", 2147483648L, "Project Gutenberg top 1000", PackStatus.AVAILABLE),
         )
@@ -180,6 +180,15 @@ class ContentPackManager(
                             }
                         }
                     }
+                }
+            }
+
+            // Validate the downloaded file is not an HTML error page
+            if (tmpFile.length() < 1_000_000) {
+                val header = tmpFile.readBytes().take(100).toByteArray().toString(Charsets.UTF_8)
+                if (header.contains("<html", ignoreCase = true) || header.contains("<!DOCTYPE", ignoreCase = true)) {
+                    tmpFile.delete()
+                    throw RuntimeException("Download returned an HTML error page instead of the model file")
                 }
             }
 

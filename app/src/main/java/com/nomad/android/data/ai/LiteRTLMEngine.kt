@@ -28,10 +28,10 @@ class LiteRTLMEngine(
     ) {
         GEMMA4_E2B(
             displayName = "Gemma 4 E2B",
-            fileName = "gemma-4-E2B-it-web.task",
+            fileName = "gemma-4-E2B-it.litertlm",
             ramRequiredMB = 2048,
-            sizeMB = 2004,
-            downloadUrl = "https://huggingface.co/litert-community/gemma-4-E2B-it-litert-lm/resolve/main/gemma-4-E2B-it-web.task"
+            sizeMB = 2643,
+            downloadUrl = "https://huggingface.co/litert-community/gemma-4-E2B-it-litert-lm/resolve/main/gemma-4-E2B-it.litertlm"
         )
     }
 
@@ -45,18 +45,27 @@ class LiteRTLMEngine(
         if (!isModelLoaded) {
             val result = loadModel()
             if (result.isError) {
-                return@withContext (result as Result.Error).message
+                val modelFile = getModelFile()
+                val fileSizeMB = if (modelFile.exists()) modelFile.length() / 1_048_576 else 0
+                val expectedMB = modelVariant.sizeMB
+                return@withContext if (!modelFile.exists()) {
+                    "Model not downloaded. Go to Settings and download ${modelVariant.displayName}."
+                } else if (fileSizeMB < expectedMB * 0.9) {
+                    "Model file incomplete (${fileSizeMB}MB of ${expectedMB}MB). Delete and re-download in Settings."
+                } else {
+                    "Failed to load model: ${(result as Result.Error).message}"
+                }
             }
         }
 
-        val inference = llmInference ?: return@withContext "AI Engine not initialized."
+        val inference = llmInference ?: return@withContext "Model not loaded. Try restarting the app."
         val fullPrompt = buildPromptWithContext(prompt, context)
 
         try {
             inference.generateResponse(fullPrompt)
         } catch (e: Exception) {
             Log.e(TAG, "Generation failed", e)
-            "AI generation error: ${e.message}"
+            "AI generation error. The model may be corrupt — try re-downloading in Settings."
         }
     }
 
@@ -64,7 +73,7 @@ class LiteRTLMEngine(
         if (!isModelLoaded) {
             withContext(Dispatchers.IO) { loadModel() }.let { result ->
                 if (result.isError) {
-                    trySend((result as Result.Error).message)
+                    trySend("Model not ready. Download ${modelVariant.displayName} in Settings to enable AI chat.")
                     close()
                     return@callbackFlow
                 }
@@ -73,7 +82,7 @@ class LiteRTLMEngine(
 
         val inference = llmInference
         if (inference == null) {
-            trySend("AI Engine not initialized.")
+            trySend("Model not ready. Download ${modelVariant.displayName} in Settings to enable AI chat.")
             close()
             return@callbackFlow
         }
@@ -118,7 +127,7 @@ class LiteRTLMEngine(
         try {
             val modelFile = getModelFile()
             if (!modelFile.exists()) {
-                return@withContext Result.error("Model not downloaded yet. Go to Settings and tap GET on Gemma 4 E2B.")
+                return@withContext Result.error("Model not downloaded yet. Go to Settings and tap GET on ${modelVariant.displayName}.")
             }
             if (modelFile.length() < 1_000_000) {
                 modelFile.delete()
@@ -129,8 +138,8 @@ class LiteRTLMEngine(
 
             val options = LlmInference.LlmInferenceOptions.builder()
                 .setModelPath(modelFile.absolutePath)
-                .setMaxTokens(1024)
-                .setMaxTopK(64)
+                .setMaxTokens(256)
+                .setMaxTopK(10)
                 .build()
 
             llmInference = LlmInference.createFromOptions(context, options)
@@ -160,6 +169,7 @@ class LiteRTLMEngine(
 
     private fun buildPromptWithContext(prompt: String, context: List<String>): String {
         return buildString {
+            append("<start_of_turn>user\n")
             if (context.isNotEmpty()) {
                 appendLine("Context:")
                 context.forEachIndexed { i, ctx ->
@@ -168,6 +178,8 @@ class LiteRTLMEngine(
                 appendLine()
             }
             append(prompt)
+            append("<end_of_turn>\n")
+            append("<start_of_turn>model\n")
         }
     }
 

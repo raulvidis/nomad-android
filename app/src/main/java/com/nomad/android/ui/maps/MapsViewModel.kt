@@ -1,5 +1,8 @@
 package com.nomad.android.ui.maps
 
+import android.app.Application
+import android.content.pm.PackageManager
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.nomad.android.data.Result
@@ -9,12 +12,10 @@ import com.nomad.android.data.repository.LocationRepository
 import com.nomad.android.data.repository.MapsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -43,7 +44,8 @@ data class MapsUiState(
 @HiltViewModel
 class MapsViewModel @Inject constructor(
     private val mapsRepository: MapsRepository,
-    private val locationRepository: LocationRepository
+    private val locationRepository: LocationRepository,
+    application: Application
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(MapsUiState(isLoading = true))
@@ -52,6 +54,16 @@ class MapsViewModel @Inject constructor(
     private val _locationPermissionGranted = MutableStateFlow(false)
 
     init {
+        val hasPermission = ContextCompat.checkSelfPermission(
+            application,
+            android.Manifest.permission.ACCESS_FINE_LOCATION
+        ) == PackageManager.PERMISSION_GRANTED
+        if (hasPermission) {
+            _locationPermissionGranted.value = true
+            _uiState.update { it.copy(data = it.data.copy(hasLocationPermission = true)) }
+            locationRepository.requestCurrentLocation()
+        }
+
         loadMapData()
         observeLocation()
     }
@@ -95,7 +107,7 @@ class MapsViewModel @Inject constructor(
                     _uiState.update {
                         it.copy(
                             isLoading = false,
-                            data = MapsData(
+                            data = it.data.copy(
                                 layers = result.data,
                                 hasOfflineTiles = mapsRepository.hasOfflineTiles(),
                                 isMapInitialized = true,

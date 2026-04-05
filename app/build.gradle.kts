@@ -87,7 +87,7 @@ dependencies {
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
 
     // On-device LLM inference (Gemma models)
-    implementation("com.google.mediapipe:tasks-genai:0.10.29")
+    implementation("com.google.mediapipe:tasks-genai:0.10.33")
 
     implementation("androidx.work:work-runtime-ktx:2.9.0")
 

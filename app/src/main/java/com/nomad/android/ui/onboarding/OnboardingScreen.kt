@@ -243,7 +243,6 @@ private fun ModelSelectionStep(
     val models = remember {
         listOf(
             Triple("GEMMA 4 E2B", "2.0 GB", "On-device LLM — download in Settings after setup"),
-            Triple("FALLBACK", "N/A", "Rule-based offline responses — no download required"),
         )
     }
 

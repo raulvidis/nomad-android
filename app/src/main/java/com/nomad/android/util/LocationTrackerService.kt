@@ -3,6 +3,8 @@ package com.nomad.android.util
 import android.annotation.SuppressLint
 import android.app.Application
 import android.location.Location
+import android.location.LocationListener
+import android.location.LocationManager
 import android.os.Looper
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationCallback
@@ -40,7 +42,8 @@ class LocationTrackerService(
 
     private var fusedClient: FusedLocationProviderClient? = null
     private var useFallback = false
-    private var fallbackLocationManager: android.location.LocationManager? = null
+    private var fallbackLocationManager: LocationManager? = null
+    private var fallbackListener: LocationListener? = null
 
     private val locationCallback = object : LocationCallback() {
         override fun onLocationResult(result: LocationResult) {
@@ -59,7 +62,7 @@ class LocationTrackerService(
         } catch (e: Exception) {
             useFallback = true
             fallbackLocationManager =
-                context.getSystemService(android.content.Context.LOCATION_SERVICE) as? android.location.LocationManager
+                context.getSystemService(android.content.Context.LOCATION_SERVICE) as? LocationManager
         }
     }
 
@@ -130,24 +133,27 @@ class LocationTrackerService(
     private fun startFallbackTracking() {
         fallbackLocationManager?.let { lm ->
             val provider = when {
-                lm.isProviderEnabled(android.location.LocationManager.GPS_PROVIDER) ->
-                    android.location.LocationManager.GPS_PROVIDER
-                lm.isProviderEnabled(android.location.LocationManager.NETWORK_PROVIDER) ->
-                    android.location.LocationManager.NETWORK_PROVIDER
+                lm.isProviderEnabled(LocationManager.GPS_PROVIDER) ->
+                    LocationManager.GPS_PROVIDER
+                lm.isProviderEnabled(LocationManager.NETWORK_PROVIDER) ->
+                    LocationManager.NETWORK_PROVIDER
                 else -> return
             }
+
+            val listener = LocationListener { location ->
+                _currentLocation.value = location
+                if (_isTracking.value) {
+                    saveSnapshot(location, isTracking = true)
+                }
+            }
+            fallbackListener = listener
 
             try {
                 lm.requestLocationUpdates(
                     provider,
                     60_000L,
                     0f,
-                    { location ->
-                        _currentLocation.value = location
-                        if (_isTracking.value) {
-                            saveSnapshot(location, isTracking = true)
-                        }
-                    },
+                    listener,
                     Looper.getMainLooper()
                 )
             } catch (_: Exception) {
@@ -156,18 +162,20 @@ class LocationTrackerService(
     }
 
     private fun stopFallbackTracking() {
-        // No-op for simplicity; the fallback listener cannot be easily removed
-        // without holding a reference. In production, hold the listener reference.
+        fallbackListener?.let { listener ->
+            fallbackLocationManager?.removeUpdates(listener)
+            fallbackListener = null
+        }
     }
 
     @SuppressLint("MissingPermission")
     private fun requestFallbackSingleUpdate() {
         fallbackLocationManager?.let { lm ->
             val provider = when {
-                lm.isProviderEnabled(android.location.LocationManager.GPS_PROVIDER) ->
-                    android.location.LocationManager.GPS_PROVIDER
-                lm.isProviderEnabled(android.location.LocationManager.NETWORK_PROVIDER) ->
-                    android.location.LocationManager.NETWORK_PROVIDER
+                lm.isProviderEnabled(LocationManager.GPS_PROVIDER) ->
+                    LocationManager.GPS_PROVIDER
+                lm.isProviderEnabled(LocationManager.NETWORK_PROVIDER) ->
+                    LocationManager.NETWORK_PROVIDER
                 else -> return
             }
             try {

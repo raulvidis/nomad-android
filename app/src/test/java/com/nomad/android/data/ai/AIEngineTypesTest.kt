@@ -8,9 +8,8 @@ class AIEngineTypesTest {
     @Test
     fun `AIEngineType enum has all values`() {
         val values = AIEngineType.values()
-        assertEquals(4, values.size)
+        assertEquals(3, values.size)
         assertTrue(values.contains(AIEngineType.LITERTLM_E2B))
-        assertTrue(values.contains(AIEngineType.LITERTLM_1B))
         assertTrue(values.contains(AIEngineType.FALLBACK))
         assertTrue(values.contains(AIEngineType.NONE))
     }
@@ -47,15 +46,15 @@ class AIEngineTypesTest {
     fun `LiteRTLMEngine ModelVariant GEMMA4_E2B has correct properties`() {
         val gemma4 = LiteRTLMEngine.ModelVariant.GEMMA4_E2B
         assertEquals("Gemma 4 E2B", gemma4.displayName)
-        assertEquals("gemma-4-E2B-it-web.task", gemma4.fileName)
+        assertEquals("gemma-4-E2B-it.litertlm", gemma4.fileName)
         assertEquals(2048L, gemma4.ramRequiredMB)
-        assertEquals(2004, gemma4.sizeMB)
+        assertEquals(2643, gemma4.sizeMB)
         assertTrue(gemma4.downloadUrl.startsWith("https://"))
         assertTrue(gemma4.downloadUrl.contains("huggingface"))
     }
 
     @Test
-    fun `recommendedVariant always selects Gemma4`() {
+    fun `recommendedVariant selects Gemma4 for high RAM`() {
         assertEquals(LiteRTLMEngine.ModelVariant.GEMMA4_E2B, LiteRTLMEngine.recommendedVariant(8192))
         assertEquals(LiteRTLMEngine.ModelVariant.GEMMA4_E2B, LiteRTLMEngine.recommendedVariant(4096))
         assertEquals(LiteRTLMEngine.ModelVariant.GEMMA4_E2B, LiteRTLMEngine.recommendedVariant(2048))

@@ -64,28 +64,22 @@ class ChatViewModel @Inject constructor(
 
         viewModelScope.launch {
             chatRepository.getRecentSessions().collect { result ->
-                when (result) {
-                    is Result.Success -> {
-                        val sessions = result.data.map { entity ->
-                            ChatSession(
-                                id = entity.id,
-                                title = entity.title,
-                                createdAt = entity.createdAt,
-                                updatedAt = entity.updatedAt
-                            )
-                        }
-                        _uiState.update {
-                            it.copy(
-                                isLoading = false,
-                                data = it.data.copy(sessions = sessions)
-                            )
-                        }
+                val sessions = when (result) {
+                    is Result.Success -> result.data.map { entity ->
+                        ChatSession(
+                            id = entity.id,
+                            title = entity.title,
+                            createdAt = entity.createdAt,
+                            updatedAt = entity.updatedAt
+                        )
                     }
-                    is Result.Error -> {
-                        _uiState.update {
-                            it.copy(isLoading = false, error = result.message)
-                        }
-                    }
+                    is Result.Error -> emptyList()
+                }
+                _uiState.update {
+                    it.copy(
+                        isLoading = false,
+                        data = it.data.copy(sessions = sessions)
+                    )
                 }
             }
         }
@@ -201,10 +195,17 @@ class ChatViewModel @Inject constructor(
             content = content
         )
 
+        // Add user message + placeholder assistant message for streaming
+        val streamingMessage = ChatMessage(
+            sessionId = sessionId,
+            role = "assistant",
+            content = ""
+        )
+
         _uiState.update {
             it.copy(
                 data = it.data.copy(
-                    messages = it.data.messages + userMessage,
+                    messages = it.data.messages + userMessage + streamingMessage,
                     isStreaming = true
                 )
             )
@@ -221,32 +222,33 @@ class ChatViewModel @Inject constructor(
                 )
             )
 
-            // Get AI response
+            // Stream AI response token by token
+            val responseBuilder = StringBuilder()
             try {
-                val response = aiEngine.generate(content, emptyList())
-                val assistantMessage = ChatMessage(
-                    sessionId = sessionId,
-                    role = "assistant",
-                    content = response
-                )
+                aiEngine.generateStream(content, emptyList()).collect { token ->
+                    responseBuilder.append(token)
+                    val currentResponse = responseBuilder.toString()
+                    _uiState.update { state ->
+                        val messages = state.data.messages.toMutableList()
+                        messages[messages.lastIndex] = streamingMessage.copy(content = currentResponse)
+                        state.copy(data = state.data.copy(messages = messages))
+                    }
+                }
+
+                val finalResponse = responseBuilder.toString()
 
                 // Save assistant message
                 chatRepository.insertMessage(
                     ChatMessageEntity(
                         sessionId = sessionId,
                         role = "assistant",
-                        content = response,
+                        content = finalResponse,
                         timestamp = System.currentTimeMillis()
                     )
                 )
 
                 _uiState.update {
-                    it.copy(
-                        data = it.data.copy(
-                            messages = it.data.messages + assistantMessage,
-                            isStreaming = false
-                        )
-                    )
+                    it.copy(data = it.data.copy(isStreaming = false))
                 }
             } catch (e: Exception) {
                 _uiState.update {

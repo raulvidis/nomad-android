@@ -20,10 +20,10 @@ interface ContentPackDao {
     @Query("SELECT * FROM content_packs WHERE status = :status")
     fun getByStatus(status: String): Flow<List<ContentPackEntity>>
 
-    @Insert
+    @Insert(onConflict = androidx.room.OnConflictStrategy.REPLACE)
     suspend fun insert(contentPack: ContentPackEntity)
 
-    @Insert
+    @Insert(onConflict = androidx.room.OnConflictStrategy.REPLACE)
     suspend fun insertAll(contentPacks: List<ContentPackEntity>)
 
     @Update

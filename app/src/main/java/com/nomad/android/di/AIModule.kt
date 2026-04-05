@@ -43,7 +43,7 @@ object AIModule {
         val deviceInfo = engine.getDeviceInfo()
         return AIEngineStatus(
             engineType = when (engine) {
-                is LiteRTLMEngine -> if (engine.getModelName().contains("E2B")) AIEngineType.LITERTLM_E2B else AIEngineType.LITERTLM_1B
+                is LiteRTLMEngine -> AIEngineType.LITERTLM_E2B
                 is FallbackEngine -> AIEngineType.FALLBACK
                 else -> AIEngineType.NONE
             },

@@ -30,4 +30,7 @@ interface LocationSnapshotDao {
 
     @Query("SELECT COUNT(*) FROM location_snapshots")
     suspend fun count(): Int
+
+    @Query("SELECT COUNT(*) FROM location_snapshots")
+    fun observeCount(): Flow<Int>
 }

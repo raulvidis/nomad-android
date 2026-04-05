@@ -1,5 +1,6 @@
 package com.nomad.android.di
 
+import android.app.Application
 import android.content.Context
 import com.nomad.android.data.content.ContentPackManager
 import com.nomad.android.data.content.KiwixManager
@@ -15,6 +16,7 @@ import com.nomad.android.data.repository.LocationRepository
 import com.nomad.android.data.repository.MapsRepository
 import com.nomad.android.data.repository.SearchRepository
 import com.nomad.android.data.repository.SettingsRepository
+import com.nomad.android.util.LocationSnapshotDb
 import com.nomad.android.util.LocationTrackerService
 import dagger.Module
 import dagger.Provides
@@ -80,8 +82,16 @@ object RepositoryModule {
     @Provides
     @Singleton
     fun provideLocationTrackerService(
-        @ApplicationContext context: Context
-    ): LocationTrackerService = LocationTrackerService(context as android.app.Application)
+        application: Application,
+        locationSnapshotDao: LocationSnapshotDao
+    ): LocationTrackerService {
+        val snapshotDb = object : LocationSnapshotDb {
+            override suspend fun saveSnapshot(snapshot: com.nomad.android.data.local.entity.LocationSnapshotEntity) {
+                locationSnapshotDao.insert(snapshot)
+            }
+        }
+        return LocationTrackerService(application, snapshotDb)
+    }
 
     @Provides
     @Singleton
