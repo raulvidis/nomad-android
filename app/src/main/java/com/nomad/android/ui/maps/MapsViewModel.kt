@@ -19,7 +19,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import org.maplibre.android.geometry.LatLngBounds
 import javax.inject.Inject
 
 data class MapsData(
@@ -170,19 +169,22 @@ class MapsViewModel @Inject constructor(
         _uiState.update { it.copy(data = it.data.copy(selectedMinZoom = min, selectedMaxZoom = max)) }
     }
 
-    fun startDownload(regionName: String, bounds: LatLngBounds) {
+    fun startDownload(
+        regionName: String,
+        north: Double,
+        south: Double,
+        east: Double,
+        west: Double
+    ) {
         val minZoom = _uiState.value.data.selectedMinZoom
         val maxZoom = _uiState.value.data.selectedMaxZoom
 
-        val tiles = TileCalculator.getTilesForBounds(
-            bounds.latNorth, bounds.latSouth, bounds.lonEast, bounds.lonWest,
-            minZoom, maxZoom
-        )
+        val tiles = TileCalculator.getTilesForBounds(north, south, east, west, minZoom, maxZoom)
         val estimatedSize = TileCalculator.estimateSizeBytes(tiles.size)
 
         val id = offlineTileManager.createRegion(
             regionName.ifBlank { "Region" },
-            bounds.latNorth, bounds.latSouth, bounds.lonEast, bounds.lonWest,
+            north, south, east, west,
             minZoom, maxZoom
         )
 
@@ -192,7 +194,7 @@ class MapsViewModel @Inject constructor(
 
         viewModelScope.launch {
             offlineTileManager.downloadRegion(
-                id, bounds.latNorth, bounds.latSouth, bounds.lonEast, bounds.lonWest,
+                id, north, south, east, west,
                 minZoom, maxZoom
             ).collect { progress ->
                 _uiState.update {
