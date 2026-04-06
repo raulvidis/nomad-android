@@ -16,7 +16,7 @@ class TileCalculatorTest {
     fun latLngToTile_at_zoom_1_for_known_location() {
         val (x, y) = TileCalculator.latLngToTile(48.8566, 2.3522, 1)
         assertEquals(1, x)
-        assertEquals(1, y)
+        assertEquals(0, y)
     }
 
     @Test
