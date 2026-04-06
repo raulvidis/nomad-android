@@ -36,16 +36,17 @@ class LiteRTLMEngine(
     }
 
     private val modelDir by lazy { File(context.filesDir, "models").also { it.mkdirs() } }
+    private var llmInference: LlmInference? = null
+    private var isModelLoaded = false
+
     private val stopTokens = setOf(
         "<end_of_turn>", "<eos>",
         "</end_of_turn>", "</start_of_turn>",
         "<end_of_session>",
         "```xml", "```",
         "<channel>", "</channel>",
-        "<tool_response>", "
-</think>
-
-",
+        "<tool_response>", "</tool_response>",
+        "</think>",
         "<turn", "</turn", "turn\u25B7",
     )
 

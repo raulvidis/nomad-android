@@ -147,21 +147,33 @@ private fun MapViewContainer(
     viewModel: MapsViewModel,
 ) {
     val context = LocalContext.current
-    var mapView by remember { mutableStateOf<MapView?>(null) }
-    var mapLibreMap by remember { mutableStateOf<MapLibreMap?>(null) }
+    val mapViewRef = remember { mutableStateOf<MapView?>(null) }
+    val mapLibreMapRef = remember { mutableStateOf<MapLibreMap?>(null) }
+
+    // Initialize MapLibre before creating the MapView
+    remember {
+        MapLibre.getInstance(context)
+        true
+    }
 
     DisposableEffect(Unit) {
-        MapLibre.getInstance(context)
-        onDispose { mapView?.onDestroy() }
+        onDispose {
+            mapViewRef.value?.onPause()
+            mapViewRef.value?.onStop()
+            mapViewRef.value?.onDestroy()
+        }
     }
 
     AndroidView(
         modifier = Modifier.fillMaxSize(),
         factory = { ctx ->
             val mv = MapView(ctx)
-            mapView = mv
+            mapViewRef.value = mv
+            mv.onCreate(null)
+            mv.onStart()
+            mv.onResume()
             mv.getMapAsync { map ->
-                mapLibreMap = map
+                mapLibreMapRef.value = map
                 map.uiSettings.isCompassEnabled = false
                 map.uiSettings.isLogoEnabled = false
                 map.uiSettings.isAttributionEnabled = false
@@ -171,41 +183,43 @@ private fun MapViewContainer(
                     .withSource(RasterSource("osm-source", tileSet))
                     .withLayer(RasterLayer("osm-layer", "osm-source"))
 
-                map.setStyle(styleBuilder)
+                map.setStyle(styleBuilder) {
+                    // Style is fully loaded — safe to read projection
+                    val initialPos = if (data.currentLatitude != null && data.currentLongitude != null) {
+                        CameraPosition.Builder()
+                            .target(LatLng(data.currentLatitude, data.currentLongitude))
+                            .zoom(12.0)
+                            .build()
+                    } else {
+                        CameraPosition.Builder()
+                            .target(LatLng(48.8566, 2.3522))
+                            .zoom(4.0)
+                            .build()
+                    }
+                    map.cameraPosition = initialPos
 
-                val initialPos = if (data.currentLatitude != null && data.currentLongitude != null) {
-                    CameraPosition.Builder()
-                        .target(LatLng(data.currentLatitude, data.currentLongitude))
-                        .zoom(12.0)
-                        .build()
-                } else {
-                    CameraPosition.Builder()
-                        .target(LatLng(48.8566, 2.3522))
-                        .zoom(4.0)
-                        .build()
-                }
-                map.cameraPosition = initialPos
-
-                map.addOnCameraIdleListener {
-                    val bounds = map.projection.visibleRegion.latLngBounds
-                    viewModel.updateCameraBounds(
-                        north = bounds.latitudeNorth,
-                        south = bounds.latitudeSouth,
-                        east = bounds.longitudeEast,
-                        west = bounds.longitudeWest,
-                    )
+                    map.addOnCameraIdleListener {
+                        try {
+                            val bounds = map.projection.visibleRegion.latLngBounds
+                            viewModel.updateCameraBounds(
+                                north = bounds.latitudeNorth,
+                                south = bounds.latitudeSouth,
+                                east = bounds.longitudeEast,
+                                west = bounds.longitudeWest,
+                            )
+                        } catch (_: Exception) {
+                            // projection not ready yet
+                        }
+                    }
                 }
             }
-            mv.onCreate(null)
-            mv.onStart()
-            mv.onResume()
             mv
         },
-        update = { mv ->
+        update = {
             val lat = data.currentLatitude
             val lon = data.currentLongitude
             if (data.isAutoCenter && lat != null && lon != null) {
-                mapLibreMap?.animateCamera(
+                mapLibreMapRef.value?.animateCamera(
                     CameraUpdateFactory.newLatLng(LatLng(lat, lon)),
                     1000
                 )

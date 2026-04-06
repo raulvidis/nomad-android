@@ -231,6 +231,7 @@ class ChatViewModel @Inject constructor(
                     ChatSessionEntity(
                         id = updatedSession.id,
                         title = updatedSession.title,
+                        createdAt = currentSession.createdAt,
                         updatedAt = System.currentTimeMillis()
                     )
                 )

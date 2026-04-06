@@ -279,9 +279,6 @@ private fun ChatContent(
                         StreamingMessageBubble(isStreaming = data.isStreaming)
                     }
                 }
-                if (data.isStreaming && (data.messages.lastOrNull()?.content?.isEmpty() == true)) {
-                    item { TypingIndicator() }
-                }
             }
         }
 
