@@ -35,6 +35,7 @@ import com.nomad.android.ui.components.TerminalDivider
 import com.nomad.android.ui.components.TerminalProgressBar
 import com.nomad.android.ui.components.TerminalSectionHeader
 import com.nomad.android.ui.components.TerminalText
+import com.nomad.android.ui.theme.LocalNomadColors
 import com.nomad.android.ui.theme.TerminalAmber
 import com.nomad.android.ui.theme.TerminalBg
 import com.nomad.android.ui.theme.TerminalDanger
@@ -46,6 +47,7 @@ fun SettingsScreen(
     viewModel: SettingsViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val colors = LocalNomadColors.current
 
     Column(
         modifier = Modifier
@@ -101,12 +103,12 @@ fun SettingsScreen(
                     Box(
                         modifier = Modifier
                             .size(8.dp)
-                            .border(1.dp, if (uiState.data.aiStatus?.isReady == true) TerminalGreen else TerminalGreenDim),
+                            .border(1.dp, if (uiState.data.aiStatus?.isReady == true) colors.primary else colors.primaryDim),
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
                         text = "Status: ${if (uiState.data.aiStatus?.isReady == true) "Ready" else "Standby"}",
-                        color = if (uiState.data.aiStatus?.isReady == true) TerminalGreen else TerminalGreenDim,
+                        color = if (uiState.data.aiStatus?.isReady == true) colors.primary else colors.primaryDim,
                         fontFamily = androidx.compose.ui.text.font.FontFamily(
                             androidx.compose.ui.text.font.Font(R.font.jetbrains_mono_regular, FontWeight.Normal),
                         ),
@@ -131,7 +133,7 @@ fun SettingsScreen(
                             ) {
                                 Text(
                                     text = pack.name,
-                                    color = if (pack.isDownloaded) TerminalGreen else TerminalGreenDim,
+                                    color = if (pack.isDownloaded) colors.primary else colors.primaryDim,
                                     fontFamily = androidx.compose.ui.text.font.FontFamily(
                                         androidx.compose.ui.text.font.Font(R.font.jetbrains_mono_medium, FontWeight.Medium),
                                     ),
@@ -140,7 +142,7 @@ fun SettingsScreen(
                                 if (pack.isDownloaded) {
                                     Text(
                                         text = "[OK]",
-                                        color = TerminalGreen,
+                                        color = colors.primary,
                                         fontFamily = androidx.compose.ui.text.font.FontFamily(
                                             androidx.compose.ui.text.font.Font(R.font.jetbrains_mono_regular, FontWeight.Normal),
                                         ),
@@ -150,7 +152,7 @@ fun SettingsScreen(
                             }
                             Text(
                                 text = "${pack.type.uppercase()} — ${pack.size}",
-                                color = TerminalGreenDim,
+                                color = colors.primaryDim,
                                 fontFamily = androidx.compose.ui.text.font.FontFamily(
                                     androidx.compose.ui.text.font.Font(R.font.jetbrains_mono_regular, FontWeight.Normal),
                                 ),
@@ -186,7 +188,7 @@ fun SettingsScreen(
                         }
                     }
                     if (index < uiState.data.contentPacks.lastIndex) {
-                        TerminalDivider(color = TerminalGreenDim.copy(alpha = 0.3f))
+                        TerminalDivider(color = colors.primaryDim.copy(alpha = 0.3f))
                     }
                 }
             }
@@ -200,7 +202,7 @@ fun SettingsScreen(
                 )
                 Text(
                     text = "${uiState.data.storageMetrics?.usedBytes?.div(1_000_000_000) ?: 0} GB / ${uiState.data.storageMetrics?.totalBytes?.div(1_000_000_000) ?: 0} used",
-                    color = TerminalGreenDim,
+                    color = colors.primaryDim,
                     fontFamily = androidx.compose.ui.text.font.FontFamily(
                         androidx.compose.ui.text.font.Font(R.font.jetbrains_mono_regular, FontWeight.Normal),
                     ),
@@ -223,7 +225,7 @@ fun SettingsScreen(
                         val selectorChar = if (isSelected) "[X]" else "[ ]"
                         Text(
                             text = "$selectorChar ${theme.name}",
-                            color = if (isSelected) TerminalGreen else TerminalGreenDim,
+                            color = if (isSelected) colors.primary else colors.primaryDim,
                             fontFamily = androidx.compose.ui.text.font.FontFamily(
                                 androidx.compose.ui.text.font.Font(R.font.jetbrains_mono_regular, FontWeight.Normal),
                             ),
@@ -238,7 +240,7 @@ fun SettingsScreen(
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text(
                     text = "NOMAD v1.0.0",
-                    color = TerminalGreen,
+                    color = colors.primary,
                     fontFamily = androidx.compose.ui.text.font.FontFamily(
                         androidx.compose.ui.text.font.Font(R.font.jetbrains_mono_medium, FontWeight.Medium),
                     ),
@@ -246,7 +248,7 @@ fun SettingsScreen(
                 )
                 Text(
                     text = "Offline-first survival knowledge",
-                    color = TerminalGreenDim,
+                    color = colors.primaryDim,
                     fontFamily = androidx.compose.ui.text.font.FontFamily(
                         androidx.compose.ui.text.font.Font(R.font.jetbrains_mono_regular, FontWeight.Normal),
                     ),
