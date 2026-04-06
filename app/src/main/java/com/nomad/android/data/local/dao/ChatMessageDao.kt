@@ -42,6 +42,9 @@ interface ChatMessageDao {
     )
     fun getRecentSessions(limit: Int = 20): Flow<List<ChatSessionEntity>>
 
+    @Query("SELECT * FROM chat_sessions WHERE id = :sessionId")
+    suspend fun getSessionById(sessionId: String): ChatSessionEntity?
+
     @Query("DELETE FROM chat_messages")
     suspend fun deleteAllMessages()
 
