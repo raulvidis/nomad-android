@@ -37,6 +37,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.nomad.android.R
 import com.nomad.android.ui.components.TerminalButton
 import com.nomad.android.ui.components.TerminalButtonSize
+import com.nomad.android.ui.components.TerminalButtonVariant
 import com.nomad.android.ui.components.TerminalDivider
 import com.nomad.android.ui.components.TerminalEmptyScreen
 import com.nomad.android.ui.components.TerminalErrorScreen
@@ -66,6 +67,7 @@ fun ChatScreen(
                 sessions = uiState.data.sessions,
                 onNewSession = { viewModel.newSession() },
                 onLoadSession = { viewModel.loadSession(it) },
+                onDeleteSession = { viewModel.deleteSession(it) },
             )
         }
         else -> ChatContent(
@@ -84,6 +86,7 @@ private fun SessionListScreen(
     sessions: List<ChatSession>,
     onNewSession: () -> Unit,
     onLoadSession: (String) -> Unit,
+    onDeleteSession: (String) -> Unit,
 ) {
     Column(
         modifier = Modifier
@@ -154,14 +157,19 @@ private fun SessionListScreen(
                             fontSize = 13.sp,
                             modifier = Modifier.weight(1f),
                         )
-                        Text(
-                            text = formatTimestamp(session.updatedAt),
-                            color = TerminalGreenDim,
-                            fontFamily = androidx.compose.ui.text.font.FontFamily(
-                                androidx.compose.ui.text.font.Font(R.font.jetbrains_mono_regular, FontWeight.Normal),
-                            ),
-                            fontSize = 10.sp,
-                        )
+                        Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                            TerminalButton(
+                                text = "LOAD",
+                                onClick = { onLoadSession(session.id) },
+                                size = TerminalButtonSize.SMALL,
+                            )
+                            TerminalButton(
+                                text = "DEL",
+                                onClick = { onDeleteSession(session.id) },
+                                size = TerminalButtonSize.SMALL,
+                                variant = TerminalButtonVariant.DANGER,
+                            )
+                        }
                     }
                 }
             }
@@ -255,6 +263,8 @@ private fun ChatContent(
                             isUser = message.role == "user",
                             text = message.content,
                         )
+                    } else if (data.isStreaming && message.role == "assistant" && message.content.isEmpty()) {
+                        StreamingMessageBubble(isStreaming = data.isStreaming)
                     }
                 }
                 if (data.isStreaming && (data.messages.lastOrNull()?.content?.isEmpty() == true)) {
@@ -411,6 +421,21 @@ private fun MessageBubble(isUser: Boolean, text: String) {
             lineHeight = 18.sp,
         )
     }
+}
+
+@Composable
+private fun StreamingMessageBubble(isStreaming: Boolean) {
+    var dotCount by remember { mutableStateOf(1) }
+    LaunchedEffect(isStreaming) {
+        while (isStreaming) {
+            kotlinx.coroutines.delay(400)
+            dotCount = (dotCount % 3) + 1
+        }
+    }
+    MessageBubble(
+        isUser = false,
+        text = "Processing${".".repeat(dotCount)}",
+    )
 }
 
 @Composable

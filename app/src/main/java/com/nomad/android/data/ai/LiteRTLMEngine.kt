@@ -40,9 +40,9 @@ class LiteRTLMEngine(
     private var isModelLoaded = false
 
     private val stopTokens = setOf(
-        "<end_of_turn>", "<eos>", "<start_of_turn>",
-        "</start_of_turn>", "</end_of_turn>",
-        "<tool_response>", "</tool_response>",
+        "<end_of_turn>", "<eos>",
+        "</end_of_turn>", "</start_of_turn>",
+        "```xml", "```",
         "<channel>", "</channel>"
     )
 
@@ -53,13 +53,10 @@ class LiteRTLMEngine(
     fun getModelFile(): File = File(modelDir, modelVariant.fileName)
 
     private fun cleanToken(token: String): String? {
-        // Check if the entire token is a stop/control token
         val trimmed = token.trim()
         if (trimmed.isEmpty()) return null
-        if (stopTokens.any { trimmed.contains(it) }) return null
         if (trimmed.startsWith("Thinking Process")) return null
 
-        // Strip any embedded control tokens
         val cleaned = controlTokenPattern.replace(token, "").trim()
         return cleaned.ifEmpty { null }
     }
@@ -113,19 +110,23 @@ class LiteRTLMEngine(
 
         val fullPrompt = buildPromptWithContext(prompt, context)
         var shouldStop = false
+        var emittedToken = false
 
         try {
             inference.generateResponseAsync(fullPrompt) { partialResult, done ->
-                if (shouldStop || done) {
+                if (shouldStop) {
                     if (!isClosedForSend) close()
                     return@generateResponseAsync
                 }
 
-                // Check for stop tokens in the raw partial result
+                if (done) {
+                    if (!isClosedForSend) close()
+                    return@generateResponseAsync
+                }
+
                 if (stopTokens.any { partialResult.contains(it) }) {
                     shouldStop = true
-                    // Send any clean text before the stop token
-                    val beforeStop = partialResult.split(Regex("<(?:end_of_turn|eos|start_of_turn)>")).firstOrNull()
+                    val beforeStop = partialResult.split(Regex("<(?:end_of_turn|eos)>")).firstOrNull()
                     val cleaned = beforeStop?.let { controlTokenPattern.replace(it, "") }?.trim()
                     if (!cleaned.isNullOrEmpty()) trySend(cleaned)
                     if (!isClosedForSend) close()
@@ -134,6 +135,7 @@ class LiteRTLMEngine(
 
                 val cleaned = cleanToken(partialResult)
                 if (cleaned != null) {
+                    emittedToken = true
                     trySend(cleaned)
                 }
             }

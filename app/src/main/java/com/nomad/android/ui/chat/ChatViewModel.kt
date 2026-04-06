@@ -352,4 +352,23 @@ class ChatViewModel @Inject constructor(
     fun selectFilter(filter: String) {
         _uiState.update { it.copy(data = it.data.copy(selectedFilter = filter)) }
     }
+
+    fun deleteSession(sessionId: String) {
+        viewModelScope.launch {
+            chatRepository.deleteSessionById(sessionId)
+            loadRecentSessions()
+            // If currently viewing this session, clear it
+            if (_uiState.value.data.currentSessionId == sessionId) {
+                _uiState.update {
+                    it.copy(
+                        data = it.data.copy(
+                            currentSessionId = null,
+                            messages = emptyList(),
+                            contextTokenCount = 0
+                        )
+                    )
+                }
+            }
+        }
+    }
 }

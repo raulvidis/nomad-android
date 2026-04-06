@@ -38,4 +38,7 @@ class ChatRepository @Inject constructor(
 
     suspend fun deleteSession(session: ChatSessionEntity): Result<Unit> =
         Result.runCatching { chatMessageDao.deleteSession(session) }
+
+    suspend fun deleteSessionById(sessionId: String): Result<Unit> =
+        Result.runCatching { chatMessageDao.deleteSessionById(sessionId) }
 }
