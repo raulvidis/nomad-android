@@ -68,6 +68,7 @@ fun ChatScreen(
                 onNewSession = { viewModel.newSession() },
                 onLoadSession = { viewModel.loadSession(it) },
                 onDeleteSession = { viewModel.deleteSession(it) },
+                onDeleteAllSessions = { viewModel.deleteAllSessions() },
             )
         }
         else -> ChatContent(
@@ -87,6 +88,7 @@ private fun SessionListScreen(
     onNewSession: () -> Unit,
     onLoadSession: (String) -> Unit,
     onDeleteSession: (String) -> Unit,
+    onDeleteAllSessions: () -> Unit,
 ) {
     Column(
         modifier = Modifier
@@ -107,11 +109,21 @@ private fun SessionListScreen(
                 ),
                 fontSize = 18.sp,
             )
-            TerminalButton(
-                text = "+ NEW",
-                onClick = onNewSession,
-                size = TerminalButtonSize.SMALL,
-            )
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                TerminalButton(
+                    text = "+ NEW",
+                    onClick = onNewSession,
+                    size = TerminalButtonSize.SMALL,
+                )
+                if (sessions.isNotEmpty()) {
+                    TerminalButton(
+                        text = "DEL ALL",
+                        onClick = onDeleteAllSessions,
+                        size = TerminalButtonSize.SMALL,
+                        variant = TerminalButtonVariant.DANGER,
+                    )
+                }
+            }
         }
 
         Spacer(modifier = Modifier.height(12.dp))

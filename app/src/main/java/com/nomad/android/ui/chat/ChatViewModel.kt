@@ -345,6 +345,22 @@ class ChatViewModel @Inject constructor(
         }
     }
 
+    fun deleteAllSessions() {
+        viewModelScope.launch {
+            chatRepository.deleteAllSessions()
+            _uiState.update {
+                it.copy(
+                    data = it.data.copy(
+                        currentSessionId = null,
+                        messages = emptyList(),
+                        sessions = emptyList(),
+                        contextTokenCount = 0
+                    )
+                )
+            }
+        }
+    }
+
     companion object {
         private const val AUTO_COMPACT_THRESHOLD = 100_000
     }
