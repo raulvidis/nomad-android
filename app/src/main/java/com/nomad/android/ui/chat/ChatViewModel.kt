@@ -222,6 +222,29 @@ class ChatViewModel @Inject constructor(
         }
 
         streamingJob = viewModelScope.launch {
+            // Update session title from first message
+            val currentSession = _uiState.value.data.sessions.find { it.id == sessionId }
+            if (currentSession != null && currentSession.title == "New Session") {
+                val title = content.take(50)
+                val updatedSession = currentSession.copy(title = title)
+                chatRepository.updateSession(
+                    ChatSessionEntity(
+                        id = updatedSession.id,
+                        title = updatedSession.title,
+                        updatedAt = System.currentTimeMillis()
+                    )
+                )
+                _uiState.update { state ->
+                    state.copy(
+                        data = state.data.copy(
+                            sessions = state.data.sessions.map { s ->
+                                if (s.id == sessionId) updatedSession else s
+                            }
+                        )
+                    )
+                }
+            }
+
             chatRepository.insertMessage(
                 ChatMessageEntity(
                     sessionId = sessionId,

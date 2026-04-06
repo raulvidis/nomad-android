@@ -36,27 +36,31 @@ class LiteRTLMEngine(
     }
 
     private val modelDir by lazy { File(context.filesDir, "models").also { it.mkdirs() } }
-    private var llmInference: LlmInference? = null
-    private var isModelLoaded = false
-
     private val stopTokens = setOf(
         "<end_of_turn>", "<eos>",
         "</end_of_turn>", "</start_of_turn>",
+        "<end_of_session>",
         "```xml", "```",
         "<channel>", "</channel>",
-        "<tool_response>", "</tool_response>",
+        "<tool_response>", "
+</think>
+
+",
         "<turn", "</turn", "turn\u25B7",
     )
 
     private val controlTokenPattern = Regex(
-        """</?(?:start_of_turn|end_of_turn|eos|turn|bos|tool_response|channel|thought)\s*[^>]*>|turn\u25B7|<turn\s*\u25B7?>|Thinking Process:?\s*"""
+        """</?(?:start_of_turn|end_of_turn|end_of_session|eos|turn|bos|tool_response|channel|thought)\s*[^>]*>|turn\u25B7|<turn\s*\u25B7?>|Thinking Process:?"""
     )
 
     private val thinkingBlockPattern = Regex(
         """<channel>thought.*?</channel>""", RegexOption.DOT_MATCHES_ALL
     )
 
-    private val residualTagPattern = Regex("""<[a-z_/][^>]{0,30}>""")
+    // Only strip known AI control tags - not generic HTML-like content
+    private val residualTagPattern = Regex(
+        """</?(?:start_of_turn|end_of_turn|end_of_session|eos|turn|bos|tool_response|channel|thought|system)\s*[^>]*>|turn\u25B7"""
+    )
 
     fun getModelFile(): File = File(modelDir, modelVariant.fileName)
 
