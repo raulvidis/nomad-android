@@ -273,17 +273,20 @@ fun TerminalBottomNav(
                         tint = if (selected) TerminalGreen else TerminalGreenDim,
                         modifier = Modifier.size(24.dp),
                     )
-                    Text(
-                        text = tab.label.uppercase(),
-                        fontFamily = androidx.compose.ui.text.font.FontFamily(
-                            androidx.compose.ui.text.font.Font(
-                                R.font.jetbrains_mono_medium,
-                                FontWeight.Medium,
+                    if (selected) {
+                        Text(
+                            text = tab.label.uppercase(),
+                            maxLines = 1,
+                            fontFamily = androidx.compose.ui.text.font.FontFamily(
+                                androidx.compose.ui.text.font.Font(
+                                    R.font.jetbrains_mono_medium,
+                                    FontWeight.Medium,
+                                ),
                             ),
-                        ),
-                        fontSize = 10.sp,
-                        color = if (selected) TerminalGreen else TerminalGreenDim,
-                    )
+                            fontSize = 10.sp,
+                            color = TerminalGreen,
+                        )
+                    }
                 }
             }
         }
