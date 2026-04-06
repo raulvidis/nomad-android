@@ -35,8 +35,6 @@ import com.nomad.android.ui.components.TerminalDivider
 import com.nomad.android.ui.components.TerminalProgressBar
 import com.nomad.android.ui.components.TerminalSectionHeader
 import com.nomad.android.ui.components.TerminalText
-import com.nomad.android.ui.theme.LocalNomadColors
-import com.nomad.android.ui.theme.LocalNomadColors
 import com.nomad.android.ui.theme.TerminalAmber
 import com.nomad.android.ui.theme.TerminalBg
 import com.nomad.android.ui.theme.TerminalDanger
@@ -212,7 +210,6 @@ fun SettingsScreen(
         }
 
         TerminalCard(header = "Display") {
-            val colors = LocalNomadColors.current
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 viewModel.availableThemes.forEach { theme ->
                     val isSelected = uiState.data.currentTheme == theme.id
@@ -226,16 +223,13 @@ fun SettingsScreen(
                         val selectorChar = if (isSelected) "[X]" else "[ ]"
                         Text(
                             text = "$selectorChar ${theme.name}",
-                            color = if (isSelected) colors.primary else colors.primaryDim,
+                            color = if (isSelected) TerminalGreen else TerminalGreenDim,
                             fontFamily = androidx.compose.ui.text.font.FontFamily(
                                 androidx.compose.ui.text.font.Font(R.font.jetbrains_mono_regular, FontWeight.Normal),
                             ),
                             fontSize = 12.sp,
                         )
                     }
-                }
-            }
-        }
                 }
             }
         }
