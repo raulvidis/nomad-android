@@ -168,9 +168,9 @@ private fun MapViewContainer(
                 map.uiSettings.isLogoEnabled = false
                 map.uiSettings.isAttributionEnabled = false
 
-                val tileSet = TileSet("tileset", listOf("https://tile.openstreetmap.org/{z}/{x}/{y}.png"))
+                val tileSet = TileSet("tileset", "https://tile.openstreetmap.org/{z}/{x}/{y}.png")
                 val styleBuilder = Style.Builder()
-                    .withSource(RasterSource("osm-source", tileSet, 256, 0, 19))
+                    .withSource(RasterSource("osm-source", tileSet))
                     .withLayer(RasterLayer("osm-layer", "osm-source"))
 
                 map.setStyle(styleBuilder)
