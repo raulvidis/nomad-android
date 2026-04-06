@@ -2,7 +2,6 @@ package com.nomad.android.ui.maps
 
 import android.app.Application
 import android.content.pm.PackageManager
-import android.graphics.BitmapFactory
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -13,12 +12,14 @@ import com.nomad.android.data.maps.TileCalculator
 import com.nomad.android.data.repository.LocationRepository
 import com.nomad.android.data.repository.MapsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
 data class MapsData(
@@ -39,7 +40,11 @@ data class MapsData(
     val isAutoCenter: Boolean = true,
     val showSavedPanel: Boolean = false,
     val showRegionList: Boolean = false,
-    val regionName: String? = null
+    val regionName: String? = null,
+    val cameraNorth: Double = 48.87,
+    val cameraSouth: Double = 48.85,
+    val cameraEast: Double = 2.36,
+    val cameraWest: Double = 2.34,
 )
 
 data class MapsUiState(
@@ -169,6 +174,17 @@ class MapsViewModel @Inject constructor(
         _uiState.update { it.copy(data = it.data.copy(selectedMinZoom = min, selectedMaxZoom = max)) }
     }
 
+    fun updateCameraBounds(north: Double, south: Double, east: Double, west: Double) {
+        _uiState.update {
+            it.copy(data = it.data.copy(
+                cameraNorth = north,
+                cameraSouth = south,
+                cameraEast = east,
+                cameraWest = west
+            ))
+        }
+    }
+
     fun startDownload(
         regionName: String,
         north: Double,
@@ -215,11 +231,16 @@ class MapsViewModel @Inject constructor(
     }
 
     fun deleteRegion(regionId: String) {
-        offlineTileManager.deleteRegion(regionId)
-        _uiState.update {
-            it.copy(data = it.data.copy(
-                downloadedRegions = offlineTileManager.getDownloadedRegions()
-            ))
+        viewModelScope.launch {
+            withContext(Dispatchers.IO) {
+                offlineTileManager.deleteRegion(regionId)
+            }
+            val regions = withContext(Dispatchers.IO) {
+                offlineTileManager.getDownloadedRegions()
+            }
+            _uiState.update {
+                it.copy(data = it.data.copy(downloadedRegions = regions))
+            }
         }
     }
 }

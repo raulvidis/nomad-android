@@ -43,21 +43,36 @@ class LiteRTLMEngine(
         "<end_of_turn>", "<eos>",
         "</end_of_turn>", "</start_of_turn>",
         "```xml", "```",
-        "<channel>", "</channel>"
+        "<channel>", "</channel>",
+        "<tool_response>", "</tool_response>",
+        "<turn", "</turn", "turn\u25B7",
     )
 
     private val controlTokenPattern = Regex(
-        "</?(?:start_of_turn|end_of_turn|eos|turn|bos|tool_response|channel)\\s*[^>]*>"
+        """</?(?:start_of_turn|end_of_turn|eos|turn|bos|tool_response|channel|thought)\s*[^>]*>|turn\u25B7|<turn\s*\u25B7?>|Thinking Process:?\s*"""
     )
+
+    private val thinkingBlockPattern = Regex(
+        """<channel>thought.*?</channel>""", RegexOption.DOT_MATCHES_ALL
+    )
+
+    private val residualTagPattern = Regex("""<[a-z_/][^>]{0,30}>""")
 
     fun getModelFile(): File = File(modelDir, modelVariant.fileName)
 
     private fun cleanToken(token: String): String? {
-        val trimmed = token.trim()
-        if (trimmed.isEmpty()) return null
-        if (trimmed.startsWith("Thinking Process")) return null
+        if (token.isBlank()) return null
 
-        val cleaned = controlTokenPattern.replace(token, "").trim()
+        // Drop tokens that are entirely thinking/reasoning control blocks
+        if (token.contains("<channel>") || token.contains("Thinking Process")) return null
+
+        var cleaned = controlTokenPattern.replace(token, "")
+        // Strip any remaining angle-bracket tags that look like control tokens
+        cleaned = residualTagPattern.replace(cleaned, "")
+        // Strip unicode play symbol used as turn marker
+        cleaned = cleaned.replace("\u25B7", "")
+        cleaned = cleaned.trim()
+
         return cleaned.ifEmpty { null }
     }
 
@@ -83,7 +98,7 @@ class LiteRTLMEngine(
 
         try {
             val raw = inference.generateResponse(fullPrompt)
-            controlTokenPattern.replace(raw, "").trim()
+            cleanFullResponse(raw)
         } catch (e: Exception) {
             Log.e(TAG, "Generation failed", e)
             "AI generation error. The model may be corrupt — try re-downloading in Settings."
@@ -126,8 +141,10 @@ class LiteRTLMEngine(
 
                 if (stopTokens.any { partialResult.contains(it) }) {
                     shouldStop = true
-                    val beforeStop = partialResult.split(Regex("<(?:end_of_turn|eos)>")).firstOrNull()
-                    val cleaned = beforeStop?.let { controlTokenPattern.replace(it, "") }?.trim()
+                    val beforeStop = partialResult
+                        .split(Regex("""</?(?:end_of_turn|eos|tool_response|channel|turn)\s*[^>]*>|turn\u25B7"""))
+                        .firstOrNull()
+                    val cleaned = beforeStop?.let { cleanToken(it) }
                     if (!cleaned.isNullOrEmpty()) trySend(cleaned)
                     if (!isClosedForSend) close()
                     return@generateResponseAsync
@@ -179,8 +196,8 @@ class LiteRTLMEngine(
 
             val options = LlmInference.LlmInferenceOptions.builder()
                 .setModelPath(modelFile.absolutePath)
-                .setMaxTokens(256)
-                .setMaxTopK(10)
+                .setMaxTokens(1024)
+                .setMaxTopK(40)
                 .build()
 
             llmInference = LlmInference.createFromOptions(context, options)
@@ -208,14 +225,27 @@ class LiteRTLMEngine(
     fun requiresDownload(): Boolean = !getModelFile().exists()
     fun getModelSizeMB(): Int = modelVariant.sizeMB
 
+    private fun cleanFullResponse(raw: String): String {
+        // Remove thinking blocks entirely
+        var cleaned = thinkingBlockPattern.replace(raw, "")
+        // Remove all control tokens
+        cleaned = controlTokenPattern.replace(cleaned, "")
+        // Remove any remaining angle-bracket control tags
+        cleaned = residualTagPattern.replace(cleaned, "")
+        cleaned = cleaned.replace("\u25B7", "")
+        // Collapse excessive whitespace/newlines
+        cleaned = cleaned.replace(Regex("""\n{3,}"""), "\n\n")
+        return cleaned.trim()
+    }
+
     private fun buildPromptWithContext(prompt: String, context: List<String>): String {
         return buildString {
             append("<start_of_turn>user\n")
+            appendLine(SYSTEM_PROMPT)
+            appendLine()
             if (context.isNotEmpty()) {
-                appendLine("Context:")
-                context.forEachIndexed { i, ctx ->
-                    appendLine("[${i + 1}] $ctx")
-                }
+                appendLine("Conversation history:")
+                context.forEach { appendLine(it) }
                 appendLine()
             }
             append(prompt)
@@ -227,6 +257,9 @@ class LiteRTLMEngine(
     companion object {
         private const val TAG = "LiteRTLMEngine"
 
+        private const val SYSTEM_PROMPT = """You are NOMAD, an offline survival assistant. You give clear, concise, and practical answers about survival, first aid, navigation, emergency preparedness, and general knowledge. Keep answers direct and actionable. Do not include any XML tags, control tokens, or internal reasoning in your responses."""
+
         fun recommendedVariant(totalRamMB: Long): ModelVariant = ModelVariant.GEMMA4_E2B
     }
+
 }

@@ -110,12 +110,13 @@ class OfflineTileManager(
                     .header("User-Agent", "NOMAD-Android/1.0")
                     .build()
                 val response = httpClient.newCall(request).execute()
-                val body = response.body?.bytes()
-                if (response.isSuccessful && body != null) {
-                    db.insertTile(tile.z, tile.x, tile.y, body)
-                    bytesDownloaded += body.size
+                response.use {
+                    val body = it.body?.bytes()
+                    if (it.isSuccessful && body != null) {
+                        db.insertTile(tile.z, tile.x, tile.y, body)
+                        bytesDownloaded += body.size
+                    }
                 }
-                response.close()
             } catch (e: Exception) {
                 Log.w(TAG, "Failed to download tile ${tile.z}/${tile.x}/${tile.y}", e)
             }

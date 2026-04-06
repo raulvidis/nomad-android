@@ -32,8 +32,6 @@ import androidx.compose.material.icons.filled.GpsFixed
 import androidx.compose.material.icons.filled.GpsOff
 import androidx.compose.material.icons.filled.Layers
 import androidx.compose.material.icons.filled.MyLocation
-import androidx.compose.material.icons.filled.ZoomIn
-import androidx.compose.material.icons.filled.ZoomOut
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -134,7 +132,7 @@ fun MapsScreen(
         }
 
         if (uiState.data.isSelectingRegion) {
-            RegionSelectionOverlay(viewModel = viewModel)
+            RegionSelectionOverlay(viewModel = viewModel, data = uiState.data)
         }
 
         if (uiState.data.isDownloading) {
@@ -187,6 +185,16 @@ private fun MapViewContainer(
                         .build()
                 }
                 map.cameraPosition = initialPos
+
+                map.addOnCameraIdleListener {
+                    val bounds = map.projection.visibleRegion.latLngBounds
+                    viewModel.updateCameraBounds(
+                        north = bounds.latitudeNorth,
+                        south = bounds.latitudeSouth,
+                        east = bounds.longitudeEast,
+                        west = bounds.longitudeWest,
+                    )
+                }
             }
             mv.onCreate(null)
             mv.onStart()
@@ -537,6 +545,7 @@ private fun RegionsPanel(
 @Composable
 private fun RegionSelectionOverlay(
     viewModel: MapsViewModel,
+    data: MapsData,
 ) {
     var minZoom by remember { mutableStateOf(12) }
     var maxZoom by remember { mutableStateOf(15) }
@@ -690,7 +699,15 @@ private fun RegionSelectionOverlay(
                         .weight(1f)
                         .border(1.dp, TerminalGreen, RoundedCornerShape(4.dp))
                         .background(TerminalGreen.copy(alpha = 0.15f), RoundedCornerShape(4.dp))
-                        .clickable { viewModel.cancelRegionSelection() }
+                        .clickable {
+                            viewModel.startDownload(
+                                regionName = "Region",
+                                north = data.cameraNorth,
+                                south = data.cameraSouth,
+                                east = data.cameraEast,
+                                west = data.cameraWest,
+                            )
+                        }
                         .padding(horizontal = 12.dp, vertical = 8.dp),
                     contentAlignment = Alignment.Center,
                 ) {

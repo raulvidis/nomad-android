@@ -357,7 +357,49 @@ private fun ChatContent(
                 }
             }
 
-            Spacer(modifier = Modifier.height(6.dp))
+            Spacer(modifier = Modifier.height(4.dp))
+
+            // Knowledge filter row
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 12.dp),
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
+                data.contextFilters.forEach { filter ->
+                    val isSelected = data.selectedFilter == filter
+                    Box(
+                        modifier = Modifier
+                            .border(
+                                width = if (isSelected) 2.dp else 1.dp,
+                                color = if (isSelected) TerminalGreen else TerminalGreenDim,
+                                shape = RoundedCornerShape(4.dp),
+                            )
+                            .background(
+                                if (isSelected) TerminalGreen.copy(alpha = 0.15f) else TerminalSurface,
+                                RoundedCornerShape(4.dp),
+                            )
+                            .clickable(
+                                interactionSource = remember { MutableInteractionSource() },
+                                indication = null,
+                                onClick = { onSelectFilter(filter) },
+                            )
+                            .padding(horizontal = 8.dp, vertical = 4.dp),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Text(
+                            text = filter,
+                            color = if (isSelected) TerminalGreen else TerminalGreenDim,
+                            fontFamily = androidx.compose.ui.text.font.FontFamily(
+                                androidx.compose.ui.text.font.Font(R.font.jetbrains_mono_regular, FontWeight.Normal),
+                            ),
+                            fontSize = 10.sp,
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(4.dp))
 
             // Input row
             Row(

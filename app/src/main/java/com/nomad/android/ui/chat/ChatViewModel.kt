@@ -33,9 +33,9 @@ data class ChatSession(
 )
 
 enum class ThinkingPower(val label: String, val maxTokens: Int, val topK: Int) {
-    LOW("Low", 64, 5),
-    MEDIUM("Med", 256, 10),
-    HIGH("High", 512, 10)
+    LOW("Fast", 256, 10),
+    MEDIUM("Balanced", 512, 20),
+    HIGH("Deep", 1024, 40)
 }
 
 data class ChatData(
@@ -43,7 +43,7 @@ data class ChatData(
     val messages: List<ChatMessage> = emptyList(),
     val sessions: List<ChatSession> = emptyList(),
     val isStreaming: Boolean = false,
-    val contextFilters: List<String> = listOf("Wikipedia", "Survival", "First Aid", "All"),
+    val contextFilters: List<String> = listOf("All", "Survival", "First Aid", "Wikipedia"),
     val selectedFilter: String = "All",
     val thinkingPower: ThinkingPower = ThinkingPower.LOW,
     val contextTokenCount: Int = 0
@@ -58,7 +58,7 @@ data class ChatUiState(
 @HiltViewModel
 class ChatViewModel @Inject constructor(
     private val chatRepository: ChatRepository,
-    private val aiEngine: AIEngine
+    private val aiEngine: AIEngine,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ChatUiState(isLoading = true))
@@ -233,7 +233,15 @@ class ChatViewModel @Inject constructor(
 
             val responseBuilder = StringBuilder()
             try {
-                aiEngine.generateStream(content, buildContext()).collect { token ->
+                val conversationContext = buildContext()
+                val knowledgeContext = retrieveKnowledgeContext(content)
+                val fullContext = if (knowledgeContext.isNotEmpty()) {
+                    listOf(knowledgeContext) + conversationContext
+                } else {
+                    conversationContext
+                }
+
+                aiEngine.generateStream(content, fullContext).collect { token ->
                     responseBuilder.append(token)
                     val currentResponse = responseBuilder.toString()
                     _uiState.update { state ->
@@ -306,19 +314,19 @@ class ChatViewModel @Inject constructor(
     }
 
     private fun buildContext(): List<String> {
-        val messages = _uiState.value.data.messages
-        val power = _uiState.value.data.thinkingPower
-        val maxContextTokens = when (power) {
-            ThinkingPower.LOW -> 8_000
-            ThinkingPower.MEDIUM -> 32_000
-            ThinkingPower.HIGH -> 100_000
-        }
+        val data = _uiState.value.data
+        val messages = data.messages
+        val maxContextTokens = MAX_CONTEXT_TOKENS
 
-        // Walk backwards from recent messages, accumulating tokens until budget is hit
-        val history = messages.dropLast(2) // exclude current user msg + empty assistant placeholder
         val selected = mutableListOf<String>()
         var tokenBudget = maxContextTokens
 
+        // Reserve budget for knowledge base context
+        val knowledgeBudget = (maxContextTokens * 0.15).toInt() // 15% for KB
+        tokenBudget -= knowledgeBudget
+
+        // Walk backwards from recent messages, accumulating tokens until budget is hit
+        val history = messages.dropLast(2) // exclude current user msg + empty assistant placeholder
         for (msg in history.reversed()) {
             val line = "${msg.role}: ${msg.content}"
             val tokens = estimateTokenCount(line)
@@ -326,7 +334,35 @@ class ChatViewModel @Inject constructor(
             tokenBudget -= tokens
             selected.add(0, line)
         }
+
         return selected
+    }
+
+    private fun retrieveKnowledgeContext(query: String): String {
+        val filter = _uiState.value.data.selectedFilter
+        val knowledgeEntries = KNOWLEDGE_BASE.filter { (category, _, _) ->
+            filter == "All" || category.equals(filter, ignoreCase = true)
+        }
+
+        val queryWords = query.lowercase().split(Regex("\\s+")).filter { it.length > 2 }.toSet()
+        val relevant = knowledgeEntries
+            .map { (_, title, content) ->
+                val text = "$title $content".lowercase()
+                val score = queryWords.count { text.contains(it) }
+                Triple(title, content, score)
+            }
+            .filter { it.third > 0 }
+            .sortedByDescending { it.third }
+            .take(3)
+
+        if (relevant.isEmpty()) return ""
+
+        return buildString {
+            appendLine("Relevant knowledge base entries:")
+            relevant.forEach { (title, content, _) ->
+                appendLine("- $title: $content")
+            }
+        }
     }
 
     private fun estimateTokenCount(messages: List<ChatMessage>): Int {
@@ -362,7 +398,28 @@ class ChatViewModel @Inject constructor(
     }
 
     companion object {
+        private const val MAX_CONTEXT_TOKENS = 128_000
         private const val AUTO_COMPACT_THRESHOLD = 100_000
+
+        // Built-in knowledge base entries: (category, title, content)
+        private val KNOWLEDGE_BASE = listOf(
+            Triple("Survival", "CPR Basics", "To perform CPR: Check responsiveness, call emergency services, push hard and fast in the center of the chest at 100-120 compressions per minute, give rescue breaths if trained. Continue until help arrives or an AED is available."),
+            Triple("Survival", "Water Purification", "Boil water for at least 1 minute (3 minutes above 6,500 ft). Use purification tablets or chlorine dioxide drops. Solar disinfection: clear bottle in direct sunlight for 6 hours. Filter through cloth first to remove sediment."),
+            Triple("Survival", "Fire Starting", "Gather tinder (dry leaves, bark), kindling (small sticks), and fuel (logs). Create a teepee or log cabin fire lay. Use matches, lighter, ferro rod, or bow-drill friction method. Shield from wind. Never leave unattended."),
+            Triple("Survival", "Shelter Building", "Find natural windbreaks (rock faces, fallen trees). Build lean-to with branches at 45 degrees. Insulate ground with leaves/pine needles. Keep shelter small to retain body heat. Ensure ventilation if using fire nearby."),
+            Triple("Survival", "Navigation Without Tools", "Sun rises in east, sets in west. North Star (Polaris) indicates north in the northern hemisphere. Moss often grows thicker on north side of trees. Follow waterways downstream toward civilization. Leave trail markers."),
+            Triple("Survival", "Edible Plants", "Only eat plants you can positively identify. Safe: dandelion (all parts), clover, cattail (roots/shoots), pine needles (tea), chickweed. Avoid: milky sap, umbrella-shaped flowers, almond scent, three-leaved growth, white/yellow berries."),
+            Triple("Survival", "SOS Signals", "Three of anything: fires, whistle blasts, mirror flashes. Ground-to-air: use contrasting materials, minimum 10ft letters. Mirror signal toward aircraft. At night, use bright fires. Universal distress: SOS (... --- ...) in Morse code."),
+            Triple("First Aid", "Bleeding Control", "Apply direct pressure with clean cloth. Elevate wound above heart. Apply pressure bandage. For severe limb bleeding, apply tourniquet 2-3 inches above wound. Do not remove soaked cloths—add more on top."),
+            Triple("First Aid", "Burns Treatment", "Cool burn immediately with cool (not cold) running water for 10-20 minutes. Cover with sterile non-stick dressing. Do not apply ice, butter, or toothpaste. Seek medical help for burns larger than palm size or on face/joints/genitals."),
+            Triple("First Aid", "Shock Treatment", "Lay person down with legs elevated 12 inches. Keep warm with blankets. Do not give food or water. Monitor breathing. If unconscious but breathing, place in recovery position. Call emergency services immediately."),
+            Triple("First Aid", "Fracture Splinting", "Immobilize the joint above and below the fracture. Use rigid materials (sticks, boards) padded with cloth. Secure with bandages but don't restrict circulation. Check pulse below splint regularly."),
+            Triple("First Aid", "Hypothermia", "Move to shelter. Remove wet clothing. Warm gradually with blankets, skin-to-skin contact. Give warm sweet drinks if conscious. Do not rub limbs, apply direct heat, or give alcohol. Severe cases: call emergency services."),
+            Triple("Wikipedia", "Morse Code", "International communication system using dots and dashes. SOS = ... --- ... Key letters: E=. T=- A=.- I=.. M=-- N=-. Useful for emergency signaling with light, sound, or tapping."),
+            Triple("Wikipedia", "Cardinal Directions", "North, South, East, West. The sun rises in the east and sets in the west. Compass points to magnetic north. True north differs from magnetic north by the declination angle."),
+            Triple("Wikipedia", "Dehydration", "Occurs when body loses more fluid than it takes in. Symptoms: thirst, dark urine, dizziness, fatigue. Prevention: drink water regularly, more in heat/exertion. Treatment: oral rehydration salts, sip water slowly."),
+            Triple("Wikipedia", "Wilderness First Aid", "The practice of medicine in environments where definitive care is delayed. Priorities: scene safety, primary survey (ABCs), secondary survey. Evacuation decisions based on mechanism of injury and patient condition."),
+        )
     }
 
     fun selectFilter(filter: String) {

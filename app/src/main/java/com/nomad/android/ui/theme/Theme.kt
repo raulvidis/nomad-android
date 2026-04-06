@@ -36,7 +36,7 @@ fun NomadTheme(
         "crt_amber" -> AmberThemeColors
         "crt_blue" -> BlueThemeColors
         else -> GreenThemeColors
-}
+    }
     val colorScheme = createColorScheme(themeColors)
 
     CompositionLocalProvider(LocalNomadColors provides themeColors) {
