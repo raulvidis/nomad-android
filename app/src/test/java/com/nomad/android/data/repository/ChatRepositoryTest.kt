@@ -184,4 +184,12 @@ class FakeChatMessageDao(
         if (shouldFail) throw RuntimeException("DB error")
         return sessions.find { it.id == sessionId }
     }
+
+    override suspend fun deleteAllMessages() {
+        if (shouldFail) throw RuntimeException("DB error")
+    }
+
+    override suspend fun deleteAllSessions() {
+        if (shouldFail) throw RuntimeException("DB error")
+    }
 }
