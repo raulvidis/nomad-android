@@ -2,12 +2,14 @@ package com.nomad.android.ui.maps
 
 import android.app.Application
 import android.content.pm.PackageManager
+import android.graphics.BitmapFactory
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.nomad.android.data.Result
-import com.nomad.android.data.local.entity.LocationSavedPointEntity
-import com.nomad.android.data.local.entity.LocationSnapshotEntity
+import com.nomad.android.data.maps.DownloadProgress
+import com.nomad.android.data.maps.OfflineRegion
+import com.nomad.android.data.maps.OfflineTileManager
+import com.nomad.android.data.maps.TileCalculator
 import com.nomad.android.data.repository.LocationRepository
 import com.nomad.android.data.repository.MapsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -15,24 +17,30 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import org.maplibre.android.geometry.LatLngBounds
 import javax.inject.Inject
 
 data class MapsData(
-    val layers: List<MapsRepository.MapLayer> = emptyList(),
-    val hasOfflineTiles: Boolean = false,
     val isMapInitialized: Boolean = false,
-    val regionName: String? = null,
     val currentLocationText: String = "NO FIX",
     val currentLatitude: Double? = null,
     val currentLongitude: Double? = null,
     val isTracking: Boolean = false,
-    val trackingSnapshots: List<LocationSnapshotEntity> = emptyList(),
-    val savedPoints: List<LocationSavedPointEntity> = emptyList(),
+    val savedPoints: List<com.nomad.android.data.local.entity.LocationSavedPointEntity> = emptyList(),
     val snapshotCount: Int = 0,
-    val hasLocationPermission: Boolean = false
+    val hasLocationPermission: Boolean = false,
+    val downloadedRegions: List<OfflineRegion> = emptyList(),
+    val isDownloading: Boolean = false,
+    val downloadProgress: DownloadProgress? = null,
+    val isSelectingRegion: Boolean = false,
+    val selectedMinZoom: Int = 12,
+    val selectedMaxZoom: Int = 15,
+    val isAutoCenter: Boolean = true,
+    val showSavedPanel: Boolean = false,
+    val showRegionList: Boolean = false,
+    val regionName: String? = null
 )
 
 data class MapsUiState(
@@ -45,6 +53,7 @@ data class MapsUiState(
 class MapsViewModel @Inject constructor(
     private val mapsRepository: MapsRepository,
     private val locationRepository: LocationRepository,
+    private val offlineTileManager: OfflineTileManager,
     application: Application
 ) : ViewModel() {
 
@@ -63,7 +72,6 @@ class MapsViewModel @Inject constructor(
             _uiState.update { it.copy(data = it.data.copy(hasLocationPermission = true)) }
             locationRepository.requestCurrentLocation()
         }
-
         loadMapData()
         observeLocation()
     }
@@ -75,11 +83,10 @@ class MapsViewModel @Inject constructor(
                 locationRepository.isTracking,
                 locationRepository.savedPoints,
                 locationRepository.recentSnapshots
-            ) { location, isTracking, savedPoints, snapshots ->
+            ) { location, isTracking, savedPoints, _ ->
                 val locText = location?.let {
                     "%.6f, %.6f".format(it.latitude, it.longitude)
                 } ?: "NO FIX"
-
                 _uiState.update { state ->
                     state.copy(
                         data = state.data.copy(
@@ -88,8 +95,6 @@ class MapsViewModel @Inject constructor(
                             currentLongitude = location?.longitude,
                             isTracking = isTracking,
                             savedPoints = savedPoints,
-                            trackingSnapshots = snapshots.takeLast(50),
-                            snapshotCount = snapshots.size
                         )
                     )
                 }
@@ -99,52 +104,30 @@ class MapsViewModel @Inject constructor(
 
     fun loadMapData() {
         _uiState.update { it.copy(isLoading = true, error = null) }
-
         viewModelScope.launch {
-            val result = mapsRepository.getAvailableLayers().first()
-            when (result) {
-                is Result.Success -> {
-                    _uiState.update {
-                        it.copy(
-                            isLoading = false,
-                            data = it.data.copy(
-                                layers = result.data,
-                                hasOfflineTiles = mapsRepository.hasOfflineTiles(),
-                                isMapInitialized = true,
-                                regionName = mapsRepository.getDownloadedRegionName()
-                            )
-                        )
-                    }
-                }
-                is Result.Error -> {
-                    _uiState.update {
-                        it.copy(isLoading = false, error = result.message)
-                    }
-                }
+            val regions = offlineTileManager.getDownloadedRegions()
+            val regionName = mapsRepository.getDownloadedRegionName()
+            _uiState.update {
+                it.copy(
+                    isLoading = false,
+                    data = it.data.copy(
+                        isMapInitialized = true,
+                        downloadedRegions = regions,
+                        regionName = regionName
+                    )
+                )
             }
         }
-    }
-
-    fun toggleLayer(layerId: String) {
-        val currentLayers = _uiState.value.data.layers
-        val updatedLayers = currentLayers.map { layer ->
-            if (layer.id == layerId) layer.copy(isEnabled = !layer.isEnabled) else layer
-        }
-        _uiState.update { it.copy(data = it.data.copy(layers = updatedLayers)) }
     }
 
     fun setLocationPermissionGranted(granted: Boolean) {
         _locationPermissionGranted.value = granted
         _uiState.update { it.copy(data = it.data.copy(hasLocationPermission = granted)) }
-        if (granted) {
-            locationRepository.requestCurrentLocation()
-        }
+        if (granted) locationRepository.requestCurrentLocation()
     }
 
     fun startTracking() {
-        if (_locationPermissionGranted.value) {
-            locationRepository.startTracking()
-        }
+        if (_locationPermissionGranted.value) locationRepository.startTracking()
     }
 
     fun stopTracking() {
@@ -152,20 +135,89 @@ class MapsViewModel @Inject constructor(
     }
 
     fun saveLocation(name: String, notes: String) {
-        viewModelScope.launch {
-            locationRepository.saveCurrentLocation(name, notes)
-        }
+        viewModelScope.launch { locationRepository.saveCurrentLocation(name, notes) }
     }
 
     fun deleteSavedPoint(id: String) {
-        viewModelScope.launch {
-            locationRepository.deleteSavedPoint(id)
-        }
+        viewModelScope.launch { locationRepository.deleteSavedPoint(id) }
     }
 
     fun requestCurrentLocation() {
-        if (_locationPermissionGranted.value) {
-            locationRepository.requestCurrentLocation()
+        if (_locationPermissionGranted.value) locationRepository.requestCurrentLocation()
+    }
+
+    fun toggleAutoCenter() {
+        _uiState.update { it.copy(data = it.data.copy(isAutoCenter = !it.data.isAutoCenter)) }
+    }
+
+    fun toggleSavedPanel() {
+        _uiState.update { it.copy(data = it.data.copy(showSavedPanel = !it.data.showSavedPanel)) }
+    }
+
+    fun toggleRegionList() {
+        _uiState.update { it.copy(data = it.data.copy(showRegionList = !it.data.showRegionList)) }
+    }
+
+    fun startRegionSelection() {
+        _uiState.update { it.copy(data = it.data.copy(isSelectingRegion = true)) }
+    }
+
+    fun cancelRegionSelection() {
+        _uiState.update { it.copy(data = it.data.copy(isSelectingRegion = false)) }
+    }
+
+    fun setZoomRange(min: Int, max: Int) {
+        _uiState.update { it.copy(data = it.data.copy(selectedMinZoom = min, selectedMaxZoom = max)) }
+    }
+
+    fun startDownload(regionName: String, bounds: LatLngBounds) {
+        val minZoom = _uiState.value.data.selectedMinZoom
+        val maxZoom = _uiState.value.data.selectedMaxZoom
+
+        val tiles = TileCalculator.getTilesForBounds(
+            bounds.latNorth, bounds.latSouth, bounds.lonEast, bounds.lonWest,
+            minZoom, maxZoom
+        )
+        val estimatedSize = TileCalculator.estimateSizeBytes(tiles.size)
+
+        val id = offlineTileManager.createRegion(
+            regionName.ifBlank { "Region" },
+            bounds.latNorth, bounds.latSouth, bounds.lonEast, bounds.lonWest,
+            minZoom, maxZoom
+        )
+
+        _uiState.update {
+            it.copy(data = it.data.copy(isDownloading = true, isSelectingRegion = false))
+        }
+
+        viewModelScope.launch {
+            offlineTileManager.downloadRegion(
+                id, bounds.latNorth, bounds.latSouth, bounds.lonEast, bounds.lonWest,
+                minZoom, maxZoom
+            ).collect { progress ->
+                _uiState.update {
+                    it.copy(data = it.data.copy(downloadProgress = progress))
+                }
+            }
+            val regions = offlineTileManager.getDownloadedRegions()
+            _uiState.update {
+                it.copy(
+                    data = it.data.copy(
+                        isDownloading = false,
+                        downloadProgress = null,
+                        downloadedRegions = regions
+                    )
+                )
+            }
+        }
+    }
+
+    fun deleteRegion(regionId: String) {
+        offlineTileManager.deleteRegion(regionId)
+        _uiState.update {
+            it.copy(data = it.data.copy(
+                downloadedRegions = offlineTileManager.getDownloadedRegions()
+            ))
         }
     }
 }
