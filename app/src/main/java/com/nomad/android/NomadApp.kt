@@ -12,6 +12,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.nomad.android.ui.onboarding.OnboardingScreen
 import com.nomad.android.ui.onboarding.OnboardingViewModel
+import com.nomad.android.ui.settings.SettingsViewModel
 import com.nomad.android.ui.theme.CrtScreen
 import com.nomad.android.ui.theme.NomadTheme
 import com.nomad.android.ui.theme.TerminalStatusBar
@@ -21,6 +22,9 @@ import com.nomad.android.ui.navigation.NomadNavHost
 @Composable
 fun NomadApp() {
     val onboardingViewModel: OnboardingViewModel = hiltViewModel()
+    val settingsViewModel: SettingsViewModel = hiltViewModel()
+    val settingsState by settingsViewModel.uiState.collectAsStateWithLifecycle()
+    val currentTheme = settingsState.data.currentTheme
     val isOnboardingComplete by onboardingViewModel.isOnboardingComplete.collectAsStateWithLifecycle(initialValue = false)
     val onboardingState by onboardingViewModel.uiState.collectAsStateWithLifecycle()
     val showOnboarding = !isOnboardingComplete && !onboardingState.data.isComplete
@@ -28,7 +32,7 @@ fun NomadApp() {
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route ?: "dashboard"
 
-    NomadTheme {
+    NomadTheme(themeId = currentTheme) {
         CrtScreen {
             if (showOnboarding) {
                 OnboardingScreen(viewModel = onboardingViewModel)
@@ -50,6 +54,10 @@ fun NomadApp() {
                     NomadNavHost(navController = navController, modifier = Modifier.weight(1f))
                     TerminalBottomNav(navController = navController, currentRoute = currentRoute)
                 }
+            }
+        }
+    }
+}
             }
         }
     }

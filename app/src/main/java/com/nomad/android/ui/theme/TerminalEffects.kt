@@ -52,17 +52,25 @@ import androidx.compose.animation.core.*
 import com.nomad.android.R
 
 fun Modifier.scanlineOverlay(): Modifier = this.then(
-    Modifier.drawBehind {
-        val lineSpacing = 4.dp.toPx()
-        var y = 0f
-        while (y < size.height) {
-            drawLine(
-                color = TerminalGreen.copy(alpha = 0.03f),
-                start = Offset(0f, y),
-                end = Offset(size.width, y),
-                strokeWidth = 1.dp.toPx(),
-            )
-            y += lineSpacing
+    Modifier.composed {
+        val color = LocalNomadColors.current.primary
+        Modifier.drawBehind {
+            val lineSpacing = 4.dp.toPx()
+            var y = 0f
+            while (y < size.height) {
+                drawLine(
+                    color = color.copy(alpha = 0.03f),
+                    start = Offset(0f, y),
+                    end = Offset(size.width, y),
+                    strokeWidth = 1.dp.toPx(),
+                )
+                y += lineSpacing
+            }
+        }
+    }
+)
+                y += lineSpacing
+            }
         }
     }
 )
@@ -88,15 +96,17 @@ fun CrtScreen(
     modifier: Modifier = Modifier,
     content: @Composable () -> Unit,
 ) {
+    val colors = LocalNomadColors.current
     Box(
         modifier = modifier
             .fillMaxSize()
-            .background(TerminalBg.copy(alpha = 0.98f))
+            .background(colors.background.copy(alpha = 0.98f))
             .scanlineOverlay()
             .crtFlicker(),
     ) {
         content()
     }
+}
 }
 
 @Composable
@@ -105,6 +115,7 @@ fun TerminalStatusBar(
     isAiOnline: Boolean = true,
     storagePercent: Int = 67,
 ) {
+    val colors = LocalNomadColors.current
     val dateFormat = remember { SimpleDateFormat("MM.dd.yyyy HH:mm", Locale.US) }
     var currentTime by remember { mutableStateOf(dateFormat.format(Date())) }
     LaunchedEffect(Unit) {
@@ -112,6 +123,182 @@ fun TerminalStatusBar(
             kotlinx.coroutines.delay(60_000L)
             currentTime = dateFormat.format(Date())
         }
+    }
+
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .background(colors.surface)
+            .border(width = 1.dp, color = colors.primaryDim)
+            .padding(horizontal = 12.dp, vertical = 8.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = "NOMAD",
+            color = colors.primary,
+            fontFamily = androidx.compose.ui.text.font.FontFamily(
+                androidx.compose.ui.text.font.Font(
+                    R.font.jetbrains_mono_bold,
+                    FontWeight.Bold,
+                ),
+            ),
+            fontSize = 13.sp,
+            letterSpacing = 3.sp,
+        )
+
+        Text(
+            text = currentTime,
+            color = colors.primary.copy(alpha = 0.8f),
+            fontFamily = androidx.compose.ui.text.font.FontFamily(
+                androidx.compose.ui.text.font.Font(
+                    R.font.jetbrains_mono_regular,
+                    FontWeight.Normal,
+                ),
+            ),
+            fontSize = 12.sp,
+        )
+
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(6.dp)
+                        .background(
+                            if (isAiOnline) colors.primary else colors.danger,
+                        ),
+                )
+                Text(
+                    text = if (isAiOnline) "ONLINE" else "OFFLINE",
+                    color = if (isAiOnline) colors.primary else colors.danger,
+                    fontFamily = androidx.compose.ui.text.font.FontFamily(
+                        androidx.compose.ui.text.font.Font(
+                            R.font.jetbrains_mono_regular,
+                            FontWeight.Normal,
+                        ),
+                    ),
+                    fontSize = 10.sp,
+                )
+            }
+
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(6.dp)
+                        .background(colors.secondary),
+                )
+                Text(
+                    text = "$storagePercent%",
+                    color = colors.secondary,
+                    fontFamily = androidx.compose.ui.text.font.FontFamily(
+                        androidx.compose.ui.text.font.Font(
+                            R.font.jetbrains_mono_regular,
+                            FontWeight.Normal,
+                        ),
+                    ),
+                    fontSize = 10.sp,
+                )
+            }
+        }
+    }
+}
+    }
+
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .background(colors.surface)
+            .border(width = 1.dp, color = colors.primaryDim)
+            .padding(horizontal = 12.dp, vertical = 8.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = "NOMAD",
+            color = colors.primary,
+            fontFamily = androidx.compose.ui.text.font.FontFamily(
+                androidx.compose.ui.text.font.Font(
+                    R.font.jetbrains_mono_bold,
+                    FontWeight.Bold,
+                ),
+            ),
+            fontSize = 13.sp,
+            letterSpacing = 3.sp,
+        )
+
+        Text(
+            text = currentTime,
+            color = colors.primary.copy(alpha = 0.8f),
+            fontFamily = androidx.compose.ui.text.font.FontFamily(
+                androidx.compose.ui.text.font.Font(
+                    R.font.jetbrains_mono_regular,
+                    FontWeight.Normal,
+                ),
+            ),
+            fontSize = 12.sp,
+        )
+
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(6.dp)
+                        .background(
+                            if (isAiOnline) colors.primary else colors.danger,
+                        ),
+                )
+                Text(
+                    text = if (isAiOnline) "ONLINE" else "OFFLINE",
+                    color = if (isAiOnline) colors.primary else colors.danger,
+                    fontFamily = androidx.compose.ui.text.font.FontFamily(
+                        androidx.compose.ui.text.font.Font(
+                            R.font.jetbrains_mono_regular,
+                            FontWeight.Normal,
+                        ),
+                    ),
+                    fontSize = 10.sp,
+                )
+            }
+
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(6.dp)
+                        .background(colors.secondary),
+                )
+                Text(
+                    text = "$storagePercent%",
+                    color = colors.secondary,
+                    fontFamily = androidx.compose.ui.text.font.FontFamily(
+                        androidx.compose.ui.text.font.Font(
+                            R.font.jetbrains_mono_regular,
+                            FontWeight.Normal,
+                        ),
+                    ),
+                    fontSize = 10.sp,
+                )
+            }
+        }
+    }
+}
     }
 
     Row(
@@ -223,11 +410,12 @@ fun TerminalBottomNav(
     currentRoute: String,
     modifier: Modifier = Modifier,
 ) {
+    val colors = LocalNomadColors.current
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .background(TerminalSurface)
-            .border(width = 1.dp, color = TerminalGreenDim, shape = RoundedCornerShape(topStart = 8.dp, topEnd = 8.dp)),
+            .background(colors.surface)
+            .border(width = 1.dp, color = colors.primaryDim, shape = RoundedCornerShape(topStart = 8.dp, topEnd = 8.dp)),
         horizontalArrangement = Arrangement.SpaceEvenly,
     ) {
         TerminalTabs.forEach { tab ->
@@ -242,7 +430,7 @@ fun TerminalBottomNav(
                         if (selected) {
                             Modifier.border(
                                 width = 2.dp,
-                                color = TerminalGreen,
+                                color = colors.primary,
                                 shape = RoundedCornerShape(4.dp),
                             )
                         } else {
@@ -270,7 +458,7 @@ fun TerminalBottomNav(
                     Icon(
                         imageVector = if (selected) tab.selectedIcon else tab.unselectedIcon,
                         contentDescription = tab.label,
-                        tint = if (selected) TerminalGreen else TerminalGreenDim,
+                        tint = if (selected) colors.primary else colors.primaryDim,
                         modifier = Modifier.size(24.dp),
                     )
                     if (selected) {
@@ -284,7 +472,7 @@ fun TerminalBottomNav(
                                 ),
                             ),
                             fontSize = 10.sp,
-                            color = TerminalGreen,
+                            color = colors.primary,
                         )
                     }
                 }
