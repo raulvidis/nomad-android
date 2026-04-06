@@ -69,11 +69,6 @@ fun Modifier.scanlineOverlay(): Modifier = this.then(
         }
     }
 )
-                y += lineSpacing
-            }
-        }
-    }
-)
 
 fun Modifier.crtFlicker(): Modifier = this.then(
     Modifier.composed {
@@ -106,7 +101,6 @@ fun CrtScreen(
     ) {
         content()
     }
-}
 }
 
 @Composable
@@ -199,182 +193,6 @@ fun TerminalStatusBar(
                 Text(
                     text = "$storagePercent%",
                     color = colors.secondary,
-                    fontFamily = androidx.compose.ui.text.font.FontFamily(
-                        androidx.compose.ui.text.font.Font(
-                            R.font.jetbrains_mono_regular,
-                            FontWeight.Normal,
-                        ),
-                    ),
-                    fontSize = 10.sp,
-                )
-            }
-        }
-    }
-}
-    }
-
-    Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .background(colors.surface)
-            .border(width = 1.dp, color = colors.primaryDim)
-            .padding(horizontal = 12.dp, vertical = 8.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Text(
-            text = "NOMAD",
-            color = colors.primary,
-            fontFamily = androidx.compose.ui.text.font.FontFamily(
-                androidx.compose.ui.text.font.Font(
-                    R.font.jetbrains_mono_bold,
-                    FontWeight.Bold,
-                ),
-            ),
-            fontSize = 13.sp,
-            letterSpacing = 3.sp,
-        )
-
-        Text(
-            text = currentTime,
-            color = colors.primary.copy(alpha = 0.8f),
-            fontFamily = androidx.compose.ui.text.font.FontFamily(
-                androidx.compose.ui.text.font.Font(
-                    R.font.jetbrains_mono_regular,
-                    FontWeight.Normal,
-                ),
-            ),
-            fontSize = 12.sp,
-        )
-
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(4.dp),
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(6.dp)
-                        .background(
-                            if (isAiOnline) colors.primary else colors.danger,
-                        ),
-                )
-                Text(
-                    text = if (isAiOnline) "ONLINE" else "OFFLINE",
-                    color = if (isAiOnline) colors.primary else colors.danger,
-                    fontFamily = androidx.compose.ui.text.font.FontFamily(
-                        androidx.compose.ui.text.font.Font(
-                            R.font.jetbrains_mono_regular,
-                            FontWeight.Normal,
-                        ),
-                    ),
-                    fontSize = 10.sp,
-                )
-            }
-
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(4.dp),
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(6.dp)
-                        .background(colors.secondary),
-                )
-                Text(
-                    text = "$storagePercent%",
-                    color = colors.secondary,
-                    fontFamily = androidx.compose.ui.text.font.FontFamily(
-                        androidx.compose.ui.text.font.Font(
-                            R.font.jetbrains_mono_regular,
-                            FontWeight.Normal,
-                        ),
-                    ),
-                    fontSize = 10.sp,
-                )
-            }
-        }
-    }
-}
-    }
-
-    Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .background(TerminalSurface)
-            .border(width = 1.dp, color = TerminalGreenDim)
-            .padding(horizontal = 12.dp, vertical = 8.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Text(
-            text = "NOMAD",
-            color = TerminalGreen,
-            fontFamily = androidx.compose.ui.text.font.FontFamily(
-                androidx.compose.ui.text.font.Font(
-                    R.font.jetbrains_mono_bold,
-                    FontWeight.Bold,
-                ),
-            ),
-            fontSize = 13.sp,
-            letterSpacing = 3.sp,
-        )
-
-        Text(
-            text = currentTime,
-            color = TerminalGreen.copy(alpha = 0.8f),
-            fontFamily = androidx.compose.ui.text.font.FontFamily(
-                androidx.compose.ui.text.font.Font(
-                    R.font.jetbrains_mono_regular,
-                    FontWeight.Normal,
-                ),
-            ),
-            fontSize = 12.sp,
-        )
-
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(4.dp),
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(6.dp)
-                        .background(
-                            if (isAiOnline) TerminalGreen else TerminalDanger,
-                        ),
-                )
-                Text(
-                    text = if (isAiOnline) "ONLINE" else "OFFLINE",
-                    color = if (isAiOnline) TerminalGreen else TerminalDanger,
-                    fontFamily = androidx.compose.ui.text.font.FontFamily(
-                        androidx.compose.ui.text.font.Font(
-                            R.font.jetbrains_mono_regular,
-                            FontWeight.Normal,
-                        ),
-                    ),
-                    fontSize = 10.sp,
-                )
-            }
-
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(4.dp),
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(6.dp)
-                        .background(TerminalAmber),
-                )
-                Text(
-                    text = "$storagePercent%",
-                    color = TerminalAmber,
                     fontFamily = androidx.compose.ui.text.font.FontFamily(
                         androidx.compose.ui.text.font.Font(
                             R.font.jetbrains_mono_regular,
