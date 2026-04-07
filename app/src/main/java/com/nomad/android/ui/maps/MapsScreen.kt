@@ -54,12 +54,12 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.nomad.android.R
 import com.nomad.android.data.local.entity.LocationSavedPointEntity
 import com.nomad.android.data.maps.OfflineRegion
-import com.nomad.android.ui.theme.TerminalAmber
-import com.nomad.android.ui.theme.TerminalBg
+import com.nomad.android.ui.theme.TertiaryAmber
+import com.nomad.android.ui.theme.BackgroundDark
 import com.nomad.android.ui.theme.TerminalDanger
-import com.nomad.android.ui.theme.TerminalGreen
-import com.nomad.android.ui.theme.TerminalGreenDim
-import com.nomad.android.ui.theme.TerminalSurface
+import com.nomad.android.ui.theme.PhosphorGreen
+import com.nomad.android.ui.theme.PhosphorGreenDim
+import com.nomad.android.ui.theme.SurfaceContainerLow
 import org.maplibre.android.MapLibre
 import org.maplibre.android.camera.CameraPosition
 import org.maplibre.android.camera.CameraUpdateFactory
@@ -237,17 +237,17 @@ private fun CoordinatesOverlay(data: MapsData) {
     ) {
         Row(
             modifier = Modifier
-                .background(TerminalBg.copy(alpha = 0.85f), RoundedCornerShape(6.dp))
-                .border(1.dp, TerminalGreenDim, RoundedCornerShape(6.dp))
+                .background(BackgroundDark.copy(alpha = 0.85f), RoundedCornerShape(0.dp))
+                .border(2.dp, PhosphorGreenDim, RoundedCornerShape(0.dp))
                 .padding(horizontal = 10.dp, vertical = 6.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
                 text = data.currentLocationText,
-                color = if (data.currentLocationText == "NO FIX") TerminalGreenDim else TerminalGreen,
+                color = if (data.currentLocationText == "NO FIX") PhosphorGreenDim else PhosphorGreen,
                 fontFamily = androidx.compose.ui.text.font.FontFamily(
-                    androidx.compose.ui.text.font.Font(R.font.jetbrains_mono_medium, FontWeight.Medium),
+                    androidx.compose.ui.text.font.Font(R.font.space_grotesk_semi_bold, FontWeight.Medium),
                 ),
                 fontSize = 13.sp,
                 maxLines = 1,
@@ -259,7 +259,7 @@ private fun CoordinatesOverlay(data: MapsData) {
                 Box(
                     modifier = Modifier
                         .size(8.dp)
-                        .background(TerminalGreen, CircleShape)
+                        .background(PhosphorGreen, CircleShape)
                 )
                 Spacer(modifier = Modifier.width(4.dp))
             }
@@ -284,8 +284,8 @@ private fun MapControlsOverlay(
         Column(
             modifier = Modifier
                 .align(Alignment.BottomEnd)
-                .background(TerminalBg.copy(alpha = 0.7f), RoundedCornerShape(8.dp))
-                .border(1.dp, TerminalGreenDim, RoundedCornerShape(8.dp))
+                .background(BackgroundDark.copy(alpha = 0.7f), RoundedCornerShape(0.dp))
+                .border(2.dp, PhosphorGreenDim, RoundedCornerShape(0.dp))
                 .padding(4.dp),
             verticalArrangement = Arrangement.spacedBy(2.dp),
         ) {
@@ -294,7 +294,7 @@ private fun MapControlsOverlay(
                     Icon(
                         if (data.isAutoCenter) Icons.Filled.GpsFixed else Icons.Filled.GpsOff,
                         contentDescription = "Auto Center",
-                        tint = if (data.isAutoCenter) TerminalGreen else TerminalGreenDim,
+                        tint = if (data.isAutoCenter) PhosphorGreen else PhosphorGreenDim,
                         modifier = Modifier.size(20.dp),
                     )
                 },
@@ -305,7 +305,7 @@ private fun MapControlsOverlay(
                     Icon(
                         Icons.Filled.MyLocation,
                         contentDescription = "Permission",
-                        tint = TerminalAmber,
+                        tint = TertiaryAmber,
                         modifier = Modifier.size(20.dp),
                     )
                 },
@@ -317,8 +317,8 @@ private fun MapControlsOverlay(
             modifier = Modifier
                 .align(Alignment.BottomStart)
                 .padding(start = 12.dp)
-                .background(TerminalBg.copy(alpha = 0.7f), RoundedCornerShape(8.dp))
-                .border(1.dp, TerminalGreenDim, RoundedCornerShape(8.dp))
+                .background(BackgroundDark.copy(alpha = 0.7f), RoundedCornerShape(0.dp))
+                .border(2.dp, PhosphorGreenDim, RoundedCornerShape(0.dp))
                 .padding(4.dp),
             verticalArrangement = Arrangement.spacedBy(2.dp),
         ) {
@@ -327,7 +327,7 @@ private fun MapControlsOverlay(
                     Icon(
                         Icons.Filled.Add,
                         contentDescription = "Download Region",
-                        tint = TerminalGreen,
+                        tint = PhosphorGreen,
                         modifier = Modifier.size(20.dp),
                     )
                 },
@@ -338,7 +338,7 @@ private fun MapControlsOverlay(
                     Icon(
                         Icons.Filled.Bookmark,
                         contentDescription = "Saved Points",
-                        tint = TerminalGreen,
+                        tint = PhosphorGreen,
                         modifier = Modifier.size(20.dp),
                     )
                 },
@@ -349,7 +349,7 @@ private fun MapControlsOverlay(
                     Icon(
                         Icons.Filled.Layers,
                         contentDescription = "Regions",
-                        tint = TerminalGreen,
+                        tint = PhosphorGreen,
                         modifier = Modifier.size(20.dp),
                     )
                 },
@@ -367,7 +367,7 @@ private fun MapControlButton(
     Box(
         modifier = Modifier
             .size(36.dp)
-            .clip(RoundedCornerShape(4.dp))
+            .clip(RoundedCornerShape(0.dp))
             .clickable(onClick = onClick)
             .padding(4.dp),
         contentAlignment = Alignment.Center,
@@ -386,8 +386,8 @@ private fun SavedPointsPanel(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 12.dp, vertical = 60.dp)
-            .background(TerminalBg.copy(alpha = 0.95f), RoundedCornerShape(8.dp))
-            .border(1.dp, TerminalGreenDim, RoundedCornerShape(8.dp))
+            .background(BackgroundDark.copy(alpha = 0.95f), RoundedCornerShape(0.dp))
+            .border(2.dp, PhosphorGreenDim, RoundedCornerShape(0.dp))
     ) {
         Column(modifier = Modifier.padding(12.dp)) {
             Row(
@@ -396,16 +396,16 @@ private fun SavedPointsPanel(
             ) {
                 Text(
                     text = "SAVED LOCATIONS (${points.size})",
-                    color = TerminalGreen,
+                    color = PhosphorGreen,
                     fontFamily = androidx.compose.ui.text.font.FontFamily(
-                        androidx.compose.ui.text.font.Font(R.font.jetbrains_mono_bold, FontWeight.Bold),
+                        androidx.compose.ui.text.font.Font(R.font.space_grotesk_bold, FontWeight.Bold),
                     ),
                     fontSize = 14.sp,
                 )
                 Icon(
                     Icons.Filled.Close,
                     contentDescription = "Close",
-                    tint = TerminalGreenDim,
+                    tint = PhosphorGreenDim,
                     modifier = Modifier
                         .size(20.dp)
                         .clickable(onClick = onClose),
@@ -415,9 +415,9 @@ private fun SavedPointsPanel(
             if (points.isEmpty()) {
                 Text(
                     text = "No saved locations",
-                    color = TerminalGreenDim,
+                    color = PhosphorGreenDim,
                     fontFamily = androidx.compose.ui.text.font.FontFamily(
-                        androidx.compose.ui.text.font.Font(R.font.jetbrains_mono_regular, FontWeight.Normal),
+                        androidx.compose.ui.text.font.Font(R.font.space_grotesk_regular, FontWeight.Normal),
                     ),
                     fontSize = 12.sp,
                 )
@@ -435,17 +435,17 @@ private fun SavedPointsPanel(
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(
                                     text = point.name.uppercase(),
-                                    color = TerminalGreen,
+                                    color = PhosphorGreen,
                                     fontFamily = androidx.compose.ui.text.font.FontFamily(
-                                        androidx.compose.ui.text.font.Font(R.font.jetbrains_mono_medium, FontWeight.Medium),
+                                        androidx.compose.ui.text.font.Font(R.font.space_grotesk_semi_bold, FontWeight.Medium),
                                     ),
                                     fontSize = 12.sp,
                                 )
                                 Text(
                                     text = "%.6f, %.6f".format(point.latitude, point.longitude),
-                                    color = TerminalGreenDim,
+                                    color = PhosphorGreenDim,
                                     fontFamily = androidx.compose.ui.text.font.FontFamily(
-                                        androidx.compose.ui.text.font.Font(R.font.jetbrains_mono_regular, FontWeight.Normal),
+                                        androidx.compose.ui.text.font.Font(R.font.space_grotesk_regular, FontWeight.Normal),
                                     ),
                                     fontSize = 10.sp,
                                 )
@@ -476,8 +476,8 @@ private fun RegionsPanel(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 12.dp, vertical = 60.dp)
-            .background(TerminalBg.copy(alpha = 0.95f), RoundedCornerShape(8.dp))
-            .border(1.dp, TerminalGreenDim, RoundedCornerShape(8.dp))
+            .background(BackgroundDark.copy(alpha = 0.95f), RoundedCornerShape(0.dp))
+            .border(2.dp, PhosphorGreenDim, RoundedCornerShape(0.dp))
     ) {
         Column(modifier = Modifier.padding(12.dp)) {
             Row(
@@ -486,16 +486,16 @@ private fun RegionsPanel(
             ) {
                 Text(
                     text = "OFFLINE REGIONS (${regions.size})",
-                    color = TerminalGreen,
+                    color = PhosphorGreen,
                     fontFamily = androidx.compose.ui.text.font.FontFamily(
-                        androidx.compose.ui.text.font.Font(R.font.jetbrains_mono_bold, FontWeight.Bold),
+                        androidx.compose.ui.text.font.Font(R.font.space_grotesk_bold, FontWeight.Bold),
                     ),
                     fontSize = 14.sp,
                 )
                 Icon(
                     Icons.Filled.Close,
                     contentDescription = "Close",
-                    tint = TerminalGreenDim,
+                    tint = PhosphorGreenDim,
                     modifier = Modifier
                         .size(20.dp)
                         .clickable(onClick = onClose),
@@ -505,9 +505,9 @@ private fun RegionsPanel(
             if (regions.isEmpty()) {
                 Text(
                     text = "No offline regions. Tap + to download.",
-                    color = TerminalGreenDim,
+                    color = PhosphorGreenDim,
                     fontFamily = androidx.compose.ui.text.font.FontFamily(
-                        androidx.compose.ui.text.font.Font(R.font.jetbrains_mono_regular, FontWeight.Normal),
+                        androidx.compose.ui.text.font.Font(R.font.space_grotesk_regular, FontWeight.Normal),
                     ),
                     fontSize = 12.sp,
                 )
@@ -525,17 +525,17 @@ private fun RegionsPanel(
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(
                                     text = region.name.uppercase(),
-                                    color = TerminalGreen,
+                                    color = PhosphorGreen,
                                     fontFamily = androidx.compose.ui.text.font.FontFamily(
-                                        androidx.compose.ui.text.font.Font(R.font.jetbrains_mono_medium, FontWeight.Medium),
+                                        androidx.compose.ui.text.font.Font(R.font.space_grotesk_semi_bold, FontWeight.Medium),
                                     ),
                                     fontSize = 12.sp,
                                 )
                                 Text(
                                     text = "Z${region.minZoom}-${region.maxZoom} | ${region.tileCount} tiles | ${"%.1f".format(region.sizeBytes / 1_048_576.0)}MB",
-                                    color = TerminalGreenDim,
+                                    color = PhosphorGreenDim,
                                     fontFamily = androidx.compose.ui.text.font.FontFamily(
-                                        androidx.compose.ui.text.font.Font(R.font.jetbrains_mono_regular, FontWeight.Normal),
+                                        androidx.compose.ui.text.font.Font(R.font.space_grotesk_regular, FontWeight.Normal),
                                     ),
                                     fontSize = 10.sp,
                                 )
@@ -567,32 +567,32 @@ private fun RegionSelectionOverlay(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(TerminalBg.copy(alpha = 0.7f)),
+            .background(BackgroundDark.copy(alpha = 0.7f)),
         contentAlignment = Alignment.Center,
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(24.dp)
-                .background(TerminalBg, RoundedCornerShape(8.dp))
-                .border(1.dp, TerminalGreen, RoundedCornerShape(8.dp))
+                .background(BackgroundDark, RoundedCornerShape(0.dp))
+                .border(2.dp, PhosphorGreen, RoundedCornerShape(0.dp))
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Text(
                 text = "DOWNLOAD OFFLINE MAP",
-                color = TerminalGreen,
+                color = PhosphorGreen,
                 fontFamily = androidx.compose.ui.text.font.FontFamily(
-                    androidx.compose.ui.text.font.Font(R.font.jetbrains_mono_bold, FontWeight.Bold),
+                    androidx.compose.ui.text.font.Font(R.font.space_grotesk_bold, FontWeight.Bold),
                 ),
                 fontSize = 16.sp,
             )
 
             Text(
                 text = "Navigate to the area you want to download, then set zoom levels.",
-                color = TerminalGreenDim,
+                color = PhosphorGreenDim,
                 fontFamily = androidx.compose.ui.text.font.FontFamily(
-                    androidx.compose.ui.text.font.Font(R.font.jetbrains_mono_regular, FontWeight.Normal),
+                    androidx.compose.ui.text.font.Font(R.font.space_grotesk_regular, FontWeight.Normal),
                 ),
                 fontSize = 11.sp,
             )
@@ -604,9 +604,9 @@ private fun RegionSelectionOverlay(
             ) {
                 Text(
                     text = "Min Zoom: $minZoom",
-                    color = TerminalGreen,
+                    color = PhosphorGreen,
                     fontFamily = androidx.compose.ui.text.font.FontFamily(
-                        androidx.compose.ui.text.font.Font(R.font.jetbrains_mono_regular, FontWeight.Normal),
+                        androidx.compose.ui.text.font.Font(R.font.space_grotesk_regular, FontWeight.Normal),
                     ),
                     fontSize = 13.sp,
                 )
@@ -616,12 +616,12 @@ private fun RegionSelectionOverlay(
                             modifier = Modifier
                                 .border(
                                     1.dp,
-                                    if (minZoom == z) TerminalGreen else TerminalGreenDim,
-                                    RoundedCornerShape(4.dp)
+                                    if (minZoom == z) PhosphorGreen else PhosphorGreenDim,
+                                    RoundedCornerShape(0.dp)
                                 )
                                 .background(
-                                    if (minZoom == z) TerminalGreen.copy(alpha = 0.15f) else TerminalSurface,
-                                    RoundedCornerShape(4.dp),
+                                    if (minZoom == z) PhosphorGreen.copy(alpha = 0.1f) else SurfaceContainerLow,
+                                    RoundedCornerShape(0.dp),
                                 )
                                 .clickable {
                                     minZoom = z
@@ -631,9 +631,9 @@ private fun RegionSelectionOverlay(
                         ) {
                             Text(
                                 text = "$z",
-                                color = if (minZoom == z) TerminalGreen else TerminalGreenDim,
+                                color = if (minZoom == z) PhosphorGreen else PhosphorGreenDim,
                                 fontFamily = androidx.compose.ui.text.font.FontFamily(
-                                    androidx.compose.ui.text.font.Font(R.font.jetbrains_mono_regular, FontWeight.Normal),
+                                    androidx.compose.ui.text.font.Font(R.font.space_grotesk_regular, FontWeight.Normal),
                                 ),
                                 fontSize = 11.sp,
                             )
@@ -649,9 +649,9 @@ private fun RegionSelectionOverlay(
             ) {
                 Text(
                     text = "Max Zoom: $maxZoom",
-                    color = TerminalGreen,
+                    color = PhosphorGreen,
                     fontFamily = androidx.compose.ui.text.font.FontFamily(
-                        androidx.compose.ui.text.font.Font(R.font.jetbrains_mono_regular, FontWeight.Normal),
+                        androidx.compose.ui.text.font.Font(R.font.space_grotesk_regular, FontWeight.Normal),
                     ),
                     fontSize = 13.sp,
                 )
@@ -661,12 +661,12 @@ private fun RegionSelectionOverlay(
                             modifier = Modifier
                                 .border(
                                     1.dp,
-                                    if (maxZoom == z) TerminalGreen else TerminalGreenDim,
-                                    RoundedCornerShape(4.dp)
+                                    if (maxZoom == z) PhosphorGreen else PhosphorGreenDim,
+                                    RoundedCornerShape(0.dp)
                                 )
                                 .background(
-                                    if (maxZoom == z) TerminalGreen.copy(alpha = 0.15f) else TerminalSurface,
-                                    RoundedCornerShape(4.dp),
+                                    if (maxZoom == z) PhosphorGreen.copy(alpha = 0.1f) else SurfaceContainerLow,
+                                    RoundedCornerShape(0.dp),
                                 )
                                 .clickable {
                                     maxZoom = z
@@ -676,9 +676,9 @@ private fun RegionSelectionOverlay(
                         ) {
                             Text(
                                 text = "$z",
-                                color = if (maxZoom == z) TerminalGreen else TerminalGreenDim,
+                                color = if (maxZoom == z) PhosphorGreen else PhosphorGreenDim,
                                 fontFamily = androidx.compose.ui.text.font.FontFamily(
-                                    androidx.compose.ui.text.font.Font(R.font.jetbrains_mono_regular, FontWeight.Normal),
+                                    androidx.compose.ui.text.font.Font(R.font.space_grotesk_regular, FontWeight.Normal),
                                 ),
                                 fontSize = 11.sp,
                             )
@@ -693,16 +693,16 @@ private fun RegionSelectionOverlay(
             ) {
                 Box(
                     modifier = Modifier
-                        .border(1.dp, TerminalGreenDim, RoundedCornerShape(4.dp))
-                        .background(TerminalSurface, RoundedCornerShape(4.dp))
+                        .border(2.dp, PhosphorGreenDim, RoundedCornerShape(0.dp))
+                        .background(SurfaceContainerLow, RoundedCornerShape(0.dp))
                         .clickable { viewModel.cancelRegionSelection() }
                         .padding(horizontal = 12.dp, vertical = 8.dp),
                 ) {
                     Text(
                         text = "CANCEL",
-                        color = TerminalGreenDim,
+                        color = PhosphorGreenDim,
                         fontFamily = androidx.compose.ui.text.font.FontFamily(
-                            androidx.compose.ui.text.font.Font(R.font.jetbrains_mono_medium, FontWeight.Medium),
+                            androidx.compose.ui.text.font.Font(R.font.space_grotesk_semi_bold, FontWeight.Medium),
                         ),
                         fontSize = 13.sp,
                     )
@@ -711,8 +711,8 @@ private fun RegionSelectionOverlay(
                 Box(
                     modifier = Modifier
                         .weight(1f)
-                        .border(1.dp, TerminalGreen, RoundedCornerShape(4.dp))
-                        .background(TerminalGreen.copy(alpha = 0.15f), RoundedCornerShape(4.dp))
+                        .border(2.dp, PhosphorGreen, RoundedCornerShape(0.dp))
+                        .background(PhosphorGreen.copy(alpha = 0.1f), RoundedCornerShape(0.dp))
                         .clickable {
                             viewModel.startDownload(
                                 regionName = "Region",
@@ -727,9 +727,9 @@ private fun RegionSelectionOverlay(
                 ) {
                     Text(
                         text = "USE CURRENT VIEW",
-                        color = TerminalGreen,
+                        color = PhosphorGreen,
                         fontFamily = androidx.compose.ui.text.font.FontFamily(
-                            androidx.compose.ui.text.font.Font(R.font.jetbrains_mono_bold, FontWeight.Bold),
+                            androidx.compose.ui.text.font.Font(R.font.space_grotesk_bold, FontWeight.Bold),
                         ),
                         fontSize = 13.sp,
                     )
@@ -746,24 +746,24 @@ private fun DownloadProgressOverlay(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(TerminalBg.copy(alpha = 0.7f)),
+            .background(BackgroundDark.copy(alpha = 0.7f)),
         contentAlignment = Alignment.Center,
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(24.dp)
-                .background(TerminalBg, RoundedCornerShape(8.dp))
-                .border(1.dp, TerminalAmber, RoundedCornerShape(8.dp))
+                .background(BackgroundDark, RoundedCornerShape(0.dp))
+                .border(2.dp, TertiaryAmber, RoundedCornerShape(0.dp))
                 .padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             Text(
                 text = "DOWNLOADING MAP TILES",
-                color = TerminalAmber,
+                color = TertiaryAmber,
                 fontFamily = androidx.compose.ui.text.font.FontFamily(
-                    androidx.compose.ui.text.font.Font(R.font.jetbrains_mono_bold, FontWeight.Bold),
+                    androidx.compose.ui.text.font.Font(R.font.space_grotesk_bold, FontWeight.Bold),
                 ),
                 fontSize = 14.sp,
             )
@@ -774,17 +774,17 @@ private fun DownloadProgressOverlay(
                 val bar = "[" + "\u2588".repeat(filledBlocks) + "\u2591".repeat(emptyBlocks) + "]"
                 Text(
                     text = bar,
-                    color = TerminalGreen,
+                    color = PhosphorGreen,
                     fontFamily = androidx.compose.ui.text.font.FontFamily(
-                        androidx.compose.ui.text.font.Font(R.font.jetbrains_mono_regular, FontWeight.Normal),
+                        androidx.compose.ui.text.font.Font(R.font.space_grotesk_regular, FontWeight.Normal),
                     ),
                     fontSize = 14.sp,
                 )
                 Text(
                     text = "$pct% | ${progress.downloaded} / ${progress.total} tiles",
-                    color = TerminalGreenDim,
+                    color = PhosphorGreenDim,
                     fontFamily = androidx.compose.ui.text.font.FontFamily(
-                        androidx.compose.ui.text.font.Font(R.font.jetbrains_mono_regular, FontWeight.Normal),
+                        androidx.compose.ui.text.font.Font(R.font.space_grotesk_regular, FontWeight.Normal),
                     ),
                     fontSize = 12.sp,
                 )
@@ -792,9 +792,9 @@ private fun DownloadProgressOverlay(
                 val totalMB = "%.1f".format(progress.estimatedTotalBytes / 1_048_576.0)
                 Text(
                     text = "$sizeMB / $totalMB MB",
-                    color = TerminalGreenDim,
+                    color = PhosphorGreenDim,
                     fontFamily = androidx.compose.ui.text.font.FontFamily(
-                        androidx.compose.ui.text.font.Font(R.font.jetbrains_mono_regular, FontWeight.Normal),
+                        androidx.compose.ui.text.font.Font(R.font.space_grotesk_regular, FontWeight.Normal),
                     ),
                     fontSize = 11.sp,
                 )

@@ -1,5 +1,10 @@
 package com.nomad.android.ui.theme
 
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -19,6 +24,7 @@ import androidx.compose.material.icons.filled.Chat
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Map
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Terminal
 import androidx.compose.material.icons.outlined.Book
 import androidx.compose.material.icons.outlined.Bookmark
 import androidx.compose.material.icons.outlined.Chat
@@ -35,21 +41,24 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.composed
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import androidx.navigation.NavGraph.Companion.findStartDestination
+import com.nomad.android.R
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
-import androidx.compose.animation.core.*
-import com.nomad.android.R
 
 fun Modifier.scanlineOverlay(): Modifier = this.then(
     Modifier.composed {
@@ -59,7 +68,7 @@ fun Modifier.scanlineOverlay(): Modifier = this.then(
             var y = 0f
             while (y < size.height) {
                 drawLine(
-                    color = color.copy(alpha = 0.03f),
+                    color = color.copy(alpha = 0.05f),
                     start = Offset(0f, y),
                     end = Offset(size.width, y),
                     strokeWidth = 1.dp.toPx(),
@@ -110,99 +119,65 @@ fun TerminalStatusBar(
     storagePercent: Int = 67,
 ) {
     val colors = LocalNomadColors.current
-    val dateFormat = remember { SimpleDateFormat("MM.dd.yyyy HH:mm", Locale.US) }
-    var currentTime by remember { mutableStateOf(dateFormat.format(Date())) }
+    val timeFormat = remember { SimpleDateFormat("HH:mm", Locale.US) }
+    var currentTime by remember { mutableStateOf(timeFormat.format(Date())) }
     LaunchedEffect(Unit) {
         while (true) {
             kotlinx.coroutines.delay(60_000L)
-            currentTime = dateFormat.format(Date())
+            currentTime = timeFormat.format(Date())
         }
     }
+
+    val statusText = "SYS_STATUS: ${if (isAiOnline) "ONLINE" else "OFFLINE"} | BAT: $storagePercent% | $currentTime"
 
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .background(colors.surface)
-            .border(width = 1.dp, color = colors.primaryDim)
+            .background(colors.background)
+            .drawBehind {
+                drawLine(
+                    color = colors.primary.copy(alpha = 0.2f),
+                    start = Offset(0f, size.height),
+                    end = Offset(size.width, size.height),
+                    strokeWidth = 2.dp.toPx(),
+                )
+            }
             .padding(horizontal = 12.dp, vertical = 8.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(
-            text = "NOMAD",
-            color = colors.primary,
-            fontFamily = androidx.compose.ui.text.font.FontFamily(
-                androidx.compose.ui.text.font.Font(
-                    R.font.jetbrains_mono_bold,
-                    FontWeight.Bold,
-                ),
-            ),
-            fontSize = 13.sp,
-            letterSpacing = 3.sp,
-        )
-
-        Text(
-            text = currentTime,
-            color = colors.primary.copy(alpha = 0.8f),
-            fontFamily = androidx.compose.ui.text.font.FontFamily(
-                androidx.compose.ui.text.font.Font(
-                    R.font.jetbrains_mono_regular,
-                    FontWeight.Normal,
-                ),
-            ),
-            fontSize = 12.sp,
-        )
-
         Row(
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
         ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(4.dp),
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(6.dp)
-                        .background(
-                            if (isAiOnline) colors.primary else colors.danger,
-                        ),
-                )
-                Text(
-                    text = if (isAiOnline) "ONLINE" else "OFFLINE",
-                    color = if (isAiOnline) colors.primary else colors.danger,
-                    fontFamily = androidx.compose.ui.text.font.FontFamily(
-                        androidx.compose.ui.text.font.Font(
-                            R.font.jetbrains_mono_regular,
-                            FontWeight.Normal,
-                        ),
+            Icon(
+                imageVector = Icons.Filled.Terminal,
+                contentDescription = null,
+                tint = colors.primary,
+                modifier = Modifier.size(16.dp),
+            )
+            Text(
+                text = statusText,
+                color = colors.primary,
+                style = TextStyle(
+                    fontFamily = FontFamily(Font(R.font.space_grotesk_bold, FontWeight.Bold)),
+                    fontSize = 13.sp,
+                    letterSpacing = 0.05.em,
+                    shadow = Shadow(
+                        color = colors.primary.copy(alpha = 0.5f),
+                        offset = Offset(0f, 0f),
+                        blurRadius = 4f,
                     ),
-                    fontSize = 10.sp,
-                )
-            }
-
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(4.dp),
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(6.dp)
-                        .background(colors.secondary),
-                )
-                Text(
-                    text = "$storagePercent%",
-                    color = colors.secondary,
-                    fontFamily = androidx.compose.ui.text.font.FontFamily(
-                        androidx.compose.ui.text.font.Font(
-                            R.font.jetbrains_mono_regular,
-                            FontWeight.Normal,
-                        ),
-                    ),
-                    fontSize = 10.sp,
-                )
-            }
+                ),
+            )
         }
+
+        Icon(
+            imageVector = Icons.Filled.Settings,
+            contentDescription = "Settings",
+            tint = colors.primary,
+            modifier = Modifier.size(20.dp),
+        )
     }
 }
 
@@ -232,8 +207,15 @@ fun TerminalBottomNav(
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .background(colors.surface)
-            .border(width = 1.dp, color = colors.primaryDim, shape = RoundedCornerShape(topStart = 8.dp, topEnd = 8.dp)),
+            .background(colors.background)
+            .drawBehind {
+                drawLine(
+                    color = colors.primary.copy(alpha = 0.3f),
+                    start = Offset(0f, 0f),
+                    end = Offset(size.width, 0f),
+                    strokeWidth = 2.dp.toPx(),
+                )
+            },
         horizontalArrangement = Arrangement.SpaceEvenly,
     ) {
         TerminalTabs.forEach { tab ->
@@ -243,14 +225,11 @@ fun TerminalBottomNav(
             Box(
                 modifier = Modifier
                     .weight(1f)
-                    .clip(RoundedCornerShape(4.dp))
                     .then(
                         if (selected) {
-                            Modifier.border(
-                                width = 2.dp,
-                                color = colors.primary,
-                                shape = RoundedCornerShape(4.dp),
-                            )
+                            Modifier
+                                .background(colors.primary, RoundedCornerShape(0.dp))
+                                .border(1.dp, colors.primary.copy(alpha = 0.4f), RoundedCornerShape(0.dp))
                         } else {
                             Modifier
                         },
@@ -276,23 +255,19 @@ fun TerminalBottomNav(
                     Icon(
                         imageVector = if (selected) tab.selectedIcon else tab.unselectedIcon,
                         contentDescription = tab.label,
-                        tint = if (selected) colors.primary else colors.primaryDim,
+                        tint = if (selected) colors.background else colors.primary.copy(alpha = 0.7f),
                         modifier = Modifier.size(24.dp),
                     )
-                    if (selected) {
-                        Text(
-                            text = tab.label.uppercase(),
-                            maxLines = 1,
-                            fontFamily = androidx.compose.ui.text.font.FontFamily(
-                                androidx.compose.ui.text.font.Font(
-                                    R.font.jetbrains_mono_medium,
-                                    FontWeight.Medium,
-                                ),
-                            ),
+                    Text(
+                        text = tab.label.uppercase(),
+                        maxLines = 1,
+                        style = TextStyle(
+                            fontFamily = FontFamily(Font(R.font.space_grotesk_semi_bold, FontWeight.SemiBold)),
                             fontSize = 10.sp,
-                            color = colors.primary,
-                        )
-                    }
+                            letterSpacing = 0.05.em,
+                        ),
+                        color = if (selected) colors.background else colors.primary.copy(alpha = 0.7f),
+                    )
                 }
             }
         }

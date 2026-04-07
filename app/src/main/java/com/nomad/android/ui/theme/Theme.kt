@@ -5,43 +5,43 @@ import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 
-private fun createColorScheme(colors: NomadThemeColors) = darkColorScheme(
-    primary = colors.primary,
-    onPrimary = colors.background,
-    primaryContainer = colors.primaryDim,
-    onPrimaryContainer = colors.primary,
-    secondary = colors.secondary,
-    onSecondary = colors.background,
-    secondaryContainer = colors.secondary.copy(alpha = 0.15f),
-    onSecondaryContainer = colors.secondary,
-    tertiary = colors.accent,
-    error = colors.danger,
-    onError = colors.background,
-    background = colors.background,
-    onBackground = colors.onBackground,
-    surface = colors.surface,
-    onSurface = colors.onSurface,
-    surfaceVariant = colors.surface.copy(alpha = 0.8f),
-    onSurfaceVariant = colors.onSurface.copy(alpha = 0.7f),
-    outline = colors.primaryDim,
-    outlineVariant = colors.primary.copy(alpha = 0.3f),
+private val StitchColorScheme = darkColorScheme(
+    primary = PhosphorGreen,
+    onPrimary = OnPrimary,
+    primaryContainer = PhosphorGreen,
+    onPrimaryContainer = OnPrimaryContainer,
+    secondary = SecondaryGreen,
+    onSecondary = OnSecondary,
+    secondaryContainer = SecondaryContainer,
+    onSecondaryContainer = SecondaryGreen,
+    tertiary = TertiaryAmber,
+    background = BackgroundDark,
+    onBackground = OnBackground,
+    surface = BackgroundDark,
+    onSurface = OnSurface,
+    surfaceVariant = SurfaceContainerHighest,
+    onSurfaceVariant = OnSurfaceVariant,
+    outline = OutlineColor,
+    outlineVariant = OutlineVariant,
+    error = TerminalDanger,
+    onError = TerminalOnError,
+    errorContainer = ErrorContainer,
+    onErrorContainer = OnErrorContainer,
+    surfaceDim = SurfaceDim,
+    surfaceBright = SurfaceBright,
+    surfaceContainerLowest = SurfaceContainerLowest,
+    surfaceContainerLow = SurfaceContainerLow,
+    surfaceContainerHigh = SurfaceContainerHigh,
+    surfaceContainerHighest = SurfaceContainerHighest,
 )
 
 @Composable
 fun NomadTheme(
-    themeId: String = "crt_green",
     content: @Composable () -> Unit
 ) {
-    val themeColors = when (themeId) {
-        "crt_amber" -> AmberThemeColors
-        "crt_blue" -> BlueThemeColors
-        else -> GreenThemeColors
-    }
-    val colorScheme = createColorScheme(themeColors)
-
-    CompositionLocalProvider(LocalNomadColors provides themeColors) {
+    CompositionLocalProvider(LocalNomadColors provides NomadColors()) {
         MaterialTheme(
-            colorScheme = colorScheme,
+            colorScheme = StitchColorScheme,
             typography = NomadTypography,
             content = content,
         )

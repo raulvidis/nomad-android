@@ -35,9 +35,9 @@ import com.nomad.android.ui.components.TerminalSectionHeader
 import com.nomad.android.ui.components.TerminalStatusIndicator
 import com.nomad.android.ui.components.TerminalText
 import com.nomad.android.ui.navigation.Routes
-import com.nomad.android.ui.theme.TerminalBg
-import com.nomad.android.ui.theme.TerminalGreen
-import com.nomad.android.ui.theme.TerminalGreenDim
+import com.nomad.android.ui.theme.BackgroundDark
+import com.nomad.android.ui.theme.PhosphorGreen
+import com.nomad.android.ui.theme.PhosphorGreenDim
 
 private data class QuickAccessItem(
     val title: String,
@@ -82,18 +82,18 @@ private fun DashboardContent(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(TerminalBg)
+            .background(BackgroundDark)
             .verticalScroll(rememberScrollState())
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         TerminalText(
             text = "NOMAD SURVIVAL SYSTEM",
-            color = TerminalGreen,
+            color = PhosphorGreen,
             style = androidx.compose.ui.text.TextStyle(
                 fontSize = 20.sp,
                 fontFamily = androidx.compose.ui.text.font.FontFamily(
-                    androidx.compose.ui.text.font.Font(R.font.jetbrains_mono_bold, FontWeight.Bold),
+                    androidx.compose.ui.text.font.Font(R.font.space_grotesk_bold, FontWeight.Bold),
                 ),
             ),
         )
@@ -157,7 +157,7 @@ private fun DashboardContent(
                 TerminalProgressBar(progress = data.storageMetrics?.usedPercent?.div(100f) ?: 0f)
                 TerminalText(
                     text = "${data.storageMetrics?.usedBytes?.div(1_000_000_000) ?: 0} GB / ${data.storageMetrics?.totalBytes?.div(1_000_000_000) ?: 0} used",
-                    color = TerminalGreenDim,
+                    color = PhosphorGreenDim,
                     style = androidx.compose.ui.text.TextStyle(fontSize = 12.sp),
                 )
             }
@@ -179,14 +179,14 @@ private fun DashboardContent(
             ) {
                 TerminalText(
                     text = "System Settings",
-                    color = TerminalGreen,
+                    color = PhosphorGreen,
                     style = androidx.compose.ui.text.TextStyle(fontSize = 14.sp),
                 )
                 Text(
                     text = ">",
-                    color = TerminalGreen,
+                    color = PhosphorGreen,
                     fontFamily = androidx.compose.ui.text.font.FontFamily(
-                        androidx.compose.ui.text.font.Font(R.font.jetbrains_mono_regular, FontWeight.Normal),
+                        androidx.compose.ui.text.font.Font(R.font.space_grotesk_regular, FontWeight.Normal),
                     ),
                     fontSize = 18.sp,
                 )
@@ -202,9 +202,9 @@ private fun StatusRow(label: String, value: String, isOnline: Boolean) {
         Spacer(modifier = Modifier.weight(1f))
         Text(
             text = value,
-            color = TerminalGreen,
+            color = PhosphorGreen,
             fontFamily = androidx.compose.ui.text.font.FontFamily(
-                androidx.compose.ui.text.font.Font(R.font.jetbrains_mono_regular, FontWeight.Normal),
+                androidx.compose.ui.text.font.Font(R.font.space_grotesk_regular, FontWeight.Normal),
             ),
             fontSize = 12.sp,
         )
@@ -227,17 +227,17 @@ private fun QuickAccessCard(
         Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Text(
                 text = item.title,
-                color = TerminalGreen,
+                color = PhosphorGreen,
                 fontFamily = androidx.compose.ui.text.font.FontFamily(
-                    androidx.compose.ui.text.font.Font(R.font.jetbrains_mono_medium, FontWeight.Medium),
+                    androidx.compose.ui.text.font.Font(R.font.space_grotesk_semi_bold, FontWeight.Medium),
                 ),
                 fontSize = 14.sp,
             )
             Text(
                 text = item.subtitle,
-                color = TerminalGreenDim,
+                color = PhosphorGreenDim,
                 fontFamily = androidx.compose.ui.text.font.FontFamily(
-                    androidx.compose.ui.text.font.Font(R.font.jetbrains_mono_regular, FontWeight.Normal),
+                    androidx.compose.ui.text.font.Font(R.font.space_grotesk_regular, FontWeight.Normal),
                 ),
                 fontSize = 12.sp,
             )

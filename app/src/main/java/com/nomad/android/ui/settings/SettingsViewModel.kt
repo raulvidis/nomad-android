@@ -7,14 +7,10 @@ import com.nomad.android.data.ai.AIEngineStatus
 import com.nomad.android.data.content.ContentPackManager
 import com.nomad.android.data.content.PackStatus
 import com.nomad.android.data.repository.SettingsRepository
-import com.nomad.android.data.repository.SettingsRepository.Companion.THEME_AMBER
-import com.nomad.android.data.repository.SettingsRepository.Companion.THEME_BLUE
-import com.nomad.android.data.repository.SettingsRepository.Companion.THEME_CRT_GREEN
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -32,8 +28,7 @@ data class ContentPackInfo(
 data class SettingsData(
     val aiStatus: AIEngineStatus? = null,
     val contentPacks: List<ContentPackInfo> = emptyList(),
-    val storageMetrics: SettingsRepository.StorageMetrics? = null,
-    val currentTheme: String = THEME_CRT_GREEN
+    val storageMetrics: SettingsRepository.StorageMetrics? = null
 )
 
 data class SettingsUiState(
@@ -52,12 +47,6 @@ class SettingsViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(SettingsUiState(isLoading = true))
     val uiState: StateFlow<SettingsUiState> = _uiState.asStateFlow()
 
-    val availableThemes = listOf(
-        ThemeOption(THEME_CRT_GREEN, "CRT Green", "Classic PipBoy green phosphor"),
-        ThemeOption(THEME_AMBER, "Amber Phosphor", "Warm amber display"),
-        ThemeOption(THEME_BLUE, "Blue Screen", "Cool blue terminal")
-    )
-
     init {
         loadSettings()
     }
@@ -67,7 +56,6 @@ class SettingsViewModel @Inject constructor(
 
         viewModelScope.launch {
             val storageMetrics = settingsRepository.getStorageMetrics()
-            val theme = settingsRepository.getTheme().first()
             val packs = contentPackManager.getAvailablePacks().first()
 
             val contentPacks = packs.map { pack ->
@@ -87,18 +75,10 @@ class SettingsViewModel @Inject constructor(
                     data = SettingsData(
                         aiStatus = aiEngineStatus,
                         storageMetrics = storageMetrics,
-                        currentTheme = theme,
                         contentPacks = contentPacks
                     )
                 )
             }
-        }
-    }
-
-    fun setTheme(themeName: String) {
-        viewModelScope.launch {
-            settingsRepository.setTheme(themeName)
-            _uiState.update { it.copy(data = it.data.copy(currentTheme = themeName)) }
         }
     }
 
@@ -163,8 +143,3 @@ class SettingsViewModel @Inject constructor(
     }
 }
 
-data class ThemeOption(
-    val id: String,
-    val name: String,
-    val description: String
-)

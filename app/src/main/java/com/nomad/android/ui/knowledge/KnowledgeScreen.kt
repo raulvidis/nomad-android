@@ -41,11 +41,12 @@ import com.nomad.android.ui.components.TerminalErrorScreen
 import com.nomad.android.ui.components.TerminalLoadingScreen
 import com.nomad.android.ui.components.TerminalText
 import com.nomad.android.ui.components.TerminalTextField
-import com.nomad.android.ui.theme.TerminalAmber
-import com.nomad.android.ui.theme.TerminalBg
-import com.nomad.android.ui.theme.TerminalGreen
-import com.nomad.android.ui.theme.TerminalGreenDim
-import com.nomad.android.ui.theme.TerminalSurface
+import com.nomad.android.ui.theme.OutlineVariant
+import com.nomad.android.ui.theme.TertiaryAmber
+import com.nomad.android.ui.theme.BackgroundDark
+import com.nomad.android.ui.theme.PhosphorGreen
+import com.nomad.android.ui.theme.PhosphorGreenDim
+import com.nomad.android.ui.theme.SurfaceContainerLow
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
@@ -91,27 +92,27 @@ private fun KnowledgeContent(
     }
 
     val categoryColor = mapOf(
-        "Survival" to TerminalGreen,
-        "First Aid" to TerminalAmber,
+        "Survival" to PhosphorGreen,
+        "First Aid" to TertiaryAmber,
         "Navigation" to Color(0xFF64B5F6),
         "Shelter" to Color(0xFFCE93D8),
-        "All" to TerminalGreen,
+        "All" to PhosphorGreen,
     )
 
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(TerminalBg)
+            .background(BackgroundDark)
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         TerminalText(
             text = "Offline Knowledge Base",
-            color = TerminalGreen,
+            color = PhosphorGreen,
             style = androidx.compose.ui.text.TextStyle(
                 fontSize = 20.sp,
                 fontFamily = androidx.compose.ui.text.font.FontFamily(
-                    androidx.compose.ui.text.font.Font(R.font.jetbrains_mono_bold, FontWeight.Bold),
+                    androidx.compose.ui.text.font.Font(R.font.space_grotesk_bold, FontWeight.Bold),
                 ),
             ),
         )
@@ -132,14 +133,14 @@ private fun KnowledgeContent(
         ) {
             data.categories.forEach { category ->
                 val isSelected = category == data.selectedCategory
-                val bgColor = if (isSelected) TerminalGreen else Color.Transparent
-                val textColor = if (isSelected) TerminalBg else TerminalGreenDim
-                val borderColor = if (isSelected) TerminalGreen else TerminalGreenDim
+                val bgColor = if (isSelected) PhosphorGreen else Color.Transparent
+                val textColor = if (isSelected) BackgroundDark else PhosphorGreenDim
+                val borderColor = if (isSelected) PhosphorGreen else PhosphorGreenDim
 
                 Box(
                     modifier = Modifier
-                        .border(2.dp, borderColor, RoundedCornerShape(6.dp))
-                        .background(bgColor, RoundedCornerShape(6.dp))
+                        .border(2.dp, borderColor, RoundedCornerShape(0.dp))
+                        .background(bgColor, RoundedCornerShape(0.dp))
                         .clickable(
                             interactionSource = remember { MutableInteractionSource() },
                             indication = null,
@@ -152,7 +153,7 @@ private fun KnowledgeContent(
                         text = category,
                         color = textColor,
                         fontFamily = androidx.compose.ui.text.font.FontFamily(
-                            androidx.compose.ui.text.font.Font(R.font.jetbrains_mono_medium, FontWeight.Medium),
+                            androidx.compose.ui.text.font.Font(R.font.space_grotesk_semi_bold, FontWeight.Medium),
                         ),
                         fontSize = 12.sp,
                     )
@@ -173,11 +174,11 @@ private fun KnowledgeContent(
                     modifier = Modifier
                         .fillMaxWidth()
                         .background(
-                            if (isExpanded) TerminalSurface else Color.Transparent,
-                            RoundedCornerShape(6.dp),
+                            if (isExpanded) SurfaceContainerLow else Color.Transparent,
+                            RoundedCornerShape(0.dp),
                         )
                         .then(
-                            if (isExpanded) Modifier.border(2.dp, TerminalGreenDim, RoundedCornerShape(6.dp))
+                            if (isExpanded) Modifier.border(2.dp, PhosphorGreenDim, RoundedCornerShape(0.dp))
                             else Modifier,
                         )
                         .clickable(
@@ -200,18 +201,18 @@ private fun KnowledgeContent(
                             ) {
                                 Text(
                                     text = article.category,
-                                    color = categoryColor[article.category] ?: TerminalGreen,
+                                    color = categoryColor[article.category] ?: PhosphorGreen,
                                     fontFamily = androidx.compose.ui.text.font.FontFamily(
-                                        androidx.compose.ui.text.font.Font(R.font.jetbrains_mono_regular, FontWeight.Normal),
+                                        androidx.compose.ui.text.font.Font(R.font.space_grotesk_regular, FontWeight.Normal),
                                     ),
                                     fontSize = 11.sp,
                                 )
                                 if (article.isFavorite) {
                                     Text(
                                         text = "\u2605",
-                                        color = TerminalAmber,
+                                        color = TertiaryAmber,
                                         fontFamily = androidx.compose.ui.text.font.FontFamily(
-                                            androidx.compose.ui.text.font.Font(R.font.jetbrains_mono_regular, FontWeight.Normal),
+                                            androidx.compose.ui.text.font.Font(R.font.space_grotesk_regular, FontWeight.Normal),
                                         ),
                                         fontSize = 12.sp,
                                     )
@@ -220,18 +221,18 @@ private fun KnowledgeContent(
                             Spacer(modifier = Modifier.height(4.dp))
                             Text(
                                 text = article.title,
-                                color = TerminalGreen,
+                                color = PhosphorGreen,
                                 fontFamily = androidx.compose.ui.text.font.FontFamily(
-                                    androidx.compose.ui.text.font.Font(R.font.jetbrains_mono_medium, FontWeight.Medium),
+                                    androidx.compose.ui.text.font.Font(R.font.space_grotesk_semi_bold, FontWeight.Medium),
                                 ),
                                 fontSize = 14.sp,
                             )
                         }
                         Text(
                             text = if (isExpanded) "[-]" else "[+]",
-                            color = TerminalGreen,
+                            color = PhosphorGreen,
                             fontFamily = androidx.compose.ui.text.font.FontFamily(
-                                androidx.compose.ui.text.font.Font(R.font.jetbrains_mono_regular, FontWeight.Normal),
+                                androidx.compose.ui.text.font.Font(R.font.space_grotesk_regular, FontWeight.Normal),
                             ),
                             fontSize = 14.sp,
                         )
@@ -247,14 +248,14 @@ private fun KnowledgeContent(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .height(1.dp)
-                                    .background(TerminalGreenDim.copy(alpha = 0.3f)),
+                                    .background(OutlineVariant.copy(alpha = 0.2f)),
                             )
                             Spacer(modifier = Modifier.height(8.dp))
                             Text(
                                 text = article.content,
-                                color = TerminalAmber,
+                                color = TertiaryAmber,
                                 fontFamily = androidx.compose.ui.text.font.FontFamily(
-                                    androidx.compose.ui.text.font.Font(R.font.jetbrains_mono_regular, FontWeight.Normal),
+                                    androidx.compose.ui.text.font.Font(R.font.space_grotesk_regular, FontWeight.Normal),
                                 ),
                                 fontSize = 12.sp,
                                 lineHeight = 18.sp,
@@ -267,9 +268,9 @@ private fun KnowledgeContent(
 
         Text(
             text = "${data.filteredArticles.size} / ${data.articles.size} articles",
-            color = TerminalGreenDim,
+            color = PhosphorGreenDim,
             fontFamily = androidx.compose.ui.text.font.FontFamily(
-                androidx.compose.ui.text.font.Font(R.font.jetbrains_mono_regular, FontWeight.Normal),
+                androidx.compose.ui.text.font.Font(R.font.space_grotesk_regular, FontWeight.Normal),
             ),
             fontSize = 11.sp,
         )

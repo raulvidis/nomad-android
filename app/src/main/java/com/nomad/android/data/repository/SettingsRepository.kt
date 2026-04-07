@@ -40,15 +40,6 @@ class SettingsRepository @Inject constructor(
     suspend fun completeOnboarding(): Result<Unit> =
         setSetting(KEY_ONBOARDING_COMPLETE, "true")
 
-    // Theme persistence
-    fun getTheme(): Flow<String> =
-        settingsDao.getAll()
-            .map { list -> list.find { it.key == KEY_THEME }?.value ?: THEME_CRT_GREEN }
-            .catch { emit(THEME_CRT_GREEN) }
-
-    suspend fun setTheme(themeName: String): Result<Unit> =
-        setSetting(KEY_THEME, themeName)
-
     // Storage metrics
     fun getStorageMetrics(): StorageMetrics {
         val stat = StatFs(context.filesDir.path)
@@ -66,9 +57,6 @@ class SettingsRepository @Inject constructor(
     companion object {
         const val KEY_ONBOARDING_COMPLETE = "onboarding_complete"
         const val KEY_THEME = "theme"
-        const val THEME_CRT_GREEN = "crt_green"
-        const val THEME_AMBER = "crt_amber"
-        const val THEME_BLUE = "crt_blue"
     }
 
     data class StorageMetrics(

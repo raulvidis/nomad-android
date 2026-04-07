@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>System Configuration | Phosphor Protocol</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        body {
+            font-family: 'Space Grotesk', sans-serif;
+            background-color: #131313;
+            color: #e5e2e1;
+            overflow-x: hidden;
+        }
+
+        .scanlines {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(
+                to bottom,
+                rgba(19, 19, 19, 0) 50%,
+                rgba(0, 0, 0, 0.1) 50%
+            );
+            background-size: 100% 4px;
+            pointer-events: none;
+            z-index: 100;
+        }
+
+        .crt-glow {
+            text-shadow: 0 0 5px rgba(0, 255, 65, 0.8);
+        }
+
+        .emissive-stroke {
+            border: 2px solid #00FF41;
+            box-shadow: 0 0 8px rgba(0, 255, 65, 0.3), inset 0 0 4px rgba(0, 255, 65, 0.2);
+        }
+
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+
+        /* Mechanical Scale Click Simulation */
+        .scale-95-on-click-mechanical:active {
+            transform: scale(0.95);
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "secondary": "#a0d39e",
+                        "surface-container": "#201f1f",
+                        "surface": "#131313",
+                        "on-background": "#e5e2e1",
+                        "tertiary-fixed-dim": "#ffba3f",
+                        "on-primary-container": "#007117",
+                        "inverse-primary": "#006e16",
+                        "inverse-surface": "#e5e2e1",
+                        "on-error": "#690005",
+                        "on-surface-variant": "#b9ccb2",
+                        "surface-variant": "#353534",
+                        "secondary-fixed": "#bbf0b9",
+                        "on-secondary": "#073913",
+                        "on-tertiary-container": "#825800",
+                        "tertiary": "#fff8f2",
+                        "on-secondary-fixed": "#002106",
+                        "tertiary-container": "#ffd69a",
+                        "on-secondary-fixed-variant": "#225027",
+                        "primary-container": "#00ff41",
+                        "surface-container-high": "#2a2a2a",
+                        "background": "#131313",
+                        "on-secondary-container": "#8fc28e",
+                        "on-surface": "#e5e2e1",
+                        "inverse-on-surface": "#313030",
+                        "secondary-container": "#225027",
+                        "on-primary": "#003907",
+                        "primary-fixed": "#72ff70",
+                        "surface-tint": "#00e639",
+                        "on-tertiary": "#432c00",
+                        "on-primary-fixed-variant": "#00530e",
+                        "surface-container-lowest": "#0e0e0e",
+                        "primary": "#ebffe2",
+                        "surface-bright": "#3a3939",
+                        "secondary-fixed-dim": "#a0d39e",
+                        "surface-container-low": "#1c1b1b",
+                        "error": "#ffb4ab",
+                        "on-primary-fixed": "#002203",
+                        "on-tertiary-fixed-variant": "#604100",
+                        "on-tertiary-fixed": "#281800",
+                        "surface-container-highest": "#353534",
+                        "error-container": "#93000a",
+                        "on-error-container": "#ffdad6",
+                        "outline-variant": "#3b4b37",
+                        "surface-dim": "#131313",
+                        "primary-fixed-dim": "#00e639",
+                        "outline": "#84967e",
+                        "tertiary-fixed": "#ffdeae"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "fontFamily": {
+                        "headline": ["Space Grotesk"],
+                        "body": ["Space Grotesk"],
+                        "label": ["Space Grotesk"]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-surface selection:bg-primary-container selection:text-on-primary">
+<div class="scanlines"></div>
+<!-- Top Navigation Anchor -->
+<header class="flex justify-between items-center w-full px-6 py-4 sticky top-0 z-50 bg-[#131313] rounded-none border-b-2 border-[#00FF41]/20">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-[#00FF41]" data-icon="terminal">terminal</span>
+<h1 class="font-['Space_Grotesk'] uppercase tracking-[0.05em] text-sm font-bold text-[#00FF41] drop-shadow-[0_0_5px_rgba(0,255,65,0.8)]">SYS_STATUS: ONLINE | BAT: 87% | 22:41</h1>
+</div>
+<div class="flex items-center gap-4">
+<button class="text-[#00FF41] brightness-125 hover:bg-[#00FF41]/10 transition-colors p-1">
+<span class="material-symbols-outlined" data-icon="settings_input_component">settings_input_component</span>
+</button>
+</div>
+</header>
+<main class="max-w-6xl mx-auto px-6 pt-12 pb-32">
+<!-- Screen Title -->
+<div class="mb-12">
+<div class="flex items-baseline gap-4 mb-2">
+<h2 class="text-3xl font-bold uppercase tracking-wider text-[#00FF41] crt-glow">SYSTEM CONFIGURATION</h2>
+<span class="text-[10px] text-outline opacity-60 font-mono">VER: 4.0.2-OMEGA</span>
+</div>
+<div class="w-full h-px bg-gradient-to-r from-[#00FF41]/40 via-[#00FF41]/10 to-transparent"></div>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-12 gap-8">
+<!-- LEFT COLUMN: AI ENGINE & STORAGE -->
+<div class="md:col-span-5 space-y-8">
+<!-- AI ENGINE STATUS CARD -->
+<section class="bg-surface-container-low p-6 rounded-none relative overflow-hidden group border-l-4 border-[#00FF41]">
+<div class="absolute top-0 right-0 p-2 opacity-20 group-hover:opacity-100 transition-opacity">
+<span class="text-[9px] font-mono text-[#00FF41]">MODULE_ID: 0x9A</span>
+</div>
+<h3 class="text-sm font-bold text-[#00FF41] uppercase tracking-widest mb-6 flex items-center gap-2">
+<span class="material-symbols-outlined text-xs" data-icon="neurology">neurology</span>
+                        AI ENGINE
+                    </h3>
+<div class="space-y-6">
+<div class="flex justify-between items-end border-b border-outline-variant/30 pb-2">
+<span class="text-xs text-on-surface-variant uppercase tracking-tighter">Engine Type</span>
+<span class="text-lg font-bold text-[#00FF41] crt-glow">NEURAL-SYNAPSE V4</span>
+</div>
+<div class="flex justify-between items-end border-b border-outline-variant/30 pb-2">
+<span class="text-xs text-on-surface-variant uppercase tracking-tighter">Status</span>
+<div class="flex items-center gap-2">
+<div class="w-2 h-2 bg-[#00FF41] animate-pulse rounded-full shadow-[0_0_5px_#00FF41]"></div>
+<span class="text-md font-bold text-[#00FF41] uppercase">Standby</span>
+</div>
+</div>
+</div>
+<div class="mt-8">
+<button class="w-full py-3 bg-primary-container text-on-primary-container font-bold uppercase tracking-widest text-xs scale-95-on-click-mechanical hover:brightness-110 shadow-[0_0_12px_rgba(0,255,65,0.4)]">
+                            RECALIBRATE CORE
+                        </button>
+</div>
+</section>
+<!-- STORAGE VISUALIZER -->
+<section class="bg-surface-container-low p-6 rounded-none">
+<div class="flex justify-between items-center mb-6">
+<h3 class="text-sm font-bold text-[#00FF41] uppercase tracking-widest flex items-center gap-2">
+<span class="material-symbols-outlined text-xs" data-icon="database">database</span>
+                            STORAGE
+                        </h3>
+<span class="text-xs font-mono text-secondary">742 GB / 1 TB</span>
+</div>
+<!-- Segmented Progress Bar -->
+<div class="flex gap-1 h-8">
+<!-- Segmented items -->
+<div class="flex-1 bg-[#00FF41] shadow-[0_0_8px_#00FF41]"></div>
+<div class="flex-1 bg-[#00FF41] shadow-[0_0_8px_#00FF41]"></div>
+<div class="flex-1 bg-[#00FF41] shadow-[0_0_8px_#00FF41]"></div>
+<div class="flex-1 bg-[#00FF41] shadow-[0_0_8px_#00FF41]"></div>
+<div class="flex-1 bg-[#00FF41] shadow-[0_0_8px_#00FF41]"></div>
+<div class="flex-1 bg-[#00FF41] shadow-[0_0_8px_#00FF41]"></div>
+<div class="flex-1 bg-[#00FF41] shadow-[0_0_8px_#00FF41]"></div>
+<div class="flex-1 bg-surface-container-highest border border-outline-variant/30"></div>
+<div class="flex-1 bg-surface-container-highest border border-outline-variant/30"></div>
+<div class="flex-1 bg-surface-container-highest border border-outline-variant/30"></div>
+</div>
+<p class="mt-4 text-[10px] uppercase text-on-surface-variant tracking-widest leading-relaxed">
+                        Sector analysis complete. Integrity 99.8%. No fragmented clusters found in primary partition.
+                    </p>
+</section>
+<!-- AMBIENT DATA -->
+<div class="bg-surface-container-lowest p-4 border border-outline-variant/10">
+<img alt="system architecture" class="w-full h-32 object-cover grayscale brightness-50 contrast-125 mb-4 opacity-40" data-alt="abstract monochromatic green digital network grid representing neural connections and system architecture with CRT distortion effect" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBSbqdq3ATx1hr2J8SkxDvjr9o0ktvQVTP68UfLwdIkD0F_NJJM9iCzX4U7K2GFvrzQjoDugeanp7pYyFKj47hTNlejdLme0cZ_B0VXJyf4kjj-EAtfbrHEmyXz7L-nXYOz21BBuKLFeUwyMlOQNpx1QtzrFO9DKhwrauKCgWNwzWefzILE7a-ggzQibDwmoaeCCzPehYubxfCNNILR0Jr3KoMTBmHX16m9jY6o2F8fJuAHEJg5Bv4Sok7JUghafSuTraTmPrFn6iSS"/>
+<div class="flex justify-between text-[8px] font-mono text-[#00FF41]/60">
+<span>LATENCY: 12ms</span>
+<span>NODES: 1,492</span>
+<span>PKT_LOSS: 0%</span>
+</div>
+</div>
+</div>
+<!-- RIGHT COLUMN: CONTENT PACKS -->
+<div class="md:col-span-7">
+<section class="bg-surface-container-low p-6 rounded-none border-t-2 border-[#00FF41]/10">
+<div class="flex justify-between items-center mb-8">
+<h3 class="text-sm font-bold text-[#00FF41] uppercase tracking-widest flex items-center gap-2">
+<span class="material-symbols-outlined text-xs" data-icon="package_2">package_2</span>
+                            CONTENT PACKS
+                        </h3>
+<div class="bg-surface-container-highest px-3 py-1 text-[10px] text-[#00FF41]">
+                            6 UPDATES AVAILABLE
+                        </div>
+</div>
+<!-- Tactile List -->
+<div class="space-y-4">
+<!-- Pack Item 1 -->
+<div class="flex items-center justify-between p-4 bg-surface-container-lowest border-l-2 border-[#00FF41]/20 hover:border-[#00FF41] transition-all">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 bg-surface-container-low flex items-center justify-center">
+<span class="material-symbols-outlined text-[#00FF41]" data-icon="language">language</span>
+</div>
+<div>
+<h4 class="text-xs font-bold text-on-surface uppercase tracking-wider">Language Hub Alpha</h4>
+<span class="text-[9px] text-on-surface-variant font-mono">v1.2.0 • 124MB</span>
+</div>
+</div>
+<div class="flex gap-2">
+<button class="px-3 py-1.5 border border-[#00FF41] text-[#00FF41] text-[10px] font-bold uppercase tracking-tighter hover:bg-[#00FF41]/10 scale-95-on-click-mechanical">GET</button>
+<button class="px-3 py-1.5 bg-surface-container-high text-on-surface-variant text-[10px] font-bold uppercase tracking-tighter opacity-50 cursor-not-allowed">DELETE</button>
+</div>
+</div>
+<!-- Pack Item 2 -->
+<div class="flex items-center justify-between p-4 bg-surface-container-lowest border-l-2 border-[#00FF41] bg-[#00FF41]/5">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 bg-surface-container-low flex items-center justify-center">
+<span class="material-symbols-outlined text-[#00FF41]" data-icon="map">map</span>
+</div>
+<div>
+<h4 class="text-xs font-bold text-on-surface uppercase tracking-wider">Territory Map: Sector 7</h4>
+<span class="text-[9px] text-on-surface-variant font-mono">INSTALLED • 2.1GB</span>
+</div>
+</div>
+<div class="flex gap-2">
+<button class="px-3 py-1.5 bg-[#00FF41] text-surface text-[10px] font-bold uppercase tracking-tighter shadow-[0_0_5px_#00FF41] cursor-default">ACTIVE</button>
+<button class="px-3 py-1.5 border border-error/50 text-error text-[10px] font-bold uppercase tracking-tighter hover:bg-error/10 scale-95-on-click-mechanical">DELETE</button>
+</div>
+</div>
+<!-- Pack Item 3 -->
+<div class="flex items-center justify-between p-4 bg-surface-container-lowest border-l-2 border-[#00FF41]/20">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 bg-surface-container-low flex items-center justify-center">
+<span class="material-symbols-outlined text-[#00FF41]" data-icon="security">security</span>
+</div>
+<div>
+<h4 class="text-xs font-bold text-on-surface uppercase tracking-wider">Firewall Patch v8.4</h4>
+<span class="text-[9px] text-on-surface-variant font-mono">v8.4.1 • 15MB</span>
+</div>
+</div>
+<div class="flex gap-2">
+<button class="px-3 py-1.5 border border-[#00FF41] text-[#00FF41] text-[10px] font-bold uppercase tracking-tighter hover:bg-[#00FF41]/10 scale-95-on-click-mechanical">GET</button>
+<button class="px-3 py-1.5 bg-surface-container-high text-on-surface-variant text-[10px] font-bold uppercase tracking-tighter opacity-50 cursor-not-allowed">DELETE</button>
+</div>
+</div>
+<!-- Pack Item 4 -->
+<div class="flex items-center justify-between p-4 bg-surface-container-lowest border-l-2 border-[#00FF41]/20">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 bg-surface-container-low flex items-center justify-center">
+<span class="material-symbols-outlined text-[#00FF41]" data-icon="face_retouching_natural">face_retouching_natural</span>
+</div>
+<div>
+<h4 class="text-xs font-bold text-on-surface uppercase tracking-wider">Visual Synthesis Pack</h4>
+<span class="text-[9px] text-on-surface-variant font-mono">v3.0.0 • 450MB</span>
+</div>
+</div>
+<div class="flex gap-2">
+<button class="px-3 py-1.5 border border-[#00FF41] text-[#00FF41] text-[10px] font-bold uppercase tracking-tighter hover:bg-[#00FF41]/10 scale-95-on-click-mechanical">GET</button>
+<button class="px-3 py-1.5 bg-surface-container-high text-on-surface-variant text-[10px] font-bold uppercase tracking-tighter opacity-50 cursor-not-allowed">DELETE</button>
+</div>
+</div>
+</div>
+<div class="mt-8 p-4 border border-dashed border-outline-variant/30 text-center">
+<button class="text-xs text-[#00FF41] uppercase font-bold tracking-[0.2em] hover:brightness-150 transition-all">
+                            LOAD EXTERNAL ARCHIVE +
+                        </button>
+</div>
+</section>
+<!-- TERMINAL LOG OUTPUT -->
+<div class="mt-8 bg-[#0e0e0e] font-mono text-[10px] p-6 border-b border-r border-[#00FF41]/10">
+<div class="text-[#00FF41]/40 mb-2">[SYSTEM_LOG_INITIALIZED]</div>
+<div class="text-[#00FF41]/80">02:22:41 - AI_ENGINE.STABLE_SYNC (OK)</div>
+<div class="text-[#00FF41]/80">02:22:43 - CACHE_CLEANUP_EXPIRED: 0 blocks</div>
+<div class="text-error/80">02:22:45 - WARNING: UNAUTHORIZED_PROBE_DETECTED (BLOCKED)</div>
+<div class="text-[#00FF41]/80">02:22:46 - REFRESH_INTERFACE: READY_STATE</div>
+<div class="inline-block w-2 h-3 bg-[#00FF41] ml-1 animate-pulse"></div>
+</div>
+</div>
+</div>
+</main>
+<!-- Bottom Navigation Shell -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 pb-2 bg-[#131313] rounded-none border-t-2 border-[#00FF41]/30 shadow-[0_-4px_10px_rgba(0,255,65,0.2)] md:hidden">
+<a class="flex flex-col items-center justify-center text-[#00FF41]/70 p-2 hover:text-[#00FF41] hover:brightness-150" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span class="font-['Space_Grotesk'] uppercase tracking-widest text-[10px]">DASH</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#00FF41]/70 p-2 hover:text-[#00FF41] hover:brightness-150" href="#">
+<span class="material-symbols-outlined" data-icon="map">map</span>
+<span class="font-['Space_Grotesk'] uppercase tracking-widest text-[10px]">MAPS</span>
+</a>
+<a class="flex flex-col items-center justify-center bg-[#00FF41] text-[#131313] px-2 py-1 shadow-[0_0_8px_#00FF41]" href="#">
+<span class="material-symbols-outlined" data-icon="menu_book">menu_book</span>
+<span class="font-['Space_Grotesk'] uppercase tracking-widest text-[10px]">INFO</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#00FF41]/70 p-2 hover:text-[#00FF41] hover:brightness-150" href="#">
+<span class="material-symbols-outlined" data-icon="forum">forum</span>
+<span class="font-['Space_Grotesk'] uppercase tracking-widest text-[10px]">CHAT</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#00FF41]/70 p-2 hover:text-[#00FF41] hover:brightness-150" href="#">
+<span class="material-symbols-outlined" data-icon="emergency">emergency</span>
+<span class="font-['Space_Grotesk'] uppercase tracking-widest text-[10px]">SOS</span>
+</a>
+</nav>
+</body></html>

@@ -44,11 +44,11 @@ import com.nomad.android.ui.components.TerminalErrorScreen
 import com.nomad.android.ui.components.TerminalLoadingScreen
 import com.nomad.android.ui.components.TerminalText
 import com.nomad.android.ui.components.TerminalTextField
-import com.nomad.android.ui.theme.TerminalAmber
-import com.nomad.android.ui.theme.TerminalBg
-import com.nomad.android.ui.theme.TerminalGreen
-import com.nomad.android.ui.theme.TerminalGreenDim
-import com.nomad.android.ui.theme.TerminalSurface
+import com.nomad.android.ui.theme.TertiaryAmber
+import com.nomad.android.ui.theme.BackgroundDark
+import com.nomad.android.ui.theme.PhosphorGreen
+import com.nomad.android.ui.theme.PhosphorGreenDim
+import com.nomad.android.ui.theme.SurfaceContainerLow
 
 @Composable
 fun ChatScreen(
@@ -93,7 +93,7 @@ private fun SessionListScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(TerminalBg)
+            .background(BackgroundDark)
             .padding(16.dp),
     ) {
         Row(
@@ -103,9 +103,9 @@ private fun SessionListScreen(
         ) {
             Text(
                 text = "CHAT SESSIONS",
-                color = TerminalGreen,
+                color = PhosphorGreen,
                 fontFamily = androidx.compose.ui.text.font.FontFamily(
-                    androidx.compose.ui.text.font.Font(R.font.jetbrains_mono_bold, FontWeight.Bold),
+                    androidx.compose.ui.text.font.Font(R.font.space_grotesk_bold, FontWeight.Bold),
                 ),
                 fontSize = 18.sp,
             )
@@ -137,9 +137,9 @@ private fun SessionListScreen(
             ) {
                 Text(
                     text = "No sessions yet",
-                    color = TerminalGreenDim,
+                    color = PhosphorGreenDim,
                     fontFamily = androidx.compose.ui.text.font.FontFamily(
-                        androidx.compose.ui.text.font.Font(R.font.jetbrains_mono_regular, FontWeight.Normal),
+                        androidx.compose.ui.text.font.Font(R.font.space_grotesk_regular, FontWeight.Normal),
                     ),
                     fontSize = 13.sp,
                 )
@@ -153,8 +153,8 @@ private fun SessionListScreen(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .background(TerminalSurface, RoundedCornerShape(6.dp))
-                            .border(1.dp, TerminalGreenDim, RoundedCornerShape(6.dp))
+                            .background(SurfaceContainerLow, RoundedCornerShape(0.dp))
+                            .border(2.dp, PhosphorGreenDim, RoundedCornerShape(0.dp))
                             .clickable { onLoadSession(session.id) }
                             .padding(12.dp),
                         horizontalArrangement = Arrangement.SpaceBetween,
@@ -162,9 +162,9 @@ private fun SessionListScreen(
                     ) {
                         Text(
                             text = session.title,
-                            color = TerminalGreen,
+                            color = PhosphorGreen,
                             fontFamily = androidx.compose.ui.text.font.FontFamily(
-                                androidx.compose.ui.text.font.Font(R.font.jetbrains_mono_regular, FontWeight.Normal),
+                                androidx.compose.ui.text.font.Font(R.font.space_grotesk_regular, FontWeight.Normal),
                             ),
                             fontSize = 13.sp,
                             modifier = Modifier.weight(1f),
@@ -208,7 +208,7 @@ private fun ChatContent(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(TerminalBg),
+            .background(BackgroundDark),
     ) {
         // Header with session title + context counter
         Row(
@@ -220,18 +220,18 @@ private fun ChatContent(
         ) {
             Text(
                 text = data.sessions.find { it.id == data.currentSessionId }?.title ?: "New Session",
-                color = TerminalGreen,
+                color = PhosphorGreen,
                 fontFamily = androidx.compose.ui.text.font.FontFamily(
-                    androidx.compose.ui.text.font.Font(R.font.jetbrains_mono_bold, FontWeight.Bold),
+                    androidx.compose.ui.text.font.Font(R.font.space_grotesk_bold, FontWeight.Bold),
                 ),
                 fontSize = 16.sp,
                 modifier = Modifier.weight(1f),
             )
             Text(
                 text = "${data.contextTokenCount}tk",
-                color = TerminalGreenDim,
+                color = PhosphorGreenDim,
                 fontFamily = androidx.compose.ui.text.font.FontFamily(
-                    androidx.compose.ui.text.font.Font(R.font.jetbrains_mono_regular, FontWeight.Normal),
+                    androidx.compose.ui.text.font.Font(R.font.space_grotesk_regular, FontWeight.Normal),
                 ),
                 fontSize = 10.sp,
             )
@@ -246,9 +246,9 @@ private fun ChatContent(
             ) {
                 Text(
                     text = "Type a message to begin",
-                    color = TerminalGreenDim,
+                    color = PhosphorGreenDim,
                     fontFamily = androidx.compose.ui.text.font.FontFamily(
-                        androidx.compose.ui.text.font.Font(R.font.jetbrains_mono_regular, FontWeight.Normal),
+                        androidx.compose.ui.text.font.Font(R.font.space_grotesk_regular, FontWeight.Normal),
                     ),
                     fontSize = 13.sp,
                 )
@@ -285,7 +285,7 @@ private fun ChatContent(
 
         // Bottom controls
         Column {
-            TerminalDivider(color = TerminalGreen)
+            TerminalDivider(color = PhosphorGreen)
             Spacer(modifier = Modifier.height(6.dp))
 
             // Thinking power + compact row
@@ -302,13 +302,13 @@ private fun ChatContent(
                         Box(
                             modifier = Modifier
                                 .border(
-                                    width = if (isSelected) 2.dp else 1.dp,
-                                    color = if (isSelected) TerminalAmber else TerminalGreenDim,
-                                    shape = RoundedCornerShape(4.dp),
+                                    width = if (isSelected) 2.dp else 2.dp,
+                                    color = if (isSelected) TertiaryAmber else PhosphorGreenDim,
+                                    shape = RoundedCornerShape(0.dp),
                                 )
                                 .background(
-                                    if (isSelected) TerminalAmber.copy(alpha = 0.15f) else TerminalSurface,
-                                    RoundedCornerShape(4.dp),
+                                    if (isSelected) TertiaryAmber.copy(alpha = 0.1f) else SurfaceContainerLow,
+                                    RoundedCornerShape(0.dp),
                                 )
                                 .clickable(
                                     interactionSource = remember { MutableInteractionSource() },
@@ -320,9 +320,9 @@ private fun ChatContent(
                         ) {
                             Text(
                                 text = power.label,
-                                color = if (isSelected) TerminalAmber else TerminalGreenDim,
+                                color = if (isSelected) TertiaryAmber else PhosphorGreenDim,
                                 fontFamily = androidx.compose.ui.text.font.FontFamily(
-                                    androidx.compose.ui.text.font.Font(R.font.jetbrains_mono_regular, FontWeight.Normal),
+                                    androidx.compose.ui.text.font.Font(R.font.space_grotesk_regular, FontWeight.Normal),
                                 ),
                                 fontSize = 10.sp,
                             )
@@ -333,8 +333,8 @@ private fun ChatContent(
                 if (data.messages.size > 6) {
                     Box(
                         modifier = Modifier
-                            .border(1.dp, TerminalGreenDim, RoundedCornerShape(4.dp))
-                            .background(TerminalSurface, RoundedCornerShape(4.dp))
+                            .border(2.dp, PhosphorGreenDim, RoundedCornerShape(0.dp))
+                            .background(SurfaceContainerLow, RoundedCornerShape(0.dp))
                             .clickable(
                                 interactionSource = remember { MutableInteractionSource() },
                                 indication = null,
@@ -345,9 +345,9 @@ private fun ChatContent(
                     ) {
                         Text(
                             text = "Compact",
-                            color = TerminalGreenDim,
+                            color = PhosphorGreenDim,
                             fontFamily = androidx.compose.ui.text.font.FontFamily(
-                                androidx.compose.ui.text.font.Font(R.font.jetbrains_mono_regular, FontWeight.Normal),
+                                androidx.compose.ui.text.font.Font(R.font.space_grotesk_regular, FontWeight.Normal),
                             ),
                             fontSize = 10.sp,
                         )
@@ -369,13 +369,13 @@ private fun ChatContent(
                     Box(
                         modifier = Modifier
                             .border(
-                                width = if (isSelected) 2.dp else 1.dp,
-                                color = if (isSelected) TerminalGreen else TerminalGreenDim,
-                                shape = RoundedCornerShape(4.dp),
+                                width = if (isSelected) 2.dp else 2.dp,
+                                color = if (isSelected) PhosphorGreen else PhosphorGreenDim,
+                                shape = RoundedCornerShape(0.dp),
                             )
                             .background(
-                                if (isSelected) TerminalGreen.copy(alpha = 0.15f) else TerminalSurface,
-                                RoundedCornerShape(4.dp),
+                                if (isSelected) PhosphorGreen.copy(alpha = 0.1f) else SurfaceContainerLow,
+                                RoundedCornerShape(0.dp),
                             )
                             .clickable(
                                 interactionSource = remember { MutableInteractionSource() },
@@ -387,9 +387,9 @@ private fun ChatContent(
                     ) {
                         Text(
                             text = filter,
-                            color = if (isSelected) TerminalGreen else TerminalGreenDim,
+                            color = if (isSelected) PhosphorGreen else PhosphorGreenDim,
                             fontFamily = androidx.compose.ui.text.font.FontFamily(
-                                androidx.compose.ui.text.font.Font(R.font.jetbrains_mono_regular, FontWeight.Normal),
+                                androidx.compose.ui.text.font.Font(R.font.space_grotesk_regular, FontWeight.Normal),
                             ),
                             fontSize = 10.sp,
                         )
@@ -435,14 +435,14 @@ private fun ChatContent(
 
 @Composable
 private fun MessageBubble(isUser: Boolean, text: String) {
-    val borderColor = if (isUser) TerminalGreen else TerminalAmber
+    val borderColor = if (isUser) PhosphorGreen else TertiaryAmber
     val prefix = if (isUser) "QUERY" else "RESPONSE"
-    val prefixColor = if (isUser) TerminalGreen else TerminalAmber
+    val prefixColor = if (isUser) PhosphorGreen else TertiaryAmber
 
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .background(TerminalSurface, RoundedCornerShape(6.dp))
+            .background(SurfaceContainerLow, RoundedCornerShape(0.dp))
             .drawBehind {
                 drawLine(
                     color = borderColor,
@@ -457,7 +457,7 @@ private fun MessageBubble(isUser: Boolean, text: String) {
             text = prefix,
             color = prefixColor,
             fontFamily = androidx.compose.ui.text.font.FontFamily(
-                androidx.compose.ui.text.font.Font(R.font.jetbrains_mono_medium, FontWeight.Medium),
+                androidx.compose.ui.text.font.Font(R.font.space_grotesk_semi_bold, FontWeight.Medium),
             ),
             fontSize = 10.sp,
             letterSpacing = 1.sp,
@@ -465,9 +465,9 @@ private fun MessageBubble(isUser: Boolean, text: String) {
         Spacer(modifier = Modifier.height(4.dp))
         Text(
             text = text,
-            color = if (isUser) TerminalGreen else TerminalAmber,
+            color = if (isUser) PhosphorGreen else TertiaryAmber,
             fontFamily = androidx.compose.ui.text.font.FontFamily(
-                androidx.compose.ui.text.font.Font(R.font.jetbrains_mono_regular, FontWeight.Normal),
+                androidx.compose.ui.text.font.Font(R.font.space_grotesk_regular, FontWeight.Normal),
             ),
             fontSize = 13.sp,
             lineHeight = 18.sp,
@@ -506,9 +506,9 @@ private fun TypingIndicator() {
     ) {
         Text(
             text = "Processing${".".repeat(dotCount)}",
-            color = TerminalAmber,
+            color = TertiaryAmber,
             fontFamily = androidx.compose.ui.text.font.FontFamily(
-                androidx.compose.ui.text.font.Font(R.font.jetbrains_mono_medium, FontWeight.Medium),
+                androidx.compose.ui.text.font.Font(R.font.space_grotesk_semi_bold, FontWeight.Medium),
             ),
             fontSize = 12.sp,
         )

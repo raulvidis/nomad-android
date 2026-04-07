@@ -8,6 +8,14 @@
         "Z_AI_API_KEY": "${Z_AI_API_KEY}",
         "Z_AI_MODE": "ZAI"
       }
+    },
+    "stitch": {
+      "type": "remote",
+      "url": "https://stitch.googleapis.com/mcp",
+      "enabled": true,
+      "headers": {
+        "X-Goog-Api-Key": "AQ.Ab8RN6IP-wzvanX6YvRJFzSDp9c88PeZ2t3rPPkZZqCbFYZzvg"
+      }
     }
   }
 }

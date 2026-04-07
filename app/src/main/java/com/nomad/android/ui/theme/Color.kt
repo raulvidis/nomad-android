@@ -3,73 +3,65 @@ package com.nomad.android.ui.theme
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
 
-val TerminalGreen = Color(0xFF14F195)
-val TerminalGreenDim = Color(0xFF0A7A4C)
-val TerminalAmber = Color(0xFFFFB000)
-val TerminalAmberDim = Color(0xFF805800)
-val TerminalBlue = Color(0xFF00BFFF)
-val TerminalBlueDim = Color(0xFF006080)
-val TerminalDanger = Color(0xFFFF3333)
-val TerminalBg = Color(0xFF0C0C0C)
-val TerminalSurface = Color(0xFF1A1A1A)
-val TerminalBorder = Color(0xFF2AFF6A)
-val TerminalOnBg = Color(0xFF14F195)
-val TerminalOnSurface = Color(0xFF14F195)
+val PhosphorGreen = Color(0xFF00FF41)
+val PhosphorGreenDim = Color(0xFF00E639)
+val PhosphorGreenGlow = Color(0xFF72FF70)
+val SecondaryGreen = Color(0xFFA0D39E)
+val SecondaryGreenDim = Color(0xFF225027)
+val BackgroundDark = Color(0xFF131313)
+val SurfaceContainerLowest = Color(0xFF0E0E0E)
+val SurfaceContainerLow = Color(0xFF1C1B1B)
+val SurfaceContainer = Color(0xFF201F1F)
+val SurfaceContainerHigh = Color(0xFF2A2A2A)
+val SurfaceContainerHighest = Color(0xFF353534)
+val SurfaceDim = Color(0xFF131313)
+val SurfaceBright = Color(0xFF3A3939)
+val OnBackground = Color(0xFFE5E2E1)
+val OnSurface = Color(0xFFE5E2E1)
+val OnSurfaceVariant = Color(0xFFB9CCB2)
+val OutlineColor = Color(0xFF84967E)
+val OutlineVariant = Color(0xFF3B4B37)
+val TerminalDanger = Color(0xFFFFB4AB)
+val TerminalOnError = Color(0xFF690005)
+val ErrorContainer = Color(0xFF93000A)
+val OnErrorContainer = Color(0xFFFFDAD6)
+val OnPrimary = Color(0xFF003907)
+val OnPrimaryContainer = Color(0xFF007117)
+val SecondaryFixed = Color(0xFFBBF0B9)
+val OnSecondary = Color(0xFF073913)
+val OnSecondaryFixed = Color(0xFF002106)
+val SecondaryContainer = Color(0xFF225027)
+val TertiaryAmber = Color(0xFFFFBA3F)
+val TertiaryContainer = Color(0xFFFFD69A)
 
-data class NomadThemeColors(
-    val primary: Color,
-    val primaryDim: Color,
-    val secondary: Color,
-    val secondaryDim: Color,
-    val accent: Color,
-    val border: Color,
-    val background: Color,
-    val surface: Color,
-    val onBackground: Color,
-    val onSurface: Color,
-    val danger: Color,
+data class NomadColors(
+    val primary: Color = PhosphorGreen,
+    val primaryDim: Color = PhosphorGreenDim,
+    val primaryGlow: Color = PhosphorGreenGlow,
+    val secondary: Color = SecondaryGreen,
+    val secondaryDim: Color = SecondaryGreenDim,
+    val background: Color = BackgroundDark,
+    val surfaceContainerLowest: Color = SurfaceContainerLowest,
+    val surfaceContainerLow: Color = SurfaceContainerLow,
+    val surfaceContainer: Color = SurfaceContainer,
+    val surfaceContainerHigh: Color = SurfaceContainerHigh,
+    val surfaceContainerHighest: Color = SurfaceContainerHighest,
+    val surfaceDim: Color = SurfaceDim,
+    val surfaceBright: Color = SurfaceBright,
+    val onBackground: Color = OnBackground,
+    val onSurface: Color = OnSurface,
+    val onSurfaceVariant: Color = OnSurfaceVariant,
+    val outline: Color = OutlineColor,
+    val outlineVariant: Color = OutlineVariant,
+    val danger: Color = TerminalDanger,
+    val onPrimary: Color = OnPrimary,
+    val onPrimaryContainer: Color = OnPrimaryContainer,
+    val secondaryFixed: Color = SecondaryFixed,
+    val onSecondary: Color = OnSecondary,
+    val onSecondaryFixed: Color = OnSecondaryFixed,
+    val secondaryContainer: Color = SecondaryContainer,
+    val tertiary: Color = TertiaryAmber,
+    val tertiaryContainer: Color = TertiaryContainer,
 )
 
-val GreenThemeColors = NomadThemeColors(
-    primary = TerminalGreen,
-    primaryDim = TerminalGreenDim,
-    secondary = TerminalAmber,
-    secondaryDim = TerminalAmberDim,
-    accent = TerminalBlue,
-    border = TerminalBorder,
-    background = TerminalBg,
-    surface = TerminalSurface,
-    onBackground = TerminalOnBg,
-    onSurface = TerminalOnSurface,
-    danger = TerminalDanger,
-)
-
-val AmberThemeColors = NomadThemeColors(
-    primary = Color(0xFFFFB000),
-    primaryDim = Color(0xFF805800),
-    secondary = Color(0xFFFF6600),
-    secondaryDim = Color(0xFF803300),
-    accent = Color(0xFFFFD700),
-    border = Color(0xFFFFC040),
-    background = TerminalBg,
-    surface = TerminalSurface,
-    onBackground = Color(0xFFFFB000),
-    onSurface = Color(0xFFFFB000),
-    danger = TerminalDanger,
-)
-
-val BlueThemeColors = NomadThemeColors(
-    primary = Color(0xFF00BFFF),
-    primaryDim = Color(0xFF006080),
-    secondary = Color(0xFF00FF7F),
-    secondaryDim = Color(0xFF008040),
-    accent = Color(0xFF87CEEB),
-    border = Color(0xFF40D0FF),
-    background = TerminalBg,
-    surface = TerminalSurface,
-    onBackground = Color(0xFF00BFFF),
-    onSurface = Color(0xFF00BFFF),
-    danger = TerminalDanger,
-)
-
-val LocalNomadColors = staticCompositionLocalOf { GreenThemeColors }
+val LocalNomadColors = staticCompositionLocalOf { NomadColors() }

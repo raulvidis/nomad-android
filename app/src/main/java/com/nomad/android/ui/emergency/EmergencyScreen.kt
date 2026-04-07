@@ -33,11 +33,11 @@ import com.nomad.android.ui.components.TerminalCard
 import com.nomad.android.ui.components.TerminalDivider
 import com.nomad.android.ui.components.TerminalSectionHeader
 import com.nomad.android.ui.components.TerminalText
-import com.nomad.android.ui.theme.TerminalAmber
-import com.nomad.android.ui.theme.TerminalBg
-import com.nomad.android.ui.theme.TerminalGreen
-import com.nomad.android.ui.theme.TerminalGreenDim
-import com.nomad.android.ui.theme.TerminalSurface
+import com.nomad.android.ui.theme.TertiaryAmber
+import com.nomad.android.ui.theme.BackgroundDark
+import com.nomad.android.ui.theme.PhosphorGreen
+import com.nomad.android.ui.theme.PhosphorGreenDim
+import com.nomad.android.ui.theme.SurfaceContainerLow
 
 private data class FirstAidTopic(
     val title: String,
@@ -170,17 +170,17 @@ fun EmergencyScreen() {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(TerminalBg)
+            .background(BackgroundDark)
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         TerminalText(
             text = "Survival Reference",
-            color = TerminalAmber,
+            color = TertiaryAmber,
             style = androidx.compose.ui.text.TextStyle(
                 fontSize = 20.sp,
                 fontFamily = androidx.compose.ui.text.font.FontFamily(
-                    androidx.compose.ui.text.font.Font(R.font.jetbrains_mono_bold, FontWeight.Bold),
+                    androidx.compose.ui.text.font.Font(R.font.space_grotesk_bold, FontWeight.Bold),
                 ),
             ),
         )
@@ -231,9 +231,9 @@ fun EmergencyScreen() {
                 TerminalCard {
                     Text(
                         text = "All content available offline — no network required",
-                        color = TerminalGreenDim,
+                        color = PhosphorGreenDim,
                         fontFamily = androidx.compose.ui.text.font.FontFamily(
-                            androidx.compose.ui.text.font.Font(R.font.jetbrains_mono_regular, FontWeight.Normal),
+                            androidx.compose.ui.text.font.Font(R.font.space_grotesk_regular, FontWeight.Normal),
                         ),
                         fontSize = 11.sp,
                     )
@@ -257,8 +257,8 @@ private fun FirstAidRow(
                 indication = null,
                 onClick = onToggle,
             )
-            .background(TerminalSurface, RoundedCornerShape(6.dp))
-            .border(2.dp, TerminalAmber, RoundedCornerShape(6.dp))
+            .background(SurfaceContainerLow, RoundedCornerShape(0.dp))
+            .border(2.dp, TertiaryAmber, RoundedCornerShape(0.dp))
             .padding(12.dp),
         verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
@@ -269,17 +269,17 @@ private fun FirstAidRow(
         ) {
             Text(
                 text = topic.title.uppercase(),
-                color = TerminalAmber,
+                color = TertiaryAmber,
                 fontFamily = androidx.compose.ui.text.font.FontFamily(
-                    androidx.compose.ui.text.font.Font(R.font.jetbrains_mono_medium, FontWeight.Medium),
+                    androidx.compose.ui.text.font.Font(R.font.space_grotesk_semi_bold, FontWeight.Medium),
                 ),
                 fontSize = 13.sp,
             )
             Text(
                 text = if (isExpanded) "[-]" else "[+]",
-                color = TerminalGreen,
+                color = PhosphorGreen,
                 fontFamily = androidx.compose.ui.text.font.FontFamily(
-                    androidx.compose.ui.text.font.Font(R.font.jetbrains_mono_regular, FontWeight.Normal),
+                    androidx.compose.ui.text.font.Font(R.font.space_grotesk_regular, FontWeight.Normal),
                 ),
                 fontSize = 12.sp,
             )
@@ -294,17 +294,17 @@ private fun FirstAidRow(
                 ) {
                     Text(
                         text = "${i + 1}.",
-                        color = TerminalGreenDim,
+                        color = PhosphorGreenDim,
                         fontFamily = androidx.compose.ui.text.font.FontFamily(
-                            androidx.compose.ui.text.font.Font(R.font.jetbrains_mono_regular, FontWeight.Normal),
+                            androidx.compose.ui.text.font.Font(R.font.space_grotesk_regular, FontWeight.Normal),
                         ),
                         fontSize = 11.sp,
                     )
                     Text(
                         text = step,
-                        color = TerminalGreen,
+                        color = PhosphorGreen,
                         fontFamily = androidx.compose.ui.text.font.FontFamily(
-                            androidx.compose.ui.text.font.Font(R.font.jetbrains_mono_regular, FontWeight.Normal),
+                            androidx.compose.ui.text.font.Font(R.font.space_grotesk_regular, FontWeight.Normal),
                         ),
                         fontSize = 11.sp,
                         modifier = Modifier.weight(1f),
@@ -329,9 +329,9 @@ private fun ChecklistSection(
     ) {
         Text(
             text = category.uppercase(),
-            color = TerminalGreen,
+            color = PhosphorGreen,
             fontFamily = androidx.compose.ui.text.font.FontFamily(
-                androidx.compose.ui.text.font.Font(R.font.jetbrains_mono_medium, FontWeight.Medium),
+                androidx.compose.ui.text.font.Font(R.font.space_grotesk_semi_bold, FontWeight.Medium),
             ),
             fontSize = 13.sp,
         )
@@ -349,12 +349,12 @@ private fun ChecklistSection(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 val checkbox = if (checked) "[X]" else "[ ]"
-                val color = if (checked) TerminalGreen else TerminalGreenDim
+                val color = if (checked) PhosphorGreen else PhosphorGreenDim
                 Text(
                     text = checkbox,
                     color = color,
                     fontFamily = androidx.compose.ui.text.font.FontFamily(
-                        androidx.compose.ui.text.font.Font(R.font.jetbrains_mono_regular, FontWeight.Normal),
+                        androidx.compose.ui.text.font.Font(R.font.space_grotesk_regular, FontWeight.Normal),
                     ),
                     fontSize = 12.sp,
                 )
@@ -362,7 +362,7 @@ private fun ChecklistSection(
                     text = item,
                     color = color,
                     fontFamily = androidx.compose.ui.text.font.FontFamily(
-                        androidx.compose.ui.text.font.Font(R.font.jetbrains_mono_regular, FontWeight.Normal),
+                        androidx.compose.ui.text.font.Font(R.font.space_grotesk_regular, FontWeight.Normal),
                     ),
                     fontSize = 12.sp,
                 )

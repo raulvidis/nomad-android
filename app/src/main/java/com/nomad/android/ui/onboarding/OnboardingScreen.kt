@@ -42,11 +42,11 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.nomad.android.R
 import com.nomad.android.ui.components.TerminalButton
 import com.nomad.android.ui.components.TerminalProgressBar
-import com.nomad.android.ui.theme.TerminalAmber
-import com.nomad.android.ui.theme.TerminalBg
-import com.nomad.android.ui.theme.TerminalGreen
-import com.nomad.android.ui.theme.TerminalGreenDim
-import com.nomad.android.ui.theme.TerminalSurface
+import com.nomad.android.ui.theme.TertiaryAmber
+import com.nomad.android.ui.theme.BackgroundDark
+import com.nomad.android.ui.theme.PhosphorGreen
+import com.nomad.android.ui.theme.PhosphorGreenDim
+import com.nomad.android.ui.theme.SurfaceContainerLow
 import kotlinx.coroutines.delay
 
 @Composable
@@ -67,7 +67,7 @@ fun OnboardingScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(TerminalBg),
+            .background(BackgroundDark),
         contentAlignment = Alignment.Center,
     ) {
         when (currentStep) {
@@ -127,9 +127,9 @@ private fun BootSequenceStep(onAdvance: () -> Unit) {
             val isLastLine = i == visibleLines - 1
             Text(
                 text = if (isLastLine) currentText else lines[i],
-                color = TerminalGreen,
+                color = PhosphorGreen,
                 fontFamily = androidx.compose.ui.text.font.FontFamily(
-                    androidx.compose.ui.text.font.Font(R.font.jetbrains_mono_regular, FontWeight.Normal),
+                    androidx.compose.ui.text.font.Font(R.font.space_grotesk_regular, FontWeight.Normal),
                 ),
                 fontSize = 14.sp,
                 modifier = Modifier.padding(bottom = 8.dp),
@@ -138,9 +138,9 @@ private fun BootSequenceStep(onAdvance: () -> Unit) {
         if (visibleLines > 0 && currentText.length < (lines.getOrNull(visibleLines - 1)?.length ?: 0)) {
             Text(
                 text = "_",
-                color = TerminalGreen,
+                color = PhosphorGreen,
                 fontFamily = androidx.compose.ui.text.font.FontFamily(
-                    androidx.compose.ui.text.font.Font(R.font.jetbrains_mono_regular, FontWeight.Normal),
+                    androidx.compose.ui.text.font.Font(R.font.space_grotesk_regular, FontWeight.Normal),
                 ),
                 fontSize = 14.sp,
             )
@@ -194,9 +194,9 @@ private fun DeviceScanStep(
         ) {
             Text(
                 text = "SCANNING HARDWARE...",
-                color = TerminalGreen,
+                color = PhosphorGreen,
                 fontFamily = androidx.compose.ui.text.font.FontFamily(
-                    androidx.compose.ui.text.font.Font(R.font.jetbrains_mono_medium, FontWeight.Medium),
+                    androidx.compose.ui.text.font.Font(R.font.space_grotesk_semi_bold, FontWeight.Medium),
                 ),
                 fontSize = 16.sp,
                 modifier = Modifier.padding(bottom = 16.dp),
@@ -213,7 +213,7 @@ private fun DeviceScanStep(
                     val okIndex = text.lastIndexOf("[OK]")
                     if (okIndex >= 0) {
                         append(text.substring(0, okIndex))
-                        withStyle(SpanStyle(color = TerminalGreen)) {
+                        withStyle(SpanStyle(color = PhosphorGreen)) {
                             append("[OK]")
                         }
                     } else {
@@ -222,9 +222,9 @@ private fun DeviceScanStep(
                 }
                 Text(
                     text = annotated,
-                    color = TerminalGreenDim,
+                    color = PhosphorGreenDim,
                     fontFamily = androidx.compose.ui.text.font.FontFamily(
-                        androidx.compose.ui.text.font.Font(R.font.jetbrains_mono_regular, FontWeight.Normal),
+                        androidx.compose.ui.text.font.Font(R.font.space_grotesk_regular, FontWeight.Normal),
                     ),
                     fontSize = 13.sp,
                     modifier = Modifier.padding(bottom = 6.dp),
@@ -256,9 +256,9 @@ private fun ModelSelectionStep(
     ) {
         Text(
             text = "SELECT AI MODEL:",
-            color = TerminalAmber,
+            color = TertiaryAmber,
             fontFamily = androidx.compose.ui.text.font.FontFamily(
-                androidx.compose.ui.text.font.Font(R.font.jetbrains_mono_bold, FontWeight.Bold),
+                androidx.compose.ui.text.font.Font(R.font.space_grotesk_bold, FontWeight.Bold),
             ),
             fontSize = 18.sp,
             modifier = Modifier.padding(bottom = 20.dp),
@@ -266,17 +266,17 @@ private fun ModelSelectionStep(
 
         models.forEachIndexed { index, (name, size, desc) ->
             val isSelected = index == selectedIndex
-            val borderColor = if (isSelected) TerminalGreen else TerminalGreenDim
-            val textColor = if (isSelected) TerminalGreen else TerminalGreenDim
+            val borderColor = if (isSelected) PhosphorGreen else PhosphorGreenDim
+            val textColor = if (isSelected) PhosphorGreen else PhosphorGreenDim
 
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .border(
-                        width = if (isSelected) 2.dp else 1.dp,
+                        width = if (isSelected) 2.dp else 2.dp,
                         color = borderColor,
                     )
-                    .background(TerminalSurface)
+                    .background(SurfaceContainerLow)
                     .clickable { selectedIndex = index }
                     .padding(16.dp)
                     .padding(bottom = 12.dp),
@@ -286,16 +286,16 @@ private fun ModelSelectionStep(
                         text = name,
                         color = textColor,
                         fontFamily = androidx.compose.ui.text.font.FontFamily(
-                            androidx.compose.ui.text.font.Font(R.font.jetbrains_mono_medium, FontWeight.Medium),
+                            androidx.compose.ui.text.font.Font(R.font.space_grotesk_semi_bold, FontWeight.Medium),
                         ),
                         fontSize = 15.sp,
                     )
                     Spacer(modifier = Modifier.width(12.dp))
                     Text(
                         text = "— $size",
-                        color = if (isSelected) TerminalAmber else TerminalGreenDim,
+                        color = if (isSelected) TertiaryAmber else PhosphorGreenDim,
                         fontFamily = androidx.compose.ui.text.font.FontFamily(
-                            androidx.compose.ui.text.font.Font(R.font.jetbrains_mono_regular, FontWeight.Normal),
+                            androidx.compose.ui.text.font.Font(R.font.space_grotesk_regular, FontWeight.Normal),
                         ),
                         fontSize = 13.sp,
                     )
@@ -303,9 +303,9 @@ private fun ModelSelectionStep(
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
                             text = "[RECOMMENDED]",
-                            color = TerminalAmber,
+                            color = TertiaryAmber,
                             fontFamily = androidx.compose.ui.text.font.FontFamily(
-                                androidx.compose.ui.text.font.Font(R.font.jetbrains_mono_regular, FontWeight.Normal),
+                                androidx.compose.ui.text.font.Font(R.font.space_grotesk_regular, FontWeight.Normal),
                             ),
                             fontSize = 11.sp,
                         )
@@ -314,9 +314,9 @@ private fun ModelSelectionStep(
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
                     text = desc,
-                    color = if (isSelected) TerminalGreenDim else TerminalGreenDim.copy(alpha = 0.4f),
+                    color = if (isSelected) PhosphorGreenDim else PhosphorGreenDim.copy(alpha = 0.4f),
                     fontFamily = androidx.compose.ui.text.font.FontFamily(
-                        androidx.compose.ui.text.font.Font(R.font.jetbrains_mono_regular, FontWeight.Normal),
+                        androidx.compose.ui.text.font.Font(R.font.space_grotesk_regular, FontWeight.Normal),
                     ),
                     fontSize = 12.sp,
                 )
@@ -373,9 +373,9 @@ private fun DownloadPackStep(onAdvance: () -> Unit) {
     ) {
         Text(
             text = "INITIAL DATA PACK",
-            color = TerminalAmber,
+            color = TertiaryAmber,
             fontFamily = androidx.compose.ui.text.font.FontFamily(
-                androidx.compose.ui.text.font.Font(R.font.jetbrains_mono_bold, FontWeight.Bold),
+                androidx.compose.ui.text.font.Font(R.font.space_grotesk_bold, FontWeight.Bold),
             ),
             fontSize = 18.sp,
             modifier = Modifier.padding(bottom = 8.dp),
@@ -383,9 +383,9 @@ private fun DownloadPackStep(onAdvance: () -> Unit) {
 
         Text(
             text = "Downloading essential survival content...",
-            color = TerminalGreenDim,
+            color = PhosphorGreenDim,
             fontFamily = androidx.compose.ui.text.font.FontFamily(
-                androidx.compose.ui.text.font.Font(R.font.jetbrains_mono_regular, FontWeight.Normal),
+                androidx.compose.ui.text.font.Font(R.font.space_grotesk_regular, FontWeight.Normal),
             ),
             fontSize = 13.sp,
             modifier = Modifier.padding(bottom = 20.dp),
@@ -403,15 +403,15 @@ private fun DownloadPackStep(onAdvance: () -> Unit) {
         for (i in 0 until visibleFiles) {
             val annotated = buildAnnotatedString {
                 append(files[i].first + " ")
-                withStyle(SpanStyle(color = TerminalGreen)) {
+                withStyle(SpanStyle(color = PhosphorGreen)) {
                     append("[OK]")
                 }
             }
             Text(
                 text = annotated,
-                color = TerminalGreenDim,
+                color = PhosphorGreenDim,
                 fontFamily = androidx.compose.ui.text.font.FontFamily(
-                    androidx.compose.ui.text.font.Font(R.font.jetbrains_mono_regular, FontWeight.Normal),
+                    androidx.compose.ui.text.font.Font(R.font.space_grotesk_regular, FontWeight.Normal),
                 ),
                 fontSize = 12.sp,
                 modifier = Modifier.padding(bottom = 4.dp),
@@ -442,9 +442,9 @@ private fun WelcomeStep(onComplete: () -> Unit) {
         ) {
             Text(
                 text = "NOMAD",
-                color = TerminalGreen,
+                color = PhosphorGreen,
                 fontFamily = androidx.compose.ui.text.font.FontFamily(
-                    androidx.compose.ui.text.font.Font(R.font.jetbrains_mono_bold, FontWeight.Bold),
+                    androidx.compose.ui.text.font.Font(R.font.space_grotesk_bold, FontWeight.Bold),
                 ),
                 fontSize = 48.sp,
                 letterSpacing = 8.sp,
@@ -454,9 +454,9 @@ private fun WelcomeStep(onComplete: () -> Unit) {
 
             Text(
                 text = "SURVIVAL SYSTEM READY",
-                color = TerminalAmber,
+                color = TertiaryAmber,
                 fontFamily = androidx.compose.ui.text.font.FontFamily(
-                    androidx.compose.ui.text.font.Font(R.font.jetbrains_mono_medium, FontWeight.Medium),
+                    androidx.compose.ui.text.font.Font(R.font.space_grotesk_semi_bold, FontWeight.Medium),
                 ),
                 fontSize = 14.sp,
                 letterSpacing = 2.sp,
@@ -466,9 +466,9 @@ private fun WelcomeStep(onComplete: () -> Unit) {
 
             Text(
                 text = "All systems operational. Stay safe out there.",
-                color = TerminalGreenDim,
+                color = PhosphorGreenDim,
                 fontFamily = androidx.compose.ui.text.font.FontFamily(
-                    androidx.compose.ui.text.font.Font(R.font.jetbrains_mono_regular, FontWeight.Normal),
+                    androidx.compose.ui.text.font.Font(R.font.space_grotesk_regular, FontWeight.Normal),
                 ),
                 fontSize = 13.sp,
             )
