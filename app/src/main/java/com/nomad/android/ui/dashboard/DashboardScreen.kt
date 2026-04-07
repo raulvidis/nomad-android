@@ -23,6 +23,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import com.nomad.android.R
 import com.nomad.android.ui.components.TerminalCard
@@ -118,7 +119,15 @@ private fun DashboardContent(
                 quickAccessItems.take(2).forEach { item ->
                     QuickAccessCard(
                         item = item,
-                        onClick = { navController.navigate(item.route) },
+                        onClick = {
+                            navController.navigate(item.route) {
+                                popUpTo(navController.graph.findStartDestination().id) {
+                                    saveState = true
+                                }
+                                launchSingleTop = true
+                                restoreState = true
+                            }
+                        },
                         modifier = Modifier.weight(1f),
                     )
                 }
@@ -130,7 +139,15 @@ private fun DashboardContent(
                 quickAccessItems.drop(2).forEach { item ->
                     QuickAccessCard(
                         item = item,
-                        onClick = { navController.navigate(item.route) },
+                        onClick = {
+                            navController.navigate(item.route) {
+                                popUpTo(navController.graph.findStartDestination().id) {
+                                    saveState = true
+                                }
+                                launchSingleTop = true
+                                restoreState = true
+                            }
+                        },
                         modifier = Modifier.weight(1f),
                     )
                 }
