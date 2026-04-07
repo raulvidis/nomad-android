@@ -1,5 +1,8 @@
 package com.nomad.android.ui.chat
 
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -13,9 +16,12 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
@@ -27,28 +33,34 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.FileProvider
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import coil.compose.AsyncImage
 import com.nomad.android.R
 import com.nomad.android.ui.components.TerminalButton
 import com.nomad.android.ui.components.TerminalButtonSize
 import com.nomad.android.ui.components.TerminalButtonVariant
 import com.nomad.android.ui.components.TerminalDivider
-import com.nomad.android.ui.components.TerminalEmptyScreen
 import com.nomad.android.ui.components.TerminalErrorScreen
 import com.nomad.android.ui.components.TerminalLoadingScreen
-import com.nomad.android.ui.components.TerminalText
 import com.nomad.android.ui.components.TerminalTextField
 import com.nomad.android.ui.theme.TertiaryAmber
 import com.nomad.android.ui.theme.BackgroundDark
 import com.nomad.android.ui.theme.PhosphorGreen
 import com.nomad.android.ui.theme.PhosphorGreenDim
 import com.nomad.android.ui.theme.SurfaceContainerLow
+import com.nomad.android.ui.theme.TerminalDanger
+import java.io.File
 
 @Composable
 fun ChatScreen(
@@ -73,11 +85,13 @@ fun ChatScreen(
         }
         else -> ChatContent(
             data = uiState.data,
-            onSendMessage = { viewModel.sendMessage(it) },
+            onSendMessage = { text, image -> viewModel.sendMessage(text, image) },
             onNewSession = { viewModel.newSession() },
             onSelectFilter = { viewModel.selectFilter(it) },
             onSetThinkingPower = { viewModel.setThinkingPower(it) },
             onCompact = { viewModel.compactContext() },
+            onSetPendingImage = { viewModel.setPendingImage(it) },
+            onRemoveFromQueue = { viewModel.removeFromQueue(it) },
         )
     }
 }
@@ -197,13 +211,43 @@ private fun formatTimestamp(millis: Long): String {
 @Composable
 private fun ChatContent(
     data: ChatData,
-    onSendMessage: (String) -> Unit,
+    onSendMessage: (String, String?) -> Unit,
     onNewSession: () -> Unit,
     onSelectFilter: (String) -> Unit,
     onSetThinkingPower: (ThinkingPower) -> Unit,
     onCompact: () -> Unit,
+    onSetPendingImage: (String?) -> Unit,
+    onRemoveFromQueue: (Int) -> Unit,
 ) {
+    val context = LocalContext.current
     var inputText by remember { mutableStateOf("") }
+    var showAttachmentOptions by remember { mutableStateOf(false) }
+
+    // Camera: create a temp file and get its URI
+    var cameraImageUri by remember { mutableStateOf<Uri?>(null) }
+    var cameraImagePath by remember { mutableStateOf<String?>(null) }
+
+    val galleryLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.PickVisualMedia()
+    ) { uri ->
+        if (uri != null) {
+            // Copy to internal storage for persistence
+            val file = File(context.filesDir, "chat_images").apply { mkdirs() }
+            val dest = File(file, "${System.currentTimeMillis()}.jpg")
+            context.contentResolver.openInputStream(uri)?.use { input ->
+                dest.outputStream().use { output -> input.copyTo(output) }
+            }
+            onSetPendingImage(dest.absolutePath)
+        }
+    }
+
+    val cameraLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.TakePicture()
+    ) { success ->
+        if (success && cameraImagePath != null) {
+            onSetPendingImage(cameraImagePath)
+        }
+    }
 
     Column(
         modifier = Modifier
@@ -270,10 +314,11 @@ private fun ChatContent(
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 items(data.messages, key = { "${it.sessionId}_${it.timestamp}_${it.role}" }) { message ->
-                    if (message.content.isNotEmpty()) {
+                    if (message.content.isNotEmpty() || message.imageUri != null) {
                         MessageBubble(
                             isUser = message.role == "user",
                             text = message.content,
+                            imageUri = message.imageUri,
                         )
                     }
                 }
@@ -285,6 +330,58 @@ private fun ChatContent(
 
         // Bottom controls
         Column {
+            // Message queue display
+            if (data.messageQueue.isNotEmpty()) {
+                TerminalDivider(color = PhosphorGreenDim)
+                LazyRow(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 12.dp, vertical = 4.dp),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                ) {
+                    itemsIndexed(data.messageQueue) { index, queued ->
+                        Row(
+                            modifier = Modifier
+                                .background(SurfaceContainerLow)
+                                .border(1.dp, TertiaryAmber.copy(alpha = 0.5f))
+                                .clickable { onRemoveFromQueue(index) }
+                                .padding(horizontal = 8.dp, vertical = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp),
+                        ) {
+                            if (queued.imagePath != null) {
+                                AsyncImage(
+                                    model = File(queued.imagePath),
+                                    contentDescription = null,
+                                    modifier = Modifier
+                                        .size(14.dp)
+                                        .clip(RoundedCornerShape(0.dp)),
+                                    contentScale = ContentScale.Crop,
+                                )
+                            }
+                            Text(
+                                text = queued.content.take(30) + if (queued.content.length > 30) "..." else "",
+                                color = TertiaryAmber,
+                                fontFamily = androidx.compose.ui.text.font.FontFamily(
+                                    androidx.compose.ui.text.font.Font(R.font.space_grotesk_regular, FontWeight.Normal),
+                                ),
+                                fontSize = 10.sp,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                            Text(
+                                text = "X",
+                                color = TerminalDanger,
+                                fontFamily = androidx.compose.ui.text.font.FontFamily(
+                                    androidx.compose.ui.text.font.Font(R.font.space_grotesk_bold, FontWeight.Bold),
+                                ),
+                                fontSize = 9.sp,
+                            )
+                        }
+                    }
+                }
+            }
+
             TerminalDivider(color = PhosphorGreen)
             Spacer(modifier = Modifier.height(6.dp))
 
@@ -399,6 +496,101 @@ private fun ChatContent(
 
             Spacer(modifier = Modifier.height(4.dp))
 
+            // Pending image preview
+            if (data.pendingImagePath != null) {
+                Row(
+                    modifier = Modifier
+                        .padding(horizontal = 12.dp, vertical = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    Box {
+                        AsyncImage(
+                            model = File(data.pendingImagePath),
+                            contentDescription = "Attached image",
+                            modifier = Modifier
+                                .size(56.dp)
+                                .border(1.dp, PhosphorGreen)
+                                .clip(RoundedCornerShape(0.dp)),
+                            contentScale = ContentScale.Crop,
+                        )
+                        // X button overlay
+                        Box(
+                            modifier = Modifier
+                                .align(Alignment.TopEnd)
+                                .size(18.dp)
+                                .background(BackgroundDark.copy(alpha = 0.8f))
+                                .border(1.dp, TerminalDanger)
+                                .clickable { onSetPendingImage(null) },
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Text(
+                                text = "X",
+                                color = TerminalDanger,
+                                fontSize = 9.sp,
+                                fontFamily = androidx.compose.ui.text.font.FontFamily(
+                                    androidx.compose.ui.text.font.Font(R.font.space_grotesk_bold, FontWeight.Bold),
+                                ),
+                            )
+                        }
+                    }
+                    Text(
+                        text = "IMAGE ATTACHED",
+                        color = PhosphorGreenDim,
+                        fontFamily = androidx.compose.ui.text.font.FontFamily(
+                            androidx.compose.ui.text.font.Font(R.font.space_grotesk_regular, FontWeight.Normal),
+                        ),
+                        fontSize = 10.sp,
+                    )
+                }
+            }
+
+            // Attachment options popup
+            if (showAttachmentOptions) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 12.dp, vertical = 2.dp),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                ) {
+                    TerminalButton(
+                        text = "GALLERY",
+                        onClick = {
+                            showAttachmentOptions = false
+                            galleryLauncher.launch(
+                                androidx.activity.result.PickVisualMediaRequest(
+                                    ActivityResultContracts.PickVisualMedia.ImageOnly
+                                )
+                            )
+                        },
+                        size = TerminalButtonSize.SMALL,
+                    )
+                    TerminalButton(
+                        text = "CAMERA",
+                        onClick = {
+                            showAttachmentOptions = false
+                            val imageDir = File(context.filesDir, "chat_images").apply { mkdirs() }
+                            val imageFile = File(imageDir, "${System.currentTimeMillis()}.jpg")
+                            cameraImagePath = imageFile.absolutePath
+                            val uri = FileProvider.getUriForFile(
+                                context,
+                                "${context.packageName}.fileprovider",
+                                imageFile
+                            )
+                            cameraImageUri = uri
+                            cameraLauncher.launch(uri)
+                        },
+                        size = TerminalButtonSize.SMALL,
+                    )
+                    TerminalButton(
+                        text = "CANCEL",
+                        onClick = { showAttachmentOptions = false },
+                        size = TerminalButtonSize.SMALL,
+                        variant = TerminalButtonVariant.DANGER,
+                    )
+                }
+            }
+
             // Input row
             Row(
                 modifier = Modifier
@@ -406,25 +598,46 @@ private fun ChatContent(
                     .padding(horizontal = 12.dp, vertical = 4.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
+                // Attachment button
+                Box(
+                    modifier = Modifier
+                        .size(36.dp)
+                        .border(2.dp, PhosphorGreenDim, RoundedCornerShape(0.dp))
+                        .background(SurfaceContainerLow, RoundedCornerShape(0.dp))
+                        .clickable { showAttachmentOptions = !showAttachmentOptions },
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        text = "+",
+                        color = PhosphorGreen,
+                        fontFamily = androidx.compose.ui.text.font.FontFamily(
+                            androidx.compose.ui.text.font.Font(R.font.space_grotesk_bold, FontWeight.Bold),
+                        ),
+                        fontSize = 16.sp,
+                    )
+                }
+
+                Spacer(modifier = Modifier.width(6.dp))
+
                 TerminalTextField(
                     value = inputText,
                     onValueChange = { inputText = it },
                     modifier = Modifier.weight(1f),
-                    placeholder = "Enter query...",
+                    placeholder = if (data.isStreaming) "Queue a message..." else "Enter query...",
                     singleLine = true,
                 )
 
                 Spacer(modifier = Modifier.width(8.dp))
 
                 TerminalButton(
-                    text = "Send",
+                    text = if (data.isStreaming) "Queue" else "Send",
                     onClick = {
-                        if (inputText.isNotBlank()) {
-                            onSendMessage(inputText)
+                        if (inputText.isNotBlank() || data.pendingImagePath != null) {
+                            onSendMessage(inputText, null)
                             inputText = ""
                         }
                     },
-                    enabled = inputText.isNotBlank() && !data.isStreaming,
+                    enabled = inputText.isNotBlank() || data.pendingImagePath != null,
                 )
             }
 
@@ -434,7 +647,7 @@ private fun ChatContent(
 }
 
 @Composable
-private fun MessageBubble(isUser: Boolean, text: String) {
+private fun MessageBubble(isUser: Boolean, text: String, imageUri: String? = null) {
     val borderColor = if (isUser) PhosphorGreen else TertiaryAmber
     val prefix = if (isUser) "QUERY" else "RESPONSE"
     val prefixColor = if (isUser) PhosphorGreen else TertiaryAmber
@@ -462,16 +675,31 @@ private fun MessageBubble(isUser: Boolean, text: String) {
             fontSize = 10.sp,
             letterSpacing = 1.sp,
         )
-        Spacer(modifier = Modifier.height(4.dp))
-        Text(
-            text = text,
-            color = if (isUser) PhosphorGreen else TertiaryAmber,
-            fontFamily = androidx.compose.ui.text.font.FontFamily(
-                androidx.compose.ui.text.font.Font(R.font.space_grotesk_regular, FontWeight.Normal),
-            ),
-            fontSize = 13.sp,
-            lineHeight = 18.sp,
-        )
+        if (imageUri != null) {
+            Spacer(modifier = Modifier.height(6.dp))
+            AsyncImage(
+                model = File(imageUri),
+                contentDescription = "Attached image",
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(180.dp)
+                    .border(1.dp, borderColor.copy(alpha = 0.5f))
+                    .clip(RoundedCornerShape(0.dp)),
+                contentScale = ContentScale.Crop,
+            )
+        }
+        if (text.isNotEmpty()) {
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = text,
+                color = if (isUser) PhosphorGreen else TertiaryAmber,
+                fontFamily = androidx.compose.ui.text.font.FontFamily(
+                    androidx.compose.ui.text.font.Font(R.font.space_grotesk_regular, FontWeight.Normal),
+                ),
+                fontSize = 13.sp,
+                lineHeight = 18.sp,
+            )
+        }
     }
 }
 

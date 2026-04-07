@@ -19,7 +19,15 @@ class FallbackEngine : AIEngine {
         "first aid" to "First aid basics: 1) Stop bleeding first. 2) Treat for shock (lay down, elevate legs, keep warm). 3) Splint fractures with rigid materials. 4) Burns: cool with water, cover with clean dressing. 5) Never give food/water to unconscious person."
     )
 
-    override suspend fun generate(prompt: String, context: List<String>): String {
+    override suspend fun generate(prompt: String, context: List<String>, imagePath: String?): String {
+        if (imagePath != null) {
+            return buildString {
+                appendLine("[FALLBACK MODE - AI model not available]")
+                appendLine()
+                appendLine("Image analysis requires the AI model. Download a model pack in Settings.")
+            }
+        }
+
         val lowercasePrompt = prompt.lowercase()
         val matchedResponses = survivalKeywords.filter { (keyword, _) ->
             lowercasePrompt.contains(keyword)
@@ -50,8 +58,8 @@ class FallbackEngine : AIEngine {
         }
     }
 
-    override fun generateStream(prompt: String, context: List<String>): Flow<String> = flow {
-        val response = generate(prompt, context)
+    override fun generateStream(prompt: String, context: List<String>, imagePath: String?): Flow<String> = flow {
+        val response = generate(prompt, context, imagePath)
         response.chunked(5).forEach { chunk ->
             emit(chunk)
             kotlinx.coroutines.delay(20)

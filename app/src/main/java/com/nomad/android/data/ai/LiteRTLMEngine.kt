@@ -2,7 +2,9 @@ package com.nomad.android.data.ai
 
 import android.app.ActivityManager
 import android.content.Context
+import android.graphics.BitmapFactory
 import android.os.Build
+import android.util.Base64
 import android.util.Log
 import com.nomad.android.data.Result
 import com.google.mediapipe.tasks.genai.llminference.LlmInference
@@ -11,6 +13,7 @@ import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.withContext
+import java.io.ByteArrayOutputStream
 import java.io.File
 
 class LiteRTLMEngine(
@@ -32,6 +35,20 @@ class LiteRTLMEngine(
             ramRequiredMB = 2048,
             sizeMB = 2643,
             downloadUrl = "https://huggingface.co/litert-community/gemma-4-E2B-it-litert-lm/resolve/main/gemma-4-E2B-it.litertlm"
+        ),
+        QWEN35_2B(
+            displayName = "Qwen 3.5 2B",
+            fileName = "qwen35_2b_q4.litertlm",
+            ramRequiredMB = 1536,
+            sizeMB = 1096,
+            downloadUrl = "https://huggingface.co/paulsp94/Qwen3.5-2B-LiteRT-LM/resolve/main/qwen35_2b_q4.litertlm"
+        ),
+        QWEN35_08B(
+            displayName = "Qwen 3.5 0.8B",
+            fileName = "qwen35_mm_q8_ekv2048.litertlm",
+            ramRequiredMB = 1024,
+            sizeMB = 1188,
+            downloadUrl = "https://huggingface.co/GabrieleConte/Qwen3.5-0.8B-LiteRT/resolve/main/qwen35_mm_q8_ekv2048.litertlm"
         )
     }
 
@@ -81,7 +98,7 @@ class LiteRTLMEngine(
         return cleaned.ifEmpty { null }
     }
 
-    override suspend fun generate(prompt: String, context: List<String>): String = withContext(Dispatchers.IO) {
+    override suspend fun generate(prompt: String, context: List<String>, imagePath: String?): String = withContext(Dispatchers.IO) {
         if (!isModelLoaded) {
             val result = loadModel()
             if (result.isError) {
@@ -99,7 +116,7 @@ class LiteRTLMEngine(
         }
 
         val inference = llmInference ?: return@withContext "Model not loaded. Try restarting the app."
-        val fullPrompt = buildPromptWithContext(prompt, context)
+        val fullPrompt = buildPromptWithContext(prompt, context, imagePath)
 
         try {
             val raw = inference.generateResponse(fullPrompt)
@@ -110,7 +127,7 @@ class LiteRTLMEngine(
         }
     }
 
-    override fun generateStream(prompt: String, context: List<String>): Flow<String> = callbackFlow {
+    override fun generateStream(prompt: String, context: List<String>, imagePath: String?): Flow<String> = callbackFlow {
         if (!isModelLoaded) {
             withContext(Dispatchers.IO) { loadModel() }.let { result ->
                 if (result.isError) {
@@ -128,9 +145,11 @@ class LiteRTLMEngine(
             return@callbackFlow
         }
 
-        val fullPrompt = buildPromptWithContext(prompt, context)
+        val fullPrompt = buildPromptWithContext(prompt, context, imagePath)
         var shouldStop = false
         var emittedToken = false
+        // Buffer to detect stop tokens that arrive split across chunks
+        val pendingBuffer = StringBuilder()
 
         try {
             inference.generateResponseAsync(fullPrompt) { partialResult, done ->
@@ -140,22 +159,41 @@ class LiteRTLMEngine(
                 }
 
                 if (done) {
+                    // Flush any remaining buffered content
+                    if (pendingBuffer.isNotEmpty()) {
+                        val cleaned = cleanToken(pendingBuffer.toString())
+                        if (!cleaned.isNullOrEmpty()) trySend(cleaned)
+                        pendingBuffer.clear()
+                    }
                     if (!isClosedForSend) close()
                     return@generateResponseAsync
                 }
 
-                if (stopTokens.any { partialResult.contains(it) }) {
+                pendingBuffer.append(partialResult)
+                val buffered = pendingBuffer.toString()
+
+                // Check if buffer contains a complete stop token
+                if (stopTokens.any { buffered.contains(it) }) {
                     shouldStop = true
-                    val beforeStop = partialResult
+                    val beforeStop = buffered
                         .split(Regex("""</?(?:end_of_turn|eos|tool_response|channel|turn)\s*[^>]*>|turn\u25B7"""))
                         .firstOrNull()
                     val cleaned = beforeStop?.let { cleanToken(it) }
                     if (!cleaned.isNullOrEmpty()) trySend(cleaned)
+                    pendingBuffer.clear()
                     if (!isClosedForSend) close()
                     return@generateResponseAsync
                 }
 
-                val cleaned = cleanToken(partialResult)
+                // If buffer might contain a partial stop token (starts with '<'),
+                // hold it until more data arrives
+                if (buffered.contains("<") && !buffered.contains(">")) {
+                    return@generateResponseAsync
+                }
+
+                // No partial tag detected — flush the buffer
+                val cleaned = cleanToken(buffered)
+                pendingBuffer.clear()
                 if (cleaned != null) {
                     emittedToken = true
                     trySend(cleaned)
@@ -243,7 +281,7 @@ class LiteRTLMEngine(
         return cleaned.trim()
     }
 
-    private fun buildPromptWithContext(prompt: String, context: List<String>): String {
+    private fun buildPromptWithContext(prompt: String, context: List<String>, imagePath: String? = null): String {
         return buildString {
             append("<start_of_turn>user\n")
             appendLine(SYSTEM_PROMPT)
@@ -253,9 +291,38 @@ class LiteRTLMEngine(
                 context.forEach { appendLine(it) }
                 appendLine()
             }
+            if (imagePath != null) {
+                val imageBase64 = encodeImageToBase64(imagePath)
+                if (imageBase64 != null) {
+                    appendLine("[User attached an image]")
+                    append("<image>data:image/jpeg;base64,")
+                    append(imageBase64)
+                    appendLine("</image>")
+                }
+            }
             append(prompt)
             append("<end_of_turn>\n")
             append("<start_of_turn>model\n")
+        }
+    }
+
+    private fun encodeImageToBase64(imagePath: String): String? {
+        return try {
+            val file = File(imagePath)
+            if (!file.exists()) return null
+            // Downscale large images to keep prompt size manageable
+            val options = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+            BitmapFactory.decodeFile(imagePath, options)
+            val scale = maxOf(1, maxOf(options.outWidth, options.outHeight) / 1024)
+            val decodeOptions = BitmapFactory.Options().apply { inSampleSize = scale }
+            val bitmap = BitmapFactory.decodeFile(imagePath, decodeOptions) ?: return null
+            val baos = ByteArrayOutputStream()
+            bitmap.compress(android.graphics.Bitmap.CompressFormat.JPEG, 80, baos)
+            bitmap.recycle()
+            Base64.encodeToString(baos.toByteArray(), Base64.NO_WRAP)
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to encode image", e)
+            null
         }
     }
 
@@ -264,7 +331,11 @@ class LiteRTLMEngine(
 
         private const val SYSTEM_PROMPT = """You are NOMAD, an offline survival assistant. You give clear, concise, and practical answers about survival, first aid, navigation, emergency preparedness, and general knowledge. Keep answers direct and actionable. Do not include any XML tags, control tokens, or internal reasoning in your responses."""
 
-        fun recommendedVariant(totalRamMB: Long): ModelVariant = ModelVariant.GEMMA4_E2B
+        fun recommendedVariant(totalRamMB: Long): ModelVariant = when {
+            totalRamMB >= 2048 -> ModelVariant.GEMMA4_E2B
+            totalRamMB >= 1536 -> ModelVariant.QWEN35_2B
+            else -> ModelVariant.QWEN35_08B
+        }
     }
 
 }

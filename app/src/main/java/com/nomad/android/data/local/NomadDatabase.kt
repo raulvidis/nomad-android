@@ -31,7 +31,7 @@ import com.nomad.android.data.local.entity.TrackRouteEntity
         LocationSavedPointEntity::class,
         TrackRouteEntity::class
     ],
-    version = 3,
+    version = 4,
     exportSchema = true
 )
 abstract class NomadDatabase : RoomDatabase() {
@@ -94,6 +94,12 @@ abstract class NomadDatabase : RoomDatabase() {
                     """.trimIndent()
                 )
                 db.execSQL("ALTER TABLE location_snapshots ADD COLUMN routeId TEXT DEFAULT NULL")
+            }
+        }
+
+        val MIGRATION_3_4 = object : Migration(3, 4) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE chat_messages ADD COLUMN imageUri TEXT DEFAULT NULL")
             }
         }
     }

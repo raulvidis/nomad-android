@@ -3,8 +3,8 @@ package com.nomad.android.data.ai
 import kotlinx.coroutines.flow.Flow
 
 interface AIEngine {
-    suspend fun generate(prompt: String, context: List<String>): String
-    fun generateStream(prompt: String, context: List<String>): Flow<String>
+    suspend fun generate(prompt: String, context: List<String>, imagePath: String? = null): String
+    fun generateStream(prompt: String, context: List<String>, imagePath: String? = null): Flow<String>
     suspend fun isAvailable(): Boolean
     fun getModelName(): String
     fun getDeviceInfo(): DeviceInfo
@@ -21,6 +21,8 @@ data class DeviceInfo(
 
 enum class AIEngineType(val displayName: String) {
     LITERTLM_E2B("LiteRT-LM (Gemma 4 E2B)"),
+    LITERTLM_QWEN35_2B("LiteRT-LM (Qwen 3.5 2B)"),
+    LITERTLM_QWEN35_08B("LiteRT-LM (Qwen 3.5 0.8B)"),
     FALLBACK("Fallback (Rule-Based)"),
     NONE("No AI Engine Available")
 }

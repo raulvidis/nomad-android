@@ -2,10 +2,12 @@ package com.nomad.android.ui.onboarding
 
 import android.app.ActivityManager
 import android.content.Context
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.nomad.android.data.ai.AIEngine
 import com.nomad.android.data.ai.LiteRTLMEngine
+import com.nomad.android.data.content.ContentPackManager
 import com.nomad.android.data.repository.SettingsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -45,7 +47,8 @@ data class OnboardingUiState(
 class OnboardingViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
     private val settingsRepository: SettingsRepository,
-    private val aiEngine: AIEngine
+    private val aiEngine: AIEngine,
+    private val contentPackManager: ContentPackManager
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(OnboardingUiState(isLoading = true))
@@ -104,6 +107,27 @@ class OnboardingViewModel @Inject constructor(
     fun selectModel(modelName: String) {
         _uiState.update {
             it.copy(data = it.data.copy(selectedModel = modelName))
+        }
+    }
+
+    fun downloadSelectedModel() {
+        val modelName = _uiState.value.data.selectedModel
+        val variant = LiteRTLMEngine.ModelVariant.entries.find { it.displayName == modelName } ?: return
+        val packId = when (variant) {
+            LiteRTLMEngine.ModelVariant.GEMMA4_E2B -> "ai_gemma4"
+            LiteRTLMEngine.ModelVariant.QWEN35_2B -> "ai_qwen35_2b"
+            LiteRTLMEngine.ModelVariant.QWEN35_08B -> "ai_qwen35_08b"
+        }
+        viewModelScope.launch {
+            try {
+                contentPackManager.downloadPack(packId).collect { progress ->
+                    _uiState.update {
+                        it.copy(data = it.data.copy(downloadProgress = progress))
+                    }
+                }
+            } catch (e: Exception) {
+                Log.e("OnboardingViewModel", "Model download failed", e)
+            }
         }
     }
 

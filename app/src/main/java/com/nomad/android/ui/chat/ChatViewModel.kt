@@ -22,7 +22,13 @@ data class ChatMessage(
     val sessionId: String,
     val role: String,
     val content: String,
-    val timestamp: Long = System.currentTimeMillis()
+    val timestamp: Long = System.currentTimeMillis(),
+    val imageUri: String? = null
+)
+
+data class QueuedMessage(
+    val content: String,
+    val imagePath: String? = null
 )
 
 data class ChatSession(
@@ -46,7 +52,9 @@ data class ChatData(
     val contextFilters: List<String> = listOf("All", "Survival", "First Aid", "Wikipedia"),
     val selectedFilter: String = "All",
     val thinkingPower: ThinkingPower = ThinkingPower.LOW,
-    val contextTokenCount: Int = 0
+    val contextTokenCount: Int = 0,
+    val messageQueue: List<QueuedMessage> = emptyList(),
+    val pendingImagePath: String? = null
 )
 
 data class ChatUiState(
@@ -139,7 +147,8 @@ class ChatViewModel @Inject constructor(
                                 sessionId = entity.sessionId,
                                 role = entity.role,
                                 content = entity.content,
-                                timestamp = entity.timestamp
+                                timestamp = entity.timestamp,
+                                imageUri = entity.imageUri
                             )
                         }
                         _uiState.update {
@@ -163,12 +172,28 @@ class ChatViewModel @Inject constructor(
         }
     }
 
-    fun sendMessage(content: String) {
-        if (_uiState.value.data.isStreaming) return
+    fun sendMessage(content: String, imagePath: String? = null) {
+        val image = imagePath ?: _uiState.value.data.pendingImagePath
+        // Clear pending image
+        if (_uiState.value.data.pendingImagePath != null) {
+            _uiState.update { it.copy(data = it.data.copy(pendingImagePath = null)) }
+        }
+
+        // If streaming, queue the message
+        if (_uiState.value.data.isStreaming) {
+            _uiState.update {
+                it.copy(
+                    data = it.data.copy(
+                        messageQueue = it.data.messageQueue + QueuedMessage(content, image)
+                    )
+                )
+            }
+            return
+        }
 
         val sessionId = _uiState.value.data.currentSessionId
         if (sessionId != null) {
-            sendUserMessage(sessionId, content)
+            sendUserMessage(sessionId, content, image)
         } else {
             val newId = UUID.randomUUID().toString()
             val session = ChatSession(
@@ -194,16 +219,31 @@ class ChatViewModel @Inject constructor(
                         updatedAt = session.updatedAt
                     )
                 )
-                sendUserMessage(newId, content)
+                sendUserMessage(newId, content, image)
             }
         }
     }
 
-    private fun sendUserMessage(sessionId: String, content: String) {
+    fun setPendingImage(path: String?) {
+        _uiState.update { it.copy(data = it.data.copy(pendingImagePath = path)) }
+    }
+
+    fun removeFromQueue(index: Int) {
+        _uiState.update {
+            it.copy(
+                data = it.data.copy(
+                    messageQueue = it.data.messageQueue.toMutableList().apply { removeAt(index) }
+                )
+            )
+        }
+    }
+
+    private fun sendUserMessage(sessionId: String, content: String, imagePath: String? = null) {
         val userMessage = ChatMessage(
             sessionId = sessionId,
             role = "user",
-            content = content
+            content = content,
+            imageUri = imagePath
         )
 
         val streamingMessage = ChatMessage(
@@ -251,7 +291,8 @@ class ChatViewModel @Inject constructor(
                     sessionId = sessionId,
                     role = "user",
                     content = content,
-                    timestamp = System.currentTimeMillis()
+                    timestamp = System.currentTimeMillis(),
+                    imageUri = imagePath
                 )
             )
 
@@ -265,7 +306,7 @@ class ChatViewModel @Inject constructor(
                     conversationContext
                 }
 
-                aiEngine.generateStream(content, fullContext).collect { token ->
+                aiEngine.generateStream(content, fullContext, imagePath).collect { token ->
                     responseBuilder.append(token)
                     val currentResponse = responseBuilder.toString()
                     _uiState.update { state ->
@@ -275,7 +316,11 @@ class ChatViewModel @Inject constructor(
                     }
                 }
 
-                val finalResponse = responseBuilder.toString().trim()
+                val finalResponse = responseBuilder.toString()
+                    .replace(Regex("""</?(?:start_of_turn|end_of_turn|end_of_session|eos|turn|bos|tool_response|channel|thought|system)\s*[^>]*>"""), "")
+                    .replace("turn\u25B7", "")
+                    .replace(Regex("""\n{3,}"""), "\n\n")
+                    .trim()
 
                 // Update the final message
                 _uiState.update { state ->
@@ -308,7 +353,21 @@ class ChatViewModel @Inject constructor(
                     )
                 }
             }
+
+            // Dequeue next message if any
+            processQueue(sessionId)
         }
+    }
+
+    private fun processQueue(sessionId: String) {
+        val queue = _uiState.value.data.messageQueue
+        if (queue.isEmpty()) return
+
+        val next = queue.first()
+        _uiState.update {
+            it.copy(data = it.data.copy(messageQueue = it.data.messageQueue.drop(1)))
+        }
+        sendUserMessage(sessionId, next.content, next.imagePath)
     }
 
     fun setThinkingPower(power: ThinkingPower) {
@@ -390,12 +449,26 @@ class ChatViewModel @Inject constructor(
     }
 
     private fun estimateTokenCount(messages: List<ChatMessage>): Int {
-        return messages.sumOf { estimateTokenCount(it.content) }
+        // Count what actually gets sent: system prompt + windowed context + latest message
+        // System prompt + formatting overhead (~200 tokens)
+        var total = SYSTEM_PROMPT_TOKENS
+
+        // Count the context window that buildContext() would produce
+        val context = buildContext()
+        total += context.sumOf { estimateTokenCount(it) }
+
+        // Count the latest user message (if any)
+        val lastUserMsg = messages.lastOrNull { it.role == "user" }
+        if (lastUserMsg != null) {
+            total += estimateTokenCount(lastUserMsg.content)
+        }
+
+        return total
     }
 
     private fun estimateTokenCount(text: String): Int {
-        // Gemma tokenizer averages ~3.5 chars per token for English
-        return (text.length / 3.5).toInt().coerceAtLeast(1)
+        // Gemma tokenizer averages ~4 chars per token for English
+        return (text.length / 4.0).toInt().coerceAtLeast(1)
     }
 
     private fun autoCompactIfNeeded() {
@@ -422,8 +495,11 @@ class ChatViewModel @Inject constructor(
     }
 
     companion object {
-        private const val MAX_CONTEXT_TOKENS = 128_000
+        // Gemma 4 E2B: 128K context, reserve 1024 for generation output
+        private const val MAX_CONTEXT_TOKENS = 127_000
         private const val AUTO_COMPACT_THRESHOLD = 100_000
+        // Approximate tokens for the system prompt + turn formatting overhead
+        private const val SYSTEM_PROMPT_TOKENS = 80
 
         // Built-in knowledge base entries: (category, title, content)
         private val KNOWLEDGE_BASE = listOf(

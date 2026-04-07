@@ -27,10 +27,8 @@ object AIModule {
         activityManager.getMemoryInfo(memoryInfo)
         val totalRamMB = memoryInfo.totalMem / (1024 * 1024)
 
-        return when {
-            totalRamMB >= 2048 -> LiteRTLMEngine(context, LiteRTLMEngine.ModelVariant.GEMMA4_E2B, totalRamMB)
-            else -> FallbackEngine()
-        }
+        val variant = LiteRTLMEngine.recommendedVariant(totalRamMB)
+        return LiteRTLMEngine(context, variant, totalRamMB)
     }
 
     @Provides
@@ -44,10 +42,9 @@ object AIModule {
         return AIEngineStatus(
             engineType = when (engine) {
                 is LiteRTLMEngine -> AIEngineType.LITERTLM_E2B
-                is FallbackEngine -> AIEngineType.FALLBACK
-                else -> AIEngineType.NONE
+                else -> AIEngineType.FALLBACK
             },
-            isReady = engine is FallbackEngine,
+            isReady = false,
             modelName = engine.getModelName(),
             ramRequired = "${deviceInfo.totalRamMB}MB total",
             modelSize = if (engine is LiteRTLMEngine) "${engine.getModelSizeMB()} MB" else "N/A"

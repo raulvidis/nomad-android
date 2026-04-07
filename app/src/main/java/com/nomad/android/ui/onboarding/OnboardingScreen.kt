@@ -79,6 +79,7 @@ fun OnboardingScreen(
             2 -> ModelSelectionStep(
                 selectedModel = uiState.data.selectedModel,
                 onSelectModel = { viewModel.selectModel(it) },
+                onDownloadModel = { viewModel.downloadSelectedModel() },
             ) { viewModel.nextStep() }
             3 -> DownloadPackStep { viewModel.nextStep() }
             else -> WelcomeStep { viewModel.completeOnboarding() }
@@ -238,15 +239,25 @@ private fun DeviceScanStep(
 private fun ModelSelectionStep(
     selectedModel: String,
     onSelectModel: (String) -> Unit,
+    onDownloadModel: (String) -> Unit,
     onAdvance: () -> Unit,
 ) {
     val models = remember {
-        listOf(
-            Triple("GEMMA 4 E2B", "2.0 GB", "On-device LLM — download in Settings after setup"),
-        )
+        com.nomad.android.data.ai.LiteRTLMEngine.ModelVariant.entries.map { variant ->
+            Triple(
+                variant.displayName,
+                "%.1f GB".format(variant.sizeMB / 1024.0),
+                when (variant) {
+                    com.nomad.android.data.ai.LiteRTLMEngine.ModelVariant.GEMMA4_E2B -> "Multimodal — text, image, audio"
+                    com.nomad.android.data.ai.LiteRTLMEngine.ModelVariant.QWEN35_2B -> "Text generation — compact & fast"
+                    com.nomad.android.data.ai.LiteRTLMEngine.ModelVariant.QWEN35_08B -> "Ultra-light — minimal RAM usage"
+                }
+            )
+        }
     }
 
     var selectedIndex by remember { mutableIntStateOf(0) }
+    var showDownloadPrompt by remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier
@@ -273,7 +284,7 @@ private fun ModelSelectionStep(
                 modifier = Modifier
                     .fillMaxWidth()
                     .border(
-                        width = if (isSelected) 2.dp else 2.dp,
+                        width = 2.dp,
                         color = borderColor,
                     )
                     .background(SurfaceContainerLow)
@@ -326,14 +337,64 @@ private fun ModelSelectionStep(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        TerminalButton(
-            text = "CONFIRM SELECTION",
-            onClick = {
-                onSelectModel(models[selectedIndex].first)
-                onAdvance()
-            },
-            modifier = Modifier.fillMaxWidth(),
-        )
+        if (showDownloadPrompt) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .border(2.dp, TertiaryAmber)
+                    .background(SurfaceContainerLow)
+                    .padding(16.dp),
+            ) {
+                Text(
+                    text = "DOWNLOAD ${models[selectedIndex].first.uppercase()}?",
+                    color = TertiaryAmber,
+                    fontFamily = androidx.compose.ui.text.font.FontFamily(
+                        androidx.compose.ui.text.font.Font(R.font.space_grotesk_bold, FontWeight.Bold),
+                    ),
+                    fontSize = 14.sp,
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = "This will download ${models[selectedIndex].second} over your current network connection.",
+                    color = PhosphorGreenDim,
+                    fontFamily = androidx.compose.ui.text.font.FontFamily(
+                        androidx.compose.ui.text.font.Font(R.font.space_grotesk_regular, FontWeight.Normal),
+                    ),
+                    fontSize = 12.sp,
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    TerminalButton(
+                        text = "DOWNLOAD NOW",
+                        onClick = {
+                            onSelectModel(models[selectedIndex].first)
+                            onDownloadModel(models[selectedIndex].first)
+                            showDownloadPrompt = false
+                            onAdvance()
+                        },
+                        modifier = Modifier.weight(1f),
+                    )
+                    TerminalButton(
+                        text = "SKIP",
+                        onClick = {
+                            onSelectModel(models[selectedIndex].first)
+                            showDownloadPrompt = false
+                            onAdvance()
+                        },
+                        modifier = Modifier.weight(1f),
+                    )
+                }
+            }
+        } else {
+            TerminalButton(
+                text = "CONFIRM SELECTION",
+                onClick = { showDownloadPrompt = true },
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
     }
 }
 

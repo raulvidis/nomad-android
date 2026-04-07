@@ -90,27 +90,11 @@ fun SettingsScreen(
             }
         }
 
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            Column(
-                modifier = Modifier.weight(5f),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                AiEngineCard(uiState)
-                StorageCard(uiState)
-                AmbientDataSection(uiState)
-            }
-
-            Column(
-                modifier = Modifier.weight(7f),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                ContentPacksCard(uiState, viewModel)
-                TerminalLogSection()
-            }
-        }
+        AiEngineCard(uiState)
+        StorageCard(uiState)
+        ContentPacksCard(uiState, viewModel)
+        AmbientDataSection(uiState)
+        TerminalLogSection()
     }
 }
 

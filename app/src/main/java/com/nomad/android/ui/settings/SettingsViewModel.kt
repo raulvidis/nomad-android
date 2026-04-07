@@ -50,6 +50,7 @@ class SettingsViewModel @Inject constructor(
 
     init {
         loadSettings()
+        observeActiveDownloads()
     }
 
     private fun loadSettings() {
@@ -58,15 +59,18 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch {
             val storageMetrics = settingsRepository.getStorageMetrics()
             val packs = contentPackManager.getAvailablePacks().first()
+            val active = contentPackManager.activeDownloads.value
 
             val contentPacks = packs.map { pack ->
+                val isActive = active.containsKey(pack.id)
                 ContentPackInfo(
                     id = pack.id,
                     name = pack.name,
                     type = pack.type,
                     size = contentPackManager.formatSize(pack.sizeBytes),
-                    isDownloaded = pack.status == PackStatus.DOWNLOADED,
-                    isDownloading = pack.status == PackStatus.DOWNLOADING
+                    isDownloaded = pack.status == PackStatus.DOWNLOADED && !isActive,
+                    isDownloading = isActive,
+                    downloadProgress = active[pack.id] ?: 0f
                 )
             }
 
@@ -79,6 +83,35 @@ class SettingsViewModel @Inject constructor(
                         contentPacks = contentPacks
                     )
                 )
+            }
+        }
+    }
+
+    private fun observeActiveDownloads() {
+        viewModelScope.launch {
+            contentPackManager.activeDownloads.collect { active ->
+                _uiState.update { state ->
+                    state.copy(data = state.data.copy(
+                        contentPacks = state.data.contentPacks.map { pack ->
+                            if (active.containsKey(pack.id)) {
+                                pack.copy(
+                                    isDownloading = true,
+                                    downloadProgress = active[pack.id] ?: 0f
+                                )
+                            } else if (pack.isDownloading && !active.containsKey(pack.id)) {
+                                // Download just finished — check if file exists
+                                val isNowDownloaded = contentPackManager.isPackDownloaded(pack.id)
+                                pack.copy(
+                                    isDownloading = false,
+                                    isDownloaded = isNowDownloaded,
+                                    downloadProgress = if (isNowDownloaded) 1f else 0f
+                                )
+                            } else {
+                                pack
+                            }
+                        }
+                    ))
+                }
             }
         }
     }

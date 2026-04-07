@@ -6,8 +6,8 @@ import org.junit.Test
 class RAGEngineTest {
 
     private val mockEngine = object : AIEngine {
-        override suspend fun generate(prompt: String, context: List<String>): String = "mock"
-        override fun generateStream(prompt: String, context: List<String>): kotlinx.coroutines.flow.Flow<String> =
+        override suspend fun generate(prompt: String, context: List<String>, imagePath: String?): String = "mock"
+        override fun generateStream(prompt: String, context: List<String>, imagePath: String?): kotlinx.coroutines.flow.Flow<String> =
             kotlinx.coroutines.flow.flow { emit("mock") }
         override suspend fun isAvailable(): Boolean = true
         override fun getModelName(): String = "mock"

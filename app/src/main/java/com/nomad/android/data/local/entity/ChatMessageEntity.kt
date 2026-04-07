@@ -22,5 +22,6 @@ data class ChatMessageEntity(
     val sessionId: String,
     val role: String,
     val content: String,
-    val timestamp: Long
+    val timestamp: Long,
+    val imageUri: String? = null
 )

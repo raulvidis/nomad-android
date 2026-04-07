@@ -8,8 +8,12 @@ import com.nomad.android.data.local.entity.ContentPackEntity
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.update
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import java.io.File
@@ -39,6 +43,10 @@ class ContentPackManager(
         File(context.filesDir, "models").also { it.mkdirs() }
     }
 
+    // Track active downloads so UI can survive process recreation
+    private val _activeDownloads = MutableStateFlow<Map<String, Float>>(emptyMap())
+    val activeDownloads: StateFlow<Map<String, Float>> = _activeDownloads.asStateFlow()
+
     fun getAvailablePacks(): Flow<List<ContentPack>> = flow {
         // Clean up old misnamed model files from previous versions
         cleanupOldModelFiles()
@@ -62,86 +70,104 @@ class ContentPackManager(
     }.flowOn(Dispatchers.IO)
 
     private fun getBundledPacks(): List<ContentPack> {
-        val gemma = LiteRTLMEngine.ModelVariant.GEMMA4_E2B
+        val modelPacks = LiteRTLMEngine.ModelVariant.entries.map { variant ->
+            ContentPack(
+                id = modelVariantToPackId(variant),
+                name = variant.displayName,
+                type = "ai_model",
+                sizeBytes = variant.sizeMB.toLong() * 1_048_576,
+                description = "On-device LLM (${formatSize(variant.sizeMB.toLong() * 1_048_576)} download)",
+                status = PackStatus.AVAILABLE,
+                downloadUrl = variant.downloadUrl
+            )
+        }
 
         return listOf(
             ContentPack("essentials", "Essentials Pack", "survival", 524288000L, "First aid, survival guides, SOS protocols", PackStatus.DOWNLOADED),
+        ) + modelPacks + listOf(
             ContentPack("wiki_mini", "Wikipedia Mini", "wikipedia", 2147483648L, "Top 10,000 articles (no images)", PackStatus.AVAILABLE),
             ContentPack("wiki_full", "Wikipedia Full", "wikipedia", 32212254720L, "All articles (no images)", PackStatus.AVAILABLE),
             ContentPack("map_region", "Map - Region", "maps", 1073741824L, "Single region offline map", PackStatus.AVAILABLE),
             ContentPack("map_world", "Map - World", "maps", 128849018880L, "Global basemap + POIs", PackStatus.AVAILABLE),
-            ContentPack(
-                id = "ai_gemma4",
-                name = gemma.displayName,
-                type = "ai_model",
-                sizeBytes = gemma.sizeMB.toLong() * 1_048_576,
-                description = "On-device LLM (2.0 GB download)",
-                status = PackStatus.AVAILABLE,
-                downloadUrl = gemma.downloadUrl
-            ),
             ContentPack("books", "Classic Books Pack", "books", 2147483648L, "Project Gutenberg top 1000", PackStatus.AVAILABLE),
         )
     }
 
+    private fun modelVariantToPackId(variant: LiteRTLMEngine.ModelVariant): String = when (variant) {
+        LiteRTLMEngine.ModelVariant.GEMMA4_E2B -> "ai_gemma4"
+        LiteRTLMEngine.ModelVariant.QWEN35_2B -> "ai_qwen35_2b"
+        LiteRTLMEngine.ModelVariant.QWEN35_08B -> "ai_qwen35_08b"
+    }
+
     private fun getModelVariantForPack(packId: String): LiteRTLMEngine.ModelVariant? = when (packId) {
         "ai_gemma4" -> LiteRTLMEngine.ModelVariant.GEMMA4_E2B
+        "ai_qwen35_2b" -> LiteRTLMEngine.ModelVariant.QWEN35_2B
+        "ai_qwen35_08b" -> LiteRTLMEngine.ModelVariant.QWEN35_08B
         else -> null
     }
 
     fun downloadPack(packId: String): Flow<Float> = flow {
+        _activeDownloads.update { it + (packId to 0f) }
         emit(0f)
 
-        val pack = getBundledPacks().find { it.id == packId }
-            ?: throw IllegalArgumentException("Unknown pack: $packId")
+        try {
+            val pack = getBundledPacks().find { it.id == packId }
+                ?: throw IllegalArgumentException("Unknown pack: $packId")
 
-        if (pack.type == "ai_model" && pack.downloadUrl != null) {
-            // Real download from HuggingFace
-            val variant = getModelVariantForPack(packId)
-                ?: throw IllegalArgumentException("Unknown model variant for pack: $packId")
-            val destFile = File(modelsDir, variant.fileName)
+            if (pack.type == "ai_model" && pack.downloadUrl != null) {
+                // Real download from HuggingFace
+                val variant = getModelVariantForPack(packId)
+                    ?: throw IllegalArgumentException("Unknown model variant for pack: $packId")
+                val destFile = File(modelsDir, variant.fileName)
 
-            if (destFile.exists() && destFile.length() > 0) {
-                emit(1f)
+                if (destFile.exists() && destFile.length() > 0) {
+                    emit(1f)
+                } else {
+                    downloadFile(pack.downloadUrl, destFile) { progress ->
+                        _activeDownloads.update { it + (packId to progress) }
+                        emit(progress)
+                    }
+                }
             } else {
-                downloadFile(pack.downloadUrl, destFile) { progress ->
+                // Simulated download for non-AI packs (no real CDN yet)
+                val destFile = File(downloadDir, packId)
+                if (destFile.exists()) {
+                    emit(1f)
+                    return@flow
+                }
+                val steps = 25
+                val delayPerStep = when {
+                    pack.sizeBytes > 10_000_000_000L -> 300L
+                    pack.sizeBytes > 1_000_000_000L -> 200L
+                    else -> 120L
+                }
+                for (i in 1..steps) {
+                    delay(delayPerStep)
+                    val progress = i.toFloat() / steps
+                    _activeDownloads.update { it + (packId to progress) }
                     emit(progress)
                 }
+                destFile.createNewFile()
             }
-        } else {
-            // Simulated download for non-AI packs (no real CDN yet)
-            val destFile = File(downloadDir, packId)
-            if (destFile.exists()) {
-                emit(1f)
-                return@flow
-            }
-            val steps = 25
-            val delayPerStep = when {
-                pack.sizeBytes > 10_000_000_000L -> 300L
-                pack.sizeBytes > 1_000_000_000L -> 200L
-                else -> 120L
-            }
-            for (i in 1..steps) {
-                delay(delayPerStep)
-                emit(i.toFloat() / steps)
-            }
-            destFile.createNewFile()
-        }
 
-        // Persist to Room
-        contentPackDao.insert(
-            ContentPackEntity(
-                id = pack.id,
-                name = pack.name,
-                type = pack.type,
-                sizeBytes = pack.sizeBytes,
-                status = "downloaded",
-                downloadedAt = System.currentTimeMillis(),
-                version = "1.0",
-                description = pack.description
+            // Persist to Room
+            contentPackDao.insert(
+                ContentPackEntity(
+                    id = pack.id,
+                    name = pack.name,
+                    type = pack.type,
+                    sizeBytes = pack.sizeBytes,
+                    status = "downloaded",
+                    downloadedAt = System.currentTimeMillis(),
+                    version = "1.0",
+                    description = pack.description
+                )
             )
-        )
 
-        emit(1f)
+            emit(1f)
+        } finally {
+            _activeDownloads.update { it - packId }
+        }
     }.flowOn(Dispatchers.IO)
 
     private suspend fun downloadFile(
