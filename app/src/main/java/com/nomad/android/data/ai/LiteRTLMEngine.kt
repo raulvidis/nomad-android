@@ -106,7 +106,7 @@ class LiteRTLMEngine(
                 val fileSizeMB = if (modelFile.exists()) modelFile.length() / 1_048_576 else 0
                 val expectedMB = modelVariant.sizeMB
                 return@withContext if (!modelFile.exists()) {
-                    "Model not downloaded. Go to Settings and download ${modelVariant.displayName}."
+                    "No AI model downloaded. Go to Settings and download a model to enable AI chat."
                 } else if (fileSizeMB < expectedMB * 0.9) {
                     "Model file incomplete (${fileSizeMB}MB of ${expectedMB}MB). Delete and re-download in Settings."
                 } else {
@@ -131,7 +131,7 @@ class LiteRTLMEngine(
         if (!isModelLoaded) {
             withContext(Dispatchers.IO) { loadModel() }.let { result ->
                 if (result.isError) {
-                    trySend("Model not ready. Download ${modelVariant.displayName} in Settings to enable AI chat.")
+                    trySend("No AI model downloaded. Go to Settings and download a model to enable AI chat.")
                     close()
                     return@callbackFlow
                 }
@@ -140,7 +140,7 @@ class LiteRTLMEngine(
 
         val inference = llmInference
         if (inference == null) {
-            trySend("Model not ready. Download ${modelVariant.displayName} in Settings to enable AI chat.")
+            trySend("No AI model downloaded. Go to Settings and download a model to enable AI chat.")
             close()
             return@callbackFlow
         }

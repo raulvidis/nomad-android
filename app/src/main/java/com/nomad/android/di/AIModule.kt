@@ -27,7 +27,12 @@ object AIModule {
         activityManager.getMemoryInfo(memoryInfo)
         val totalRamMB = memoryInfo.totalMem / (1024 * 1024)
 
-        val variant = LiteRTLMEngine.recommendedVariant(totalRamMB)
+        val modelsDir = java.io.File(context.filesDir, "models")
+        // Use whichever model is actually downloaded, falling back to the recommended one
+        val downloadedVariant = LiteRTLMEngine.ModelVariant.entries.firstOrNull { variant ->
+            java.io.File(modelsDir, variant.fileName).let { it.exists() && it.length() > 1_000_000 }
+        }
+        val variant = downloadedVariant ?: LiteRTLMEngine.recommendedVariant(totalRamMB)
         return LiteRTLMEngine(context, variant, totalRamMB)
     }
 
