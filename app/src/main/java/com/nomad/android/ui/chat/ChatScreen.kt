@@ -275,9 +275,10 @@ private fun ChatContent(
                             isUser = message.role == "user",
                             text = message.content,
                         )
-                    } else if (data.isStreaming && message.role == "assistant" && message.content.isEmpty()) {
-                        StreamingMessageBubble(isStreaming = data.isStreaming)
                     }
+                }
+                if (data.isStreaming) {
+                    item(key = "typing") { TypingIndicator() }
                 }
             }
         }
