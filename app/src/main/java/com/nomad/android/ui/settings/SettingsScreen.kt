@@ -90,7 +90,7 @@ fun SettingsScreen(
             }
         }
 
-        AiEngineCard(uiState)
+        AiEngineCard(uiState, viewModel)
         StorageCard(uiState)
         ContentPacksCard(uiState, viewModel)
         AmbientDataSection(uiState)
@@ -149,7 +149,9 @@ private fun PageHeader() {
 }
 
 @Composable
-private fun AiEngineCard(uiState: SettingsUiState) {
+private fun AiEngineCard(uiState: SettingsUiState, viewModel: SettingsViewModel) {
+    val activeModel = uiState.data.downloadedModels.find { it.isActive }
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -196,7 +198,7 @@ private fun AiEngineCard(uiState: SettingsUiState) {
             Spacer(modifier = Modifier.height(8.dp))
 
             Text(
-                text = uiState.data.aiStatus?.modelName ?: "N/A",
+                text = activeModel?.variant?.displayName ?: uiState.data.aiStatus?.modelName ?: "N/A",
                 color = PhosphorGreen,
                 fontFamily = FontFamily(Font(R.font.space_grotesk_semi_bold, FontWeight.SemiBold)),
                 fontSize = 16.sp,
@@ -219,32 +221,89 @@ private fun AiEngineCard(uiState: SettingsUiState) {
             )
             Spacer(modifier = Modifier.height(4.dp))
 
-            val isReady = uiState.data.aiStatus?.isReady == true
+            val hasModel = uiState.data.downloadedModels.isNotEmpty()
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Box(
                     modifier = Modifier
                         .size(8.dp)
-                        .background(if (isReady) PhosphorGreen else PhosphorGreenDim),
+                        .background(if (hasModel) PhosphorGreen else PhosphorGreenDim),
                 )
                 Spacer(modifier = Modifier.width(6.dp))
                 Text(
-                    text = if (isReady) "ONLINE" else "STANDBY",
-                    color = if (isReady) PhosphorGreen else PhosphorGreenDim,
+                    text = if (hasModel) "ONLINE" else "STANDBY",
+                    color = if (hasModel) PhosphorGreen else PhosphorGreenDim,
                     fontFamily = FontFamily(Font(R.font.space_grotesk_semi_bold, FontWeight.SemiBold)),
                     fontSize = 12.sp,
                     letterSpacing = 0.05.em,
                 )
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
-
-            TerminalButton(
-                text = "RECALIBRATE CORE",
-                onClick = { },
-                modifier = Modifier.fillMaxWidth(),
-                size = TerminalButtonSize.SMALL,
-                variant = TerminalButtonVariant.NORMAL,
-            )
+            // Model picker — show when multiple models are downloaded
+            if (uiState.data.downloadedModels.size > 1) {
+                Spacer(modifier = Modifier.height(10.dp))
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(1.dp)
+                        .background(PhosphorGreenDim.copy(alpha = 0.3f)),
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = "SWITCH MODEL:",
+                    color = PhosphorGreenDim,
+                    fontFamily = FontFamily(Font(R.font.space_grotesk_regular)),
+                    fontSize = 10.sp,
+                    letterSpacing = 0.05.em,
+                )
+                Spacer(modifier = Modifier.height(6.dp))
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    uiState.data.downloadedModels.forEach { model ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .border(
+                                    width = if (model.isActive) 2.dp else 1.dp,
+                                    color = if (model.isActive) PhosphorGreen else OutlineVariant,
+                                )
+                                .background(
+                                    if (model.isActive) PhosphorGreen.copy(alpha = 0.08f)
+                                    else SurfaceContainerLowest,
+                                )
+                                .clickable {
+                                    if (!model.isActive) viewModel.switchModel(model.variant)
+                                }
+                                .padding(horizontal = 10.dp, vertical = 8.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Column {
+                                Text(
+                                    text = model.variant.displayName.uppercase(),
+                                    color = if (model.isActive) PhosphorGreen else OnSurfaceVariant,
+                                    fontFamily = FontFamily(Font(R.font.space_grotesk_semi_bold, FontWeight.SemiBold)),
+                                    fontSize = 12.sp,
+                                    letterSpacing = 0.05.em,
+                                )
+                                Text(
+                                    text = "${model.variant.sizeMB} MB",
+                                    color = PhosphorGreenDim,
+                                    fontFamily = FontFamily(Font(R.font.space_grotesk_regular)),
+                                    fontSize = 10.sp,
+                                )
+                            }
+                            if (model.isActive) {
+                                Text(
+                                    text = "ACTIVE",
+                                    color = PhosphorGreen,
+                                    fontFamily = FontFamily(Font(R.font.space_grotesk_semi_bold, FontWeight.SemiBold)),
+                                    fontSize = 10.sp,
+                                    letterSpacing = 0.05.em,
+                                )
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 }

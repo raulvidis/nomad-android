@@ -3,7 +3,9 @@ package com.nomad.android.ui.settings
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.nomad.android.data.Result
+import com.nomad.android.data.ai.AIEngineManager
 import com.nomad.android.data.ai.AIEngineStatus
+import com.nomad.android.data.ai.LiteRTLMEngine
 import com.nomad.android.data.content.ContentPackManager
 import com.nomad.android.data.content.PackStatus
 import com.nomad.android.data.repository.SettingsRepository
@@ -26,10 +28,16 @@ data class ContentPackInfo(
     val isDownloading: Boolean = false
 )
 
+data class DownloadedModel(
+    val variant: LiteRTLMEngine.ModelVariant,
+    val isActive: Boolean
+)
+
 data class SettingsData(
     val aiStatus: AIEngineStatus? = null,
     val contentPacks: List<ContentPackInfo> = emptyList(),
-    val storageMetrics: SettingsRepository.StorageMetrics? = null
+    val storageMetrics: SettingsRepository.StorageMetrics? = null,
+    val downloadedModels: List<DownloadedModel> = emptyList()
 )
 
 data class SettingsUiState(
@@ -42,7 +50,8 @@ data class SettingsUiState(
 class SettingsViewModel @Inject constructor(
     private val settingsRepository: SettingsRepository,
     private val aiEngineStatus: AIEngineStatus,
-    private val contentPackManager: ContentPackManager
+    private val contentPackManager: ContentPackManager,
+    private val aiEngineManager: AIEngineManager
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(SettingsUiState(isLoading = true))
@@ -51,6 +60,7 @@ class SettingsViewModel @Inject constructor(
     init {
         loadSettings()
         observeActiveDownloads()
+        observeActiveVariant()
     }
 
     private fun loadSettings() {
@@ -74,15 +84,35 @@ class SettingsViewModel @Inject constructor(
                 )
             }
 
+            val activeVariant = aiEngineManager.activeVariant.value
+            val downloadedModels = aiEngineManager.getDownloadedVariants().map { variant ->
+                DownloadedModel(variant = variant, isActive = variant == activeVariant)
+            }
+
             _uiState.update {
                 it.copy(
                     isLoading = false,
                     data = SettingsData(
                         aiStatus = aiEngineStatus,
                         storageMetrics = storageMetrics,
-                        contentPacks = contentPacks
+                        contentPacks = contentPacks,
+                        downloadedModels = downloadedModels
                     )
                 )
+            }
+        }
+    }
+
+    private fun observeActiveVariant() {
+        viewModelScope.launch {
+            aiEngineManager.activeVariant.collect { activeVariant ->
+                _uiState.update { state ->
+                    state.copy(data = state.data.copy(
+                        downloadedModels = aiEngineManager.getDownloadedVariants().map { variant ->
+                            DownloadedModel(variant = variant, isActive = variant == activeVariant)
+                        }
+                    ))
+                }
             }
         }
     }
@@ -167,6 +197,10 @@ class SettingsViewModel @Inject constructor(
                 }
             }
         }
+    }
+
+    fun switchModel(variant: LiteRTLMEngine.ModelVariant) {
+        aiEngineManager.switchModel(variant)
     }
 
     fun deletePack(packId: String) {

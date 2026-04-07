@@ -3,9 +3,9 @@ package com.nomad.android.di
 import android.app.ActivityManager
 import android.content.Context
 import com.nomad.android.data.ai.AIEngine
+import com.nomad.android.data.ai.AIEngineManager
 import com.nomad.android.data.ai.AIEngineStatus
 import com.nomad.android.data.ai.AIEngineType
-import com.nomad.android.data.ai.FallbackEngine
 import com.nomad.android.data.ai.LiteRTLMEngine
 import com.nomad.android.data.ai.RAGEngine
 import dagger.Module
@@ -21,20 +21,23 @@ object AIModule {
 
     @Provides
     @Singleton
-    fun provideAIEngine(@ApplicationContext context: Context): AIEngine {
+    fun provideAIEngineManager(@ApplicationContext context: Context): AIEngineManager {
         val activityManager = context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
         val memoryInfo = ActivityManager.MemoryInfo()
         activityManager.getMemoryInfo(memoryInfo)
         val totalRamMB = memoryInfo.totalMem / (1024 * 1024)
 
         val modelsDir = java.io.File(context.filesDir, "models")
-        // Use whichever model is actually downloaded, falling back to the recommended one
         val downloadedVariant = LiteRTLMEngine.ModelVariant.entries.firstOrNull { variant ->
             java.io.File(modelsDir, variant.fileName).let { it.exists() && it.length() > 1_000_000 }
         }
         val variant = downloadedVariant ?: LiteRTLMEngine.recommendedVariant(totalRamMB)
-        return LiteRTLMEngine(context, variant, totalRamMB)
+        return AIEngineManager(context, totalRamMB, variant)
     }
+
+    @Provides
+    @Singleton
+    fun provideAIEngine(manager: AIEngineManager): AIEngine = manager
 
     @Provides
     @Singleton
@@ -42,17 +45,14 @@ object AIModule {
 
     @Provides
     @Singleton
-    fun provideAIEngineStatus(engine: AIEngine): AIEngineStatus {
-        val deviceInfo = engine.getDeviceInfo()
+    fun provideAIEngineStatus(manager: AIEngineManager): AIEngineStatus {
+        val deviceInfo = manager.getDeviceInfo()
         return AIEngineStatus(
-            engineType = when (engine) {
-                is LiteRTLMEngine -> AIEngineType.LITERTLM_E2B
-                else -> AIEngineType.FALLBACK
-            },
+            engineType = AIEngineType.LITERTLM_E2B,
             isReady = false,
-            modelName = engine.getModelName(),
+            modelName = manager.getModelName(),
             ramRequired = "${deviceInfo.totalRamMB}MB total",
-            modelSize = if (engine is LiteRTLMEngine) "${engine.getModelSizeMB()} MB" else "N/A"
+            modelSize = "${manager.getModelSizeMB()} MB"
         )
     }
 }
