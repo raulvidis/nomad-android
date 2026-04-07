@@ -35,6 +35,7 @@ object DatabaseModule {
             "nomad.db"
         )
             .addMigrations(NomadDatabase.MIGRATION_1_2)
+            .addMigrations(NomadDatabase.MIGRATION_2_3)
             .fallbackToDestructiveMigration()
             .build()
     }
@@ -45,4 +46,5 @@ object DatabaseModule {
     @Provides fun provideSettingsDao(db: NomadDatabase) = db.settingsDao()
     @Provides fun provideLocationSnapshotDao(db: NomadDatabase) = db.locationSnapshotDao()
     @Provides fun provideLocationSavedPointDao(db: NomadDatabase) = db.locationSavedPointDao()
+    @Provides fun provideTrackRouteDao(db: NomadDatabase) = db.trackRouteDao()
 }

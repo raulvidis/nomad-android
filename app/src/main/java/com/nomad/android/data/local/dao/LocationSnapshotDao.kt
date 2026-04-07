@@ -33,4 +33,10 @@ interface LocationSnapshotDao {
 
     @Query("SELECT COUNT(*) FROM location_snapshots")
     fun observeCount(): Flow<Int>
+
+    @Query("SELECT * FROM location_snapshots WHERE routeId = :routeId ORDER BY timestamp ASC")
+    suspend fun getByRouteId(routeId: String): List<LocationSnapshotEntity>
+
+    @Query("SELECT * FROM location_snapshots WHERE routeId = :routeId ORDER BY timestamp ASC")
+    fun observeByRouteId(routeId: String): Flow<List<LocationSnapshotEntity>>
 }

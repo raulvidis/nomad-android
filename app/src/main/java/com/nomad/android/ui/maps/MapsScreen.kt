@@ -1,5 +1,6 @@
 package com.nomad.android.ui.maps
 
+import android.graphics.Color
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
@@ -23,6 +24,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Bookmark
@@ -32,7 +35,14 @@ import androidx.compose.material.icons.filled.GpsFixed
 import androidx.compose.material.icons.filled.GpsOff
 import androidx.compose.material.icons.filled.Layers
 import androidx.compose.material.icons.filled.MyLocation
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.Stop
+import androidx.compose.material.icons.filled.Timeline
+import androidx.compose.material.icons.filled.Undo
 import androidx.compose.material3.Icon
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -45,6 +55,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -53,6 +64,8 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.nomad.android.R
 import com.nomad.android.data.local.entity.LocationSavedPointEntity
+import com.nomad.android.data.local.entity.LocationSnapshotEntity
+import com.nomad.android.data.local.entity.TrackRouteEntity
 import com.nomad.android.data.maps.OfflineRegion
 import com.nomad.android.ui.theme.TertiaryAmber
 import com.nomad.android.ui.theme.BackgroundDark
@@ -67,9 +80,29 @@ import org.maplibre.android.geometry.LatLng
 import org.maplibre.android.maps.MapView
 import org.maplibre.android.maps.MapLibreMap
 import org.maplibre.android.maps.Style
+import org.maplibre.android.style.layers.CircleLayer
+import org.maplibre.android.style.layers.LineLayer
 import org.maplibre.android.style.layers.RasterLayer
+import org.maplibre.android.style.sources.GeoJsonSource
 import org.maplibre.android.style.sources.RasterSource
 import org.maplibre.android.style.sources.TileSet
+import org.maplibre.geojson.Feature
+import org.maplibre.geojson.FeatureCollection
+import org.maplibre.geojson.LineString
+import org.maplibre.geojson.Point
+
+private const val SOURCE_POSITION = "source-position"
+private const val SOURCE_SAVED_POINTS = "source-saved-points"
+private const val SOURCE_ACTIVE_TRACK = "source-active-track"
+private const val SOURCE_TRACKBACK = "source-trackback"
+private const val SOURCE_DISPLAYED_ROUTE = "source-displayed-route"
+
+private const val LAYER_POSITION = "layer-position"
+private const val LAYER_POSITION_RING = "layer-position-ring"
+private const val LAYER_SAVED_POINTS = "layer-saved-points"
+private const val LAYER_ACTIVE_TRACK = "layer-active-track"
+private const val LAYER_TRACKBACK = "layer-trackback"
+private const val LAYER_DISPLAYED_ROUTE = "layer-displayed-route"
 
 @Composable
 fun MapsScreen(
@@ -97,6 +130,13 @@ fun MapsScreen(
             onDownload = { viewModel.startRegionSelection() },
             onSavedPoints = { viewModel.toggleSavedPanel() },
             onRegions = { viewModel.toggleRegionList() },
+            onRoutes = { viewModel.toggleRoutesPanel() },
+            onToggleTracking = {
+                if (uiState.data.isTracking) viewModel.stopTracking()
+                else viewModel.startTracking()
+            },
+            onSaveLocation = { viewModel.showSaveLocationDialog() },
+            onTrackback = { viewModel.toggleTrackback() },
             onRequestPermission = {
                 locationPermissionLauncher.launch(
                     arrayOf(
@@ -131,6 +171,30 @@ fun MapsScreen(
             )
         }
 
+        AnimatedVisibility(
+            visible = uiState.data.showRoutesPanel,
+            enter = fadeIn(),
+            exit = fadeOut(),
+        ) {
+            RoutesPanel(
+                routes = uiState.data.savedRoutes,
+                displayedRouteId = uiState.data.displayedRouteId,
+                onSelect = { viewModel.displayRoute(it) },
+                onDelete = { viewModel.deleteRoute(it) },
+                onClose = { viewModel.toggleRoutesPanel() },
+            )
+        }
+
+        if (uiState.data.showSaveLocationDialog) {
+            SaveLocationDialog(
+                onSave = { name ->
+                    viewModel.saveLocation(name, "")
+                    viewModel.dismissSaveLocationDialog()
+                },
+                onDismiss = { viewModel.dismissSaveLocationDialog() },
+            )
+        }
+
         if (uiState.data.isSelectingRegion) {
             RegionSelectionOverlay(viewModel = viewModel, data = uiState.data)
         }
@@ -149,8 +213,8 @@ private fun MapViewContainer(
     val context = LocalContext.current
     val mapViewRef = remember { mutableStateOf<MapView?>(null) }
     val mapLibreMapRef = remember { mutableStateOf<MapLibreMap?>(null) }
+    val overlaySources = remember { mutableStateOf<Map<String, GeoJsonSource>?>(null) }
 
-    // Initialize MapLibre before creating the MapView
     remember {
         MapLibre.getInstance(context)
         true
@@ -184,7 +248,6 @@ private fun MapViewContainer(
                     .withLayer(RasterLayer("osm-layer", "osm-source"))
 
                 map.setStyle(styleBuilder) {
-                    // Style is fully loaded — safe to read projection
                     val initialPos = if (data.currentLatitude != null && data.currentLongitude != null) {
                         CameraPosition.Builder()
                             .target(LatLng(data.currentLatitude, data.currentLongitude))
@@ -198,6 +261,64 @@ private fun MapViewContainer(
                     }
                     map.cameraPosition = initialPos
 
+                    val posSource = GeoJsonSource(SOURCE_POSITION)
+                    val savedPointsSource = GeoJsonSource(SOURCE_SAVED_POINTS)
+                    val activeTrackSource = GeoJsonSource(SOURCE_ACTIVE_TRACK)
+                    val trackbackSource = GeoJsonSource(SOURCE_TRACKBACK)
+                    val displayedRouteSource = GeoJsonSource(SOURCE_DISPLAYED_ROUTE)
+
+                    it.addSource(posSource)
+                    it.addSource(savedPointsSource)
+                    it.addSource(activeTrackSource)
+                    it.addSource(trackbackSource)
+                    it.addSource(displayedRouteSource)
+
+                    it.addLayerAbove(CircleLayer(LAYER_POSITION_RING, SOURCE_POSITION)
+                        .withProperties(
+                            org.maplibre.android.style.layers.PropertyFactory.circleRadius(14f),
+                            org.maplibre.android.style.layers.PropertyFactory.circleColor(Color.parseColor("#1A00FF41")),
+                            org.maplibre.android.style.layers.PropertyFactory.circleOpacity(0.6f),
+                        ), "osm-layer")
+                    it.addLayerAbove(CircleLayer(LAYER_POSITION, SOURCE_POSITION)
+                        .withProperties(
+                            org.maplibre.android.style.layers.PropertyFactory.circleRadius(6f),
+                            org.maplibre.android.style.layers.PropertyFactory.circleColor(Color.parseColor("#00FF41")),
+                            org.maplibre.android.style.layers.PropertyFactory.circleOpacity(0.9f),
+                        ), LAYER_POSITION_RING)
+                    it.addLayerAbove(CircleLayer(LAYER_SAVED_POINTS, SOURCE_SAVED_POINTS)
+                        .withProperties(
+                            org.maplibre.android.style.layers.PropertyFactory.circleRadius(5f),
+                            org.maplibre.android.style.layers.PropertyFactory.circleColor(Color.parseColor("#FFBA3F")),
+                            org.maplibre.android.style.layers.PropertyFactory.circleOpacity(0.85f),
+                        ), LAYER_POSITION)
+                    it.addLayerAbove(LineLayer(LAYER_ACTIVE_TRACK, SOURCE_ACTIVE_TRACK)
+                        .withProperties(
+                            org.maplibre.android.style.layers.PropertyFactory.lineColor(Color.parseColor("#00FF41")),
+                            org.maplibre.android.style.layers.PropertyFactory.lineWidth(3f),
+                            org.maplibre.android.style.layers.PropertyFactory.lineOpacity(0.8f),
+                        ), LAYER_SAVED_POINTS)
+                    it.addLayerAbove(LineLayer(LAYER_TRACKBACK, SOURCE_TRACKBACK)
+                        .withProperties(
+                            org.maplibre.android.style.layers.PropertyFactory.lineColor(Color.parseColor("#00E639")),
+                            org.maplibre.android.style.layers.PropertyFactory.lineWidth(2f),
+                            org.maplibre.android.style.layers.PropertyFactory.lineOpacity(0.5f),
+                            org.maplibre.android.style.layers.PropertyFactory.lineDasharray(arrayOf(0.5f, 1.5f)),
+                        ), LAYER_ACTIVE_TRACK)
+                    it.addLayerAbove(LineLayer(LAYER_DISPLAYED_ROUTE, SOURCE_DISPLAYED_ROUTE)
+                        .withProperties(
+                            org.maplibre.android.style.layers.PropertyFactory.lineColor(Color.parseColor("#00E639")),
+                            org.maplibre.android.style.layers.PropertyFactory.lineWidth(2f),
+                            org.maplibre.android.style.layers.PropertyFactory.lineOpacity(0.4f),
+                        ), LAYER_TRACKBACK)
+
+                    overlaySources.value = mapOf(
+                        SOURCE_POSITION to posSource,
+                        SOURCE_SAVED_POINTS to savedPointsSource,
+                        SOURCE_ACTIVE_TRACK to activeTrackSource,
+                        SOURCE_TRACKBACK to trackbackSource,
+                        SOURCE_DISPLAYED_ROUTE to displayedRouteSource,
+                    )
+
                     map.addOnCameraIdleListener {
                         try {
                             val bounds = map.projection.visibleRegion.latLngBounds
@@ -208,7 +329,6 @@ private fun MapViewContainer(
                                 west = bounds.longitudeWest,
                             )
                         } catch (_: Exception) {
-                            // projection not ready yet
                         }
                     }
                 }
@@ -224,8 +344,71 @@ private fun MapViewContainer(
                     1000
                 )
             }
+
+            val sources = overlaySources.value ?: return@AndroidView
+
+            if (lat != null && lon != null) {
+                val point = Point.fromLngLat(lon, lat)
+                val feature = Feature.fromGeometry(point)
+                sources[SOURCE_POSITION]?.setGeoJson(FeatureCollection.fromFeature(feature))
+            } else {
+                sources[SOURCE_POSITION]?.setGeoJson(FeatureCollection.fromFeatures(emptyList()))
+            }
+
+            updateSavedPointsOverlay(sources[SOURCE_SAVED_POINTS], data.savedPoints)
+            updateActiveTrackOverlay(sources[SOURCE_ACTIVE_TRACK], data.activeTrackPoints)
+            updateTrackbackOverlay(sources[SOURCE_TRACKBACK], data.activeTrackPoints, data.isTrackback)
+            updateDisplayedRouteOverlay(sources[SOURCE_DISPLAYED_ROUTE], data.displayedRoutePoints)
         }
     )
+}
+
+private fun updateSavedPointsOverlay(source: GeoJsonSource?, points: List<LocationSavedPointEntity>) {
+    if (source == null) return
+    if (points.isEmpty()) {
+        source.setGeoJson(FeatureCollection.fromFeatures(emptyList()))
+        return
+    }
+    val features = points.map { pt ->
+        Feature.fromGeometry(Point.fromLngLat(pt.longitude, pt.latitude))
+    }
+    source.setGeoJson(FeatureCollection.fromFeatures(features))
+}
+
+private fun updateActiveTrackOverlay(source: GeoJsonSource?, points: List<LocationSnapshotEntity>) {
+    if (source == null) return
+    if (points.size < 2) {
+        source.setGeoJson(FeatureCollection.fromFeatures(emptyList()))
+        return
+    }
+    val coords = points.map { Point.fromLngLat(it.longitude, it.latitude) }
+    val line = LineString.fromLngLats(coords)
+    val feature = Feature.fromGeometry(line)
+    source.setGeoJson(FeatureCollection.fromFeature(feature))
+}
+
+private fun updateTrackbackOverlay(source: GeoJsonSource?, points: List<LocationSnapshotEntity>, isTrackback: Boolean) {
+    if (source == null) return
+    if (!isTrackback || points.size < 2) {
+        source.setGeoJson(FeatureCollection.fromFeatures(emptyList()))
+        return
+    }
+    val coords = points.reversed().map { Point.fromLngLat(it.longitude, it.latitude) }
+    val line = LineString.fromLngLats(coords)
+    val feature = Feature.fromGeometry(line)
+    source.setGeoJson(FeatureCollection.fromFeature(feature))
+}
+
+private fun updateDisplayedRouteOverlay(source: GeoJsonSource?, points: List<LocationSnapshotEntity>) {
+    if (source == null) return
+    if (points.size < 2) {
+        source.setGeoJson(FeatureCollection.fromFeatures(emptyList()))
+        return
+    }
+    val coords = points.map { Point.fromLngLat(it.longitude, it.latitude) }
+    val line = LineString.fromLngLats(coords)
+    val feature = Feature.fromGeometry(line)
+    source.setGeoJson(FeatureCollection.fromFeature(feature))
 }
 
 @Composable
@@ -235,36 +418,79 @@ private fun CoordinatesOverlay(data: MapsData) {
             .fillMaxWidth()
             .padding(top = 8.dp, start = 12.dp, end = 12.dp)
     ) {
-        Row(
+        Column(
             modifier = Modifier
                 .background(BackgroundDark.copy(alpha = 0.85f), RoundedCornerShape(0.dp))
                 .border(2.dp, PhosphorGreenDim, RoundedCornerShape(0.dp))
                 .padding(horizontal = 10.dp, vertical = 6.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
         ) {
-            Text(
-                text = data.currentLocationText,
-                color = if (data.currentLocationText == "NO FIX") PhosphorGreenDim else PhosphorGreen,
-                fontFamily = androidx.compose.ui.text.font.FontFamily(
-                    androidx.compose.ui.text.font.Font(R.font.space_grotesk_semi_bold, FontWeight.Medium),
-                ),
-                fontSize = 13.sp,
-                maxLines = 1,
-                overflow = TextOverflow.Clip,
-                modifier = Modifier.weight(1f),
-            )
-            Spacer(modifier = Modifier.width(8.dp))
-            if (data.isTracking) {
-                Box(
-                    modifier = Modifier
-                        .size(8.dp)
-                        .background(PhosphorGreen, CircleShape)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = data.currentLocationText,
+                    color = if (data.currentLocationText == "NO FIX") PhosphorGreenDim else PhosphorGreen,
+                    fontFamily = androidx.compose.ui.text.font.FontFamily(
+                        androidx.compose.ui.text.font.Font(R.font.space_grotesk_semi_bold, FontWeight.Medium),
+                    ),
+                    fontSize = 13.sp,
+                    maxLines = 1,
+                    overflow = TextOverflow.Clip,
+                    modifier = Modifier.weight(1f),
                 )
-                Spacer(modifier = Modifier.width(4.dp))
+                Spacer(modifier = Modifier.width(8.dp))
+                if (data.isTracking) {
+                    Box(
+                        modifier = Modifier
+                            .size(8.dp)
+                            .background(PhosphorGreen, CircleShape)
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = "${data.activeTrackPoints.size}pts",
+                        color = PhosphorGreenDim,
+                        fontFamily = androidx.compose.ui.text.font.FontFamily(
+                            androidx.compose.ui.text.font.Font(R.font.space_grotesk_regular, FontWeight.Normal),
+                        ),
+                        fontSize = 10.sp,
+                    )
+                }
+            }
+            if (data.isTracking && data.activeTrackPoints.size >= 2) {
+                val distance = calculateTrackDistance(data.activeTrackPoints)
+                Spacer(modifier = Modifier.height(2.dp))
+                Text(
+                    text = formatDistance(distance),
+                    color = PhosphorGreenDim,
+                    fontFamily = androidx.compose.ui.text.font.FontFamily(
+                        androidx.compose.ui.text.font.Font(R.font.space_grotesk_regular, FontWeight.Normal),
+                    ),
+                    fontSize = 10.sp,
+                )
             }
         }
     }
+}
+
+private fun calculateTrackDistance(points: List<LocationSnapshotEntity>): Double {
+    var total = 0.0
+    for (i in 1 until points.size) {
+        val r = 6371000.0
+        val dLat = Math.toRadians(points[i].latitude - points[i - 1].latitude)
+        val dLon = Math.toRadians(points[i].longitude - points[i - 1].longitude)
+        val a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+            Math.cos(Math.toRadians(points[i - 1].latitude)) *
+            Math.cos(Math.toRadians(points[i].latitude)) *
+            Math.sin(dLon / 2) * Math.sin(dLon / 2)
+        total += r * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+    }
+    return total
+}
+
+private fun formatDistance(meters: Double): String {
+    return if (meters < 1000) "%.0fm".format(meters) else "%.1fkm".format(meters / 1000)
 }
 
 @Composable
@@ -274,6 +500,10 @@ private fun MapControlsOverlay(
     onDownload: () -> Unit,
     onSavedPoints: () -> Unit,
     onRegions: () -> Unit,
+    onRoutes: () -> Unit,
+    onToggleTracking: () -> Unit,
+    onSaveLocation: () -> Unit,
+    onTrackback: () -> Unit,
     onRequestPermission: () -> Unit,
 ) {
     Box(
@@ -311,6 +541,43 @@ private fun MapControlsOverlay(
                 },
                 onClick = onRequestPermission,
             )
+            MapControlButton(
+                icon = {
+                    Icon(
+                        if (data.isTracking) Icons.Filled.Stop else Icons.Filled.PlayArrow,
+                        contentDescription = if (data.isTracking) "Stop Tracking" else "Start Tracking",
+                        tint = if (data.isTracking) TerminalDanger else PhosphorGreen,
+                        modifier = Modifier.size(20.dp),
+                    )
+                },
+                onClick = onToggleTracking,
+            )
+            if (data.currentLatitude != null) {
+                MapControlButton(
+                    icon = {
+                        Icon(
+                            Icons.Filled.Star,
+                            contentDescription = "Save Location",
+                            tint = TertiaryAmber,
+                            modifier = Modifier.size(20.dp),
+                        )
+                    },
+                    onClick = onSaveLocation,
+                )
+            }
+            if (data.isTracking && data.activeTrackPoints.size >= 2) {
+                MapControlButton(
+                    icon = {
+                        Icon(
+                            Icons.Filled.Undo,
+                            contentDescription = "Trackback",
+                            tint = if (data.isTrackback) PhosphorGreen else PhosphorGreenDim,
+                            modifier = Modifier.size(20.dp),
+                        )
+                    },
+                    onClick = onTrackback,
+                )
+            }
         }
 
         Column(
@@ -354,6 +621,17 @@ private fun MapControlsOverlay(
                     )
                 },
                 onClick = onRegions,
+            )
+            MapControlButton(
+                icon = {
+                    Icon(
+                        Icons.Filled.Timeline,
+                        contentDescription = "Routes",
+                        tint = PhosphorGreen,
+                        modifier = Modifier.size(20.dp),
+                    )
+                },
+                onClick = onRoutes,
             )
         }
     }
@@ -460,6 +738,222 @@ private fun SavedPointsPanel(
                             )
                         }
                     }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun RoutesPanel(
+    routes: List<TrackRouteEntity>,
+    displayedRouteId: String?,
+    onSelect: (String?) -> Unit,
+    onDelete: (String) -> Unit,
+    onClose: () -> Unit,
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 12.dp, vertical = 60.dp)
+            .background(BackgroundDark.copy(alpha = 0.95f), RoundedCornerShape(0.dp))
+            .border(2.dp, PhosphorGreenDim, RoundedCornerShape(0.dp))
+    ) {
+        Column(modifier = Modifier.padding(12.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+            ) {
+                Text(
+                    text = "SAVED ROUTES (${routes.size})",
+                    color = PhosphorGreen,
+                    fontFamily = androidx.compose.ui.text.font.FontFamily(
+                        androidx.compose.ui.text.font.Font(R.font.space_grotesk_bold, FontWeight.Bold),
+                    ),
+                    fontSize = 14.sp,
+                )
+                Icon(
+                    Icons.Filled.Close,
+                    contentDescription = "Close",
+                    tint = PhosphorGreenDim,
+                    modifier = Modifier
+                        .size(20.dp)
+                        .clickable(onClick = onClose),
+                )
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+            if (routes.isEmpty()) {
+                Text(
+                    text = "No saved routes. Start tracking to record a route.",
+                    color = PhosphorGreenDim,
+                    fontFamily = androidx.compose.ui.text.font.FontFamily(
+                        androidx.compose.ui.text.font.Font(R.font.space_grotesk_regular, FontWeight.Normal),
+                    ),
+                    fontSize = 12.sp,
+                )
+            } else {
+                LazyColumn(
+                    modifier = Modifier.height(200.dp),
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                ) {
+                    items(routes, key = { it.id }) { route ->
+                        val isSelected = route.id == displayedRouteId
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .background(
+                                    if (isSelected) PhosphorGreen.copy(alpha = 0.1f) else SurfaceContainerLow,
+                                    RoundedCornerShape(0.dp)
+                                )
+                                .border(
+                                    1.dp,
+                                    if (isSelected) PhosphorGreen else PhosphorGreenDim,
+                                    RoundedCornerShape(0.dp)
+                                )
+                                .clickable {
+                                    onSelect(if (isSelected) null else route.id)
+                                }
+                                .padding(8.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = route.name.uppercase(),
+                                    color = if (isSelected) PhosphorGreen else PhosphorGreenDim,
+                                    fontFamily = androidx.compose.ui.text.font.FontFamily(
+                                        androidx.compose.ui.text.font.Font(R.font.space_grotesk_semi_bold, FontWeight.Medium),
+                                    ),
+                                    fontSize = 12.sp,
+                                )
+                                Text(
+                                    text = "${route.pointCount}pts | ${formatDistance(route.totalDistanceMeters)}",
+                                    color = PhosphorGreenDim,
+                                    fontFamily = androidx.compose.ui.text.font.FontFamily(
+                                        androidx.compose.ui.text.font.Font(R.font.space_grotesk_regular, FontWeight.Normal),
+                                    ),
+                                    fontSize = 10.sp,
+                                )
+                            }
+                            Icon(
+                                Icons.Filled.Delete,
+                                contentDescription = "Delete",
+                                tint = TerminalDanger,
+                                modifier = Modifier
+                                    .size(18.dp)
+                                    .clickable { onDelete(route.id) },
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun SaveLocationDialog(
+    onSave: (String) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    var name by remember { mutableStateOf("") }
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(BackgroundDark.copy(alpha = 0.7f)),
+        contentAlignment = Alignment.Center,
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(24.dp)
+                .background(BackgroundDark, RoundedCornerShape(0.dp))
+                .border(2.dp, PhosphorGreen, RoundedCornerShape(0.dp))
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Text(
+                text = "SAVE CURRENT LOCATION",
+                color = PhosphorGreen,
+                fontFamily = androidx.compose.ui.text.font.FontFamily(
+                    androidx.compose.ui.text.font.Font(R.font.space_grotesk_bold, FontWeight.Bold),
+                ),
+                fontSize = 16.sp,
+            )
+
+            OutlinedTextField(
+                value = name,
+                onValueChange = { name = it },
+                label = {
+                    Text(
+                        "Location name",
+                        color = PhosphorGreenDim,
+                        fontFamily = androidx.compose.ui.text.font.FontFamily(
+                            androidx.compose.ui.text.font.Font(R.font.space_grotesk_regular, FontWeight.Normal),
+                        ),
+                    )
+                },
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                keyboardActions = KeyboardActions(onDone = {
+                    if (name.isNotBlank()) onSave(name)
+                }),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedTextColor = PhosphorGreen,
+                    unfocusedTextColor = PhosphorGreen,
+                    focusedBorderColor = PhosphorGreen,
+                    unfocusedBorderColor = PhosphorGreenDim,
+                    cursorColor = PhosphorGreen,
+                ),
+                modifier = Modifier.fillMaxWidth(),
+            )
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                Box(
+                    modifier = Modifier
+                        .border(2.dp, PhosphorGreenDim, RoundedCornerShape(0.dp))
+                        .background(SurfaceContainerLow, RoundedCornerShape(0.dp))
+                        .clickable { onDismiss() }
+                        .padding(horizontal = 12.dp, vertical = 8.dp),
+                ) {
+                    Text(
+                        text = "CANCEL",
+                        color = PhosphorGreenDim,
+                        fontFamily = androidx.compose.ui.text.font.FontFamily(
+                            androidx.compose.ui.text.font.Font(R.font.space_grotesk_semi_bold, FontWeight.Medium),
+                        ),
+                        fontSize = 13.sp,
+                    )
+                }
+
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .border(
+                            2.dp,
+                            if (name.isNotBlank()) PhosphorGreen else PhosphorGreenDim,
+                            RoundedCornerShape(0.dp)
+                        )
+                        .background(
+                            if (name.isNotBlank()) PhosphorGreen.copy(alpha = 0.1f) else SurfaceContainerLow,
+                            RoundedCornerShape(0.dp),
+                        )
+                        .clickable { if (name.isNotBlank()) onSave(name) }
+                        .padding(horizontal = 12.dp, vertical = 8.dp),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        text = "SAVE",
+                        color = if (name.isNotBlank()) PhosphorGreen else PhosphorGreenDim,
+                        fontFamily = androidx.compose.ui.text.font.FontFamily(
+                            androidx.compose.ui.text.font.Font(R.font.space_grotesk_bold, FontWeight.Bold),
+                        ),
+                        fontSize = 13.sp,
+                    )
                 }
             }
         }

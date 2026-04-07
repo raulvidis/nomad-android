@@ -40,6 +40,8 @@ class LocationTrackerService(
     private val _isTracking = MutableStateFlow(false)
     val isTracking: StateFlow<Boolean> = _isTracking.asStateFlow()
 
+    var activeRouteId: String? = null
+
     private var fusedClient: FusedLocationProviderClient? = null
     private var useFallback = false
     private var fallbackLocationManager: LocationManager? = null
@@ -122,7 +124,8 @@ class LocationTrackerService(
             altitude = location.altitude,
             accuracy = location.accuracy,
             timestamp = System.currentTimeMillis(),
-            isTracking = isTracking
+            isTracking = isTracking,
+            routeId = activeRouteId
         )
         snapshotDb?.let { db ->
             scope.launch(Dispatchers.IO) { db.saveSnapshot(snapshot) }

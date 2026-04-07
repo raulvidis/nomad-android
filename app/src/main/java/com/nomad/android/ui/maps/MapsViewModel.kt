@@ -21,6 +21,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
+import kotlin.collections.emptyList
 
 data class MapsData(
     val isMapInitialized: Boolean = false,
@@ -40,11 +41,19 @@ data class MapsData(
     val isAutoCenter: Boolean = true,
     val showSavedPanel: Boolean = false,
     val showRegionList: Boolean = false,
+    val showRoutesPanel: Boolean = false,
     val regionName: String? = null,
     val cameraNorth: Double = 48.87,
     val cameraSouth: Double = 48.85,
     val cameraEast: Double = 2.36,
     val cameraWest: Double = 2.34,
+    val activeRouteId: String? = null,
+    val activeTrackPoints: List<com.nomad.android.data.local.entity.LocationSnapshotEntity> = emptyList(),
+    val savedRoutes: List<com.nomad.android.data.local.entity.TrackRouteEntity> = emptyList(),
+    val displayedRouteId: String? = null,
+    val displayedRoutePoints: List<com.nomad.android.data.local.entity.LocationSnapshotEntity> = emptyList(),
+    val isTrackback: Boolean = false,
+    val showSaveLocationDialog: Boolean = false,
 )
 
 data class MapsUiState(
@@ -86,8 +95,9 @@ class MapsViewModel @Inject constructor(
                 locationRepository.currentLocation,
                 locationRepository.isTracking,
                 locationRepository.savedPoints,
-                locationRepository.recentSnapshots
-            ) { location, isTracking, savedPoints, _ ->
+                locationRepository.recentSnapshots,
+                locationRepository.savedRoutes
+            ) { location, isTracking, savedPoints, _, savedRoutes ->
                 val locText = location?.let {
                     "%.6f, %.6f".format(it.latitude, it.longitude)
                 } ?: "NO FIX"
@@ -99,6 +109,7 @@ class MapsViewModel @Inject constructor(
                             currentLongitude = location?.longitude,
                             isTracking = isTracking,
                             savedPoints = savedPoints,
+                            savedRoutes = savedRoutes,
                         )
                     )
                 }
@@ -131,11 +142,36 @@ class MapsViewModel @Inject constructor(
     }
 
     fun startTracking() {
-        if (_locationPermissionGranted.value) locationRepository.startTracking()
+        if (!_locationPermissionGranted.value) return
+        viewModelScope.launch {
+            val routeId = locationRepository.beginRoute()
+            locationRepository.startTracking()
+            _uiState.update { it.copy(data = it.data.copy(activeRouteId = routeId)) }
+            observeActiveTrack(routeId)
+        }
+    }
+
+    private fun observeActiveTrack(routeId: String) {
+        viewModelScope.launch {
+            locationRepository.observeRoutePoints(routeId).collect { points ->
+                _uiState.update { it.copy(data = it.data.copy(activeTrackPoints = points)) }
+            }
+        }
     }
 
     fun stopTracking() {
-        locationRepository.stopTracking()
+        viewModelScope.launch {
+            locationRepository.endRoute()
+            locationRepository.stopTracking()
+            _uiState.update {
+                it.copy(data = it.data.copy(
+                    isTracking = false,
+                    activeRouteId = null,
+                    activeTrackPoints = emptyList(),
+                    isTrackback = false
+                ))
+            }
+        }
     }
 
     fun saveLocation(name: String, notes: String) {
@@ -160,6 +196,37 @@ class MapsViewModel @Inject constructor(
 
     fun toggleRegionList() {
         _uiState.update { it.copy(data = it.data.copy(showRegionList = !it.data.showRegionList)) }
+    }
+
+    fun toggleRoutesPanel() {
+        _uiState.update { it.copy(data = it.data.copy(showRoutesPanel = !it.data.showRoutesPanel)) }
+    }
+
+    fun toggleTrackback() {
+        _uiState.update { it.copy(data = it.data.copy(isTrackback = !it.data.isTrackback)) }
+    }
+
+    fun showSaveLocationDialog() {
+        _uiState.update { it.copy(data = it.data.copy(showSaveLocationDialog = true)) }
+    }
+
+    fun dismissSaveLocationDialog() {
+        _uiState.update { it.copy(data = it.data.copy(showSaveLocationDialog = false)) }
+    }
+
+    fun displayRoute(routeId: String?) {
+        if (routeId == null) {
+            _uiState.update { it.copy(data = it.data.copy(displayedRouteId = null, displayedRoutePoints = emptyList())) }
+            return
+        }
+        viewModelScope.launch {
+            val points = locationRepository.getRoutePoints(routeId)
+            _uiState.update { it.copy(data = it.data.copy(displayedRouteId = routeId, displayedRoutePoints = points)) }
+        }
+    }
+
+    fun deleteRoute(id: String) {
+        viewModelScope.launch { locationRepository.deleteRoute(id) }
     }
 
     fun startRegionSelection() {

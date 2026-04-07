@@ -11,5 +11,6 @@ data class LocationSnapshotEntity(
     val altitude: Double,
     val accuracy: Float,
     val timestamp: Long,
-    val isTracking: Boolean
+    val isTracking: Boolean,
+    val routeId: String? = null
 )

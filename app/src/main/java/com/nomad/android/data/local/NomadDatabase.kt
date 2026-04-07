@@ -10,6 +10,7 @@ import com.nomad.android.data.local.dao.LocationSavedPointDao
 import com.nomad.android.data.local.dao.LocationSnapshotDao
 import com.nomad.android.data.local.dao.SearchHistoryDao
 import com.nomad.android.data.local.dao.SettingsDao
+import com.nomad.android.data.local.dao.TrackRouteDao
 import com.nomad.android.data.local.entity.ChatMessageEntity
 import com.nomad.android.data.local.entity.ChatSessionEntity
 import com.nomad.android.data.local.entity.ContentPackEntity
@@ -17,6 +18,7 @@ import com.nomad.android.data.local.entity.LocationSavedPointEntity
 import com.nomad.android.data.local.entity.LocationSnapshotEntity
 import com.nomad.android.data.local.entity.SearchHistoryEntity
 import com.nomad.android.data.local.entity.SettingsEntity
+import com.nomad.android.data.local.entity.TrackRouteEntity
 
 @Database(
     entities = [
@@ -26,9 +28,10 @@ import com.nomad.android.data.local.entity.SettingsEntity
         SearchHistoryEntity::class,
         SettingsEntity::class,
         LocationSnapshotEntity::class,
-        LocationSavedPointEntity::class
+        LocationSavedPointEntity::class,
+        TrackRouteEntity::class
     ],
-    version = 2,
+    version = 3,
     exportSchema = true
 )
 abstract class NomadDatabase : RoomDatabase() {
@@ -38,6 +41,7 @@ abstract class NomadDatabase : RoomDatabase() {
     abstract fun settingsDao(): SettingsDao
     abstract fun locationSnapshotDao(): LocationSnapshotDao
     abstract fun locationSavedPointDao(): LocationSavedPointDao
+    abstract fun trackRouteDao(): TrackRouteDao
 
     companion object {
         val MIGRATION_1_2 = object : Migration(1, 2) {
@@ -68,6 +72,28 @@ abstract class NomadDatabase : RoomDatabase() {
                     )
                     """.trimIndent()
                 )
+            }
+        }
+
+        val MIGRATION_2_3 = object : Migration(2, 3) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS track_routes (
+                        id TEXT NOT NULL PRIMARY KEY,
+                        name TEXT NOT NULL,
+                        startLat REAL NOT NULL,
+                        startLon REAL NOT NULL,
+                        endLat REAL,
+                        endLon REAL,
+                        pointCount INTEGER NOT NULL,
+                        totalDistanceMeters REAL NOT NULL,
+                        createdAt INTEGER NOT NULL,
+                        isActive INTEGER NOT NULL
+                    )
+                    """.trimIndent()
+                )
+                db.execSQL("ALTER TABLE location_snapshots ADD COLUMN routeId TEXT DEFAULT NULL")
             }
         }
     }
