@@ -345,7 +345,7 @@ class ChatViewModel @Inject constructor(
                 )
 
                 autoCompactIfNeeded()
-            } catch (e: Exception) {
+            } catch (e: Throwable) {
                 _uiState.update {
                     it.copy(
                         error = "AI Engine error: ${e.message}",

@@ -121,7 +121,7 @@ class LiteRTLMEngine(
         try {
             val raw = inference.generateResponse(fullPrompt)
             cleanFullResponse(raw)
-        } catch (e: Exception) {
+        } catch (e: Throwable) {
             Log.e(TAG, "Generation failed", e)
             "AI generation error. The model may be corrupt — try re-downloading in Settings."
         }
@@ -145,10 +145,9 @@ class LiteRTLMEngine(
             return@callbackFlow
         }
 
-        val fullPrompt = buildPromptWithContext(prompt, context, imagePath)
+        val fullPrompt = withContext(Dispatchers.IO) { buildPromptWithContext(prompt, context, imagePath) }
         var shouldStop = false
         var emittedToken = false
-        // Buffer to detect stop tokens that arrive split across chunks
         val pendingBuffer = StringBuilder()
 
         try {
@@ -199,7 +198,7 @@ class LiteRTLMEngine(
                     trySend(cleaned)
                 }
             }
-        } catch (e: Exception) {
+        } catch (e: Throwable) {
             Log.e(TAG, "Streaming generation failed", e)
             trySend("AI generation error: ${e.message}")
             close()
@@ -310,17 +309,22 @@ class LiteRTLMEngine(
         return try {
             val file = File(imagePath)
             if (!file.exists()) return null
-            // Downscale large images to keep prompt size manageable
             val options = BitmapFactory.Options().apply { inJustDecodeBounds = true }
             BitmapFactory.decodeFile(imagePath, options)
-            val scale = maxOf(1, maxOf(options.outWidth, options.outHeight) / 1024)
+            val scale = maxOf(1, maxOf(options.outWidth, options.outHeight) / 512)
             val decodeOptions = BitmapFactory.Options().apply { inSampleSize = scale }
             val bitmap = BitmapFactory.decodeFile(imagePath, decodeOptions) ?: return null
             val baos = ByteArrayOutputStream()
-            bitmap.compress(android.graphics.Bitmap.CompressFormat.JPEG, 80, baos)
+            bitmap.compress(android.graphics.Bitmap.CompressFormat.JPEG, 60, baos)
             bitmap.recycle()
-            Base64.encodeToString(baos.toByteArray(), Base64.NO_WRAP)
-        } catch (e: Exception) {
+            val encoded = Base64.encodeToString(baos.toByteArray(), Base64.NO_WRAP)
+            baos.close()
+            if (encoded.length > 500_000) {
+                Log.w(TAG, "Image base64 too large (${encoded.length} chars), skipping")
+                return null
+            }
+            encoded
+        } catch (e: Throwable) {
             Log.e(TAG, "Failed to encode image", e)
             null
         }

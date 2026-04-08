@@ -1,6 +1,7 @@
 package com.nomad.android.ui.chat
 
 import android.net.Uri
+import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
@@ -231,13 +232,18 @@ private fun ChatContent(
         contract = ActivityResultContracts.PickVisualMedia()
     ) { uri ->
         if (uri != null) {
-            // Copy to internal storage for persistence
-            val file = File(context.filesDir, "chat_images").apply { mkdirs() }
-            val dest = File(file, "${System.currentTimeMillis()}.jpg")
-            context.contentResolver.openInputStream(uri)?.use { input ->
-                dest.outputStream().use { output -> input.copyTo(output) }
+            try {
+                val file = File(context.filesDir, "chat_images").apply { mkdirs() }
+                val dest = File(file, "${System.currentTimeMillis()}.jpg")
+                context.contentResolver.openInputStream(uri)?.use { input ->
+                    dest.outputStream().use { output -> input.copyTo(output) }
+                } ?: throw IllegalStateException("Cannot open input stream for selected image")
+                if (dest.exists() && dest.length() > 0) {
+                    onSetPendingImage(dest.absolutePath)
+                }
+            } catch (e: Exception) {
+                Log.e("ChatScreen", "Failed to copy selected image", e)
             }
-            onSetPendingImage(dest.absolutePath)
         }
     }
 
@@ -571,16 +577,22 @@ private fun ChatContent(
                         text = "CAMERA",
                         onClick = {
                             showAttachmentOptions = false
-                            val imageDir = File(context.filesDir, "chat_images").apply { mkdirs() }
-                            val imageFile = File(imageDir, "${System.currentTimeMillis()}.jpg")
-                            cameraImagePath = imageFile.absolutePath
-                            val uri = FileProvider.getUriForFile(
-                                context,
-                                "${context.packageName}.fileprovider",
-                                imageFile
-                            )
-                            cameraImageUri = uri
-                            cameraLauncher.launch(uri)
+                            try {
+                                val imageDir = File(context.filesDir, "chat_images").apply { mkdirs() }
+                                val imageFile = File(imageDir, "${System.currentTimeMillis()}.jpg")
+                                cameraImagePath = imageFile.absolutePath
+                                val uri = FileProvider.getUriForFile(
+                                    context,
+                                    "${context.packageName}.fileprovider",
+                                    imageFile
+                                )
+                                cameraImageUri = uri
+                                cameraLauncher.launch(uri)
+                            } catch (e: Exception) {
+                                Log.e("ChatScreen", "Failed to prepare camera image", e)
+                                cameraImagePath = null
+                                cameraImageUri = null
+                            }
                         },
                         size = TerminalButtonSize.SMALL,
                     )
