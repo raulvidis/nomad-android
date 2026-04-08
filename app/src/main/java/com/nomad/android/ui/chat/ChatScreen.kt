@@ -320,6 +320,8 @@ private fun ChatContent(
                             text = message.content,
                             imageUri = message.imageUri,
                         )
+                    } else if (data.isStreaming && message.role == "assistant") {
+                        StreamingMessageBubble(isStreaming = true)
                     }
                 }
                 if (data.isStreaming) {
