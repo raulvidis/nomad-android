@@ -8,10 +8,8 @@ class AIEngineTypesTest {
     @Test
     fun `AIEngineType enum has all values`() {
         val values = AIEngineType.values()
-        assertEquals(5, values.size)
+        assertEquals(3, values.size)
         assertTrue(values.contains(AIEngineType.LITERTLM_E2B))
-        assertTrue(values.contains(AIEngineType.LITERTLM_QWEN35_2B))
-        assertTrue(values.contains(AIEngineType.LITERTLM_QWEN35_08B))
         assertTrue(values.contains(AIEngineType.FALLBACK))
         assertTrue(values.contains(AIEngineType.NONE))
     }
@@ -56,10 +54,10 @@ class AIEngineTypesTest {
     }
 
     @Test
-    fun `recommendedVariant selects Gemma4 for high RAM`() {
+    fun `recommendedVariant always selects Gemma4`() {
         assertEquals(LiteRTLMEngine.ModelVariant.GEMMA4_E2B, LiteRTLMEngine.recommendedVariant(8192))
-        assertEquals(LiteRTLMEngine.ModelVariant.GEMMA4_E2B, LiteRTLMEngine.recommendedVariant(4096))
         assertEquals(LiteRTLMEngine.ModelVariant.GEMMA4_E2B, LiteRTLMEngine.recommendedVariant(2048))
+        assertEquals(LiteRTLMEngine.ModelVariant.GEMMA4_E2B, LiteRTLMEngine.recommendedVariant(1024))
     }
 
     @Test

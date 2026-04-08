@@ -115,8 +115,6 @@ class OnboardingViewModel @Inject constructor(
         val variant = LiteRTLMEngine.ModelVariant.entries.find { it.displayName == modelName } ?: return
         val packId = when (variant) {
             LiteRTLMEngine.ModelVariant.GEMMA4_E2B -> "ai_gemma4"
-            LiteRTLMEngine.ModelVariant.QWEN35_2B -> "ai_qwen35_2b"
-            LiteRTLMEngine.ModelVariant.QWEN35_08B -> "ai_qwen35_08b"
         }
         viewModelScope.launch {
             try {

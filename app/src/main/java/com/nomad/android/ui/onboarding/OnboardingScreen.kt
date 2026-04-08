@@ -249,8 +249,6 @@ private fun ModelSelectionStep(
                 "%.1f GB".format(variant.sizeMB / 1024.0),
                 when (variant) {
                     com.nomad.android.data.ai.LiteRTLMEngine.ModelVariant.GEMMA4_E2B -> "Multimodal — text, image, audio"
-                    com.nomad.android.data.ai.LiteRTLMEngine.ModelVariant.QWEN35_2B -> "Text generation — compact & fast"
-                    com.nomad.android.data.ai.LiteRTLMEngine.ModelVariant.QWEN35_08B -> "Ultra-light — minimal RAM usage"
                 }
             )
         }

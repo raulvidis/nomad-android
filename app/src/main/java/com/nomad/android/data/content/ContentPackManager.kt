@@ -95,14 +95,10 @@ class ContentPackManager(
 
     private fun modelVariantToPackId(variant: LiteRTLMEngine.ModelVariant): String = when (variant) {
         LiteRTLMEngine.ModelVariant.GEMMA4_E2B -> "ai_gemma4"
-        LiteRTLMEngine.ModelVariant.QWEN35_2B -> "ai_qwen35_2b"
-        LiteRTLMEngine.ModelVariant.QWEN35_08B -> "ai_qwen35_08b"
     }
 
     private fun getModelVariantForPack(packId: String): LiteRTLMEngine.ModelVariant? = when (packId) {
         "ai_gemma4" -> LiteRTLMEngine.ModelVariant.GEMMA4_E2B
-        "ai_qwen35_2b" -> LiteRTLMEngine.ModelVariant.QWEN35_2B
-        "ai_qwen35_08b" -> LiteRTLMEngine.ModelVariant.QWEN35_08B
         else -> null
     }
 

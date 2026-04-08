@@ -35,20 +35,6 @@ class LiteRTLMEngine(
             ramRequiredMB = 2048,
             sizeMB = 2643,
             downloadUrl = "https://huggingface.co/litert-community/gemma-4-E2B-it-litert-lm/resolve/main/gemma-4-E2B-it.litertlm"
-        ),
-        QWEN35_2B(
-            displayName = "Qwen 3.5 2B",
-            fileName = "qwen35_2b_q4.litertlm",
-            ramRequiredMB = 1536,
-            sizeMB = 1096,
-            downloadUrl = "https://huggingface.co/paulsp94/Qwen3.5-2B-LiteRT-LM/resolve/main/qwen35_2b_q4.litertlm"
-        ),
-        QWEN35_08B(
-            displayName = "Qwen 3.5 0.8B",
-            fileName = "qwen35_mm_q8_ekv2048.litertlm",
-            ramRequiredMB = 1024,
-            sizeMB = 1188,
-            downloadUrl = "https://huggingface.co/GabrieleConte/Qwen3.5-0.8B-LiteRT/resolve/main/qwen35_mm_q8_ekv2048.litertlm"
         )
     }
 
@@ -335,11 +321,7 @@ class LiteRTLMEngine(
 
         private const val SYSTEM_PROMPT = """You are NOMAD, an offline survival assistant. You give clear, concise, and practical answers about survival, first aid, navigation, emergency preparedness, and general knowledge. Keep answers direct and actionable. Do not include any XML tags, control tokens, or internal reasoning in your responses."""
 
-        fun recommendedVariant(totalRamMB: Long): ModelVariant = when {
-            totalRamMB >= 2048 -> ModelVariant.GEMMA4_E2B
-            totalRamMB >= 1536 -> ModelVariant.QWEN35_2B
-            else -> ModelVariant.QWEN35_08B
-        }
+        fun recommendedVariant(totalRamMB: Long): ModelVariant = ModelVariant.GEMMA4_E2B
     }
 
 }
