@@ -8,8 +8,10 @@ class AIEngineTypesTest {
     @Test
     fun `AIEngineType enum has all values`() {
         val values = AIEngineType.values()
-        assertEquals(3, values.size)
+        assertEquals(5, values.size)
         assertTrue(values.contains(AIEngineType.LITERTLM_E2B))
+        assertTrue(values.contains(AIEngineType.LITERTLM_QWEN35_2B))
+        assertTrue(values.contains(AIEngineType.LITERTLM_QWEN35_08B))
         assertTrue(values.contains(AIEngineType.FALLBACK))
         assertTrue(values.contains(AIEngineType.NONE))
     }
