@@ -40,15 +40,36 @@ class AIEngineManager(
         _activeVariant.value = variant
     }
 
+    /** Check if a model was downloaded after init and switch to it if needed. */
+    private fun refreshEngineIfNeeded() {
+        if (!currentEngine.getModelFile().exists()) {
+            // Current engine's model isn't downloaded — find one that is
+            val downloaded = LiteRTLMEngine.ModelVariant.entries.firstOrNull { variant ->
+                File(modelsDir, variant.fileName).let { it.exists() && it.length() > 1_000_000 }
+            }
+            if (downloaded != null && downloaded != _activeVariant.value) {
+                Log.i(TAG, "Auto-switching to downloaded model: ${downloaded.displayName}")
+                switchModel(downloaded)
+            }
+        }
+    }
+
     // Delegate all AIEngine methods to the current engine
 
-    override suspend fun generate(prompt: String, context: List<String>, imagePath: String?): String =
-        currentEngine.generate(prompt, context, imagePath)
+    override suspend fun generate(prompt: String, context: List<String>, imagePath: String?): String {
+        refreshEngineIfNeeded()
+        return currentEngine.generate(prompt, context, imagePath)
+    }
 
-    override fun generateStream(prompt: String, context: List<String>, imagePath: String?): Flow<String> =
-        currentEngine.generateStream(prompt, context, imagePath)
+    override fun generateStream(prompt: String, context: List<String>, imagePath: String?): Flow<String> {
+        refreshEngineIfNeeded()
+        return currentEngine.generateStream(prompt, context, imagePath)
+    }
 
-    override suspend fun isAvailable(): Boolean = currentEngine.isAvailable()
+    override suspend fun isAvailable(): Boolean {
+        refreshEngineIfNeeded()
+        return currentEngine.isAvailable()
+    }
 
     override fun getModelName(): String = currentEngine.getModelName()
 
