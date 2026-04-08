@@ -8,6 +8,7 @@ import com.nomad.android.data.local.dao.ChatMessageDao
 import com.nomad.android.data.local.dao.ContentPackDao
 import com.nomad.android.data.local.dao.LocationSavedPointDao
 import com.nomad.android.data.local.dao.LocationSnapshotDao
+import com.nomad.android.data.local.dao.NoteDao
 import com.nomad.android.data.local.dao.SearchHistoryDao
 import com.nomad.android.data.local.dao.SettingsDao
 import com.nomad.android.data.local.dao.TrackRouteDao
@@ -16,6 +17,7 @@ import com.nomad.android.data.local.entity.ChatSessionEntity
 import com.nomad.android.data.local.entity.ContentPackEntity
 import com.nomad.android.data.local.entity.LocationSavedPointEntity
 import com.nomad.android.data.local.entity.LocationSnapshotEntity
+import com.nomad.android.data.local.entity.NoteEntity
 import com.nomad.android.data.local.entity.SearchHistoryEntity
 import com.nomad.android.data.local.entity.SettingsEntity
 import com.nomad.android.data.local.entity.TrackRouteEntity
@@ -29,9 +31,10 @@ import com.nomad.android.data.local.entity.TrackRouteEntity
         SettingsEntity::class,
         LocationSnapshotEntity::class,
         LocationSavedPointEntity::class,
-        TrackRouteEntity::class
+        TrackRouteEntity::class,
+        NoteEntity::class
     ],
-    version = 4,
+    version = 5,
     exportSchema = true
 )
 abstract class NomadDatabase : RoomDatabase() {
@@ -42,6 +45,7 @@ abstract class NomadDatabase : RoomDatabase() {
     abstract fun locationSnapshotDao(): LocationSnapshotDao
     abstract fun locationSavedPointDao(): LocationSavedPointDao
     abstract fun trackRouteDao(): TrackRouteDao
+    abstract fun noteDao(): NoteDao
 
     companion object {
         val MIGRATION_1_2 = object : Migration(1, 2) {
@@ -100,6 +104,22 @@ abstract class NomadDatabase : RoomDatabase() {
         val MIGRATION_3_4 = object : Migration(3, 4) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("ALTER TABLE chat_messages ADD COLUMN imageUri TEXT DEFAULT NULL")
+            }
+        }
+
+        val MIGRATION_4_5 = object : Migration(4, 5) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS notes (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        title TEXT NOT NULL,
+                        content TEXT NOT NULL DEFAULT '',
+                        createdAt INTEGER NOT NULL,
+                        updatedAt INTEGER NOT NULL
+                    )
+                    """.trimIndent()
+                )
             }
         }
     }

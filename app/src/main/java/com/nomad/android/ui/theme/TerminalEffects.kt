@@ -194,7 +194,7 @@ val TerminalTabs = listOf(
     TerminalTab("knowledge", "Knowledge", Icons.Filled.Book, Icons.Outlined.Book),
     TerminalTab("chat", "Chat", Icons.Filled.Chat, Icons.Outlined.Chat),
     TerminalTab("emergency", "Emergency", Icons.Filled.Bookmark, Icons.Outlined.Bookmark),
-    TerminalTab("settings", "Settings", Icons.Filled.Settings, Icons.Outlined.Settings),
+    TerminalTab("notes", "Notes", Icons.Filled.StickyNote2, Icons.Outlined.StickyNote2),
 )
 
 @Composable

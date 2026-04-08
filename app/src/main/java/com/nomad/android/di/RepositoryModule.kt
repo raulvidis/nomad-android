@@ -8,6 +8,7 @@ import com.nomad.android.data.local.dao.ChatMessageDao
 import com.nomad.android.data.local.dao.ContentPackDao
 import com.nomad.android.data.local.dao.LocationSavedPointDao
 import com.nomad.android.data.local.dao.LocationSnapshotDao
+import com.nomad.android.data.local.dao.NoteDao
 import com.nomad.android.data.local.dao.SearchHistoryDao
 import com.nomad.android.data.local.dao.SettingsDao
 import com.nomad.android.data.local.dao.TrackRouteDao
@@ -15,6 +16,7 @@ import com.nomad.android.data.repository.ChatRepository
 import com.nomad.android.data.repository.ContentPackRepository
 import com.nomad.android.data.repository.LocationRepository
 import com.nomad.android.data.repository.MapsRepository
+import com.nomad.android.data.repository.NoteRepository
 import com.nomad.android.data.repository.SearchRepository
 import com.nomad.android.data.repository.SettingsRepository
 import com.nomad.android.util.LocationSnapshotDb
@@ -102,4 +104,10 @@ object RepositoryModule {
         trackRouteDao: TrackRouteDao,
         locationTrackerService: LocationTrackerService
     ): LocationRepository = LocationRepository(locationSnapshotDao, locationSavedPointDao, trackRouteDao, locationTrackerService)
+
+    @Provides
+    @Singleton
+    fun provideNoteRepository(
+        noteDao: NoteDao
+    ): NoteRepository = NoteRepository(noteDao)
 }

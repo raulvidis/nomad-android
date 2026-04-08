@@ -7,7 +7,9 @@ import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
@@ -421,6 +423,7 @@ fun TerminalDivider(
     )
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun TerminalListTile(
     title: String,
@@ -429,6 +432,7 @@ fun TerminalListTile(
     modifier: Modifier = Modifier,
     icon: @Composable (() -> Unit)? = null,
     index: Int = 0,
+    onLongClick: (() -> Unit)? = null,
 ) {
     val bgColor = if (index % 2 == 1) SurfaceContainerLowest else Color.Transparent
 
@@ -437,10 +441,21 @@ fun TerminalListTile(
             .fillMaxWidth()
             .heightIn(min = 48.dp)
             .background(bgColor)
-            .clickable(
-                interactionSource = remember { MutableInteractionSource() },
-                indication = null,
-                onClick = onClick,
+            .then(
+                if (onLongClick != null) {
+                    Modifier.combinedClickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null,
+                        onLongClick = onLongClick,
+                        onClick = onClick,
+                    )
+                } else {
+                    Modifier.clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null,
+                        onClick = onClick,
+                    )
+                }
             )
             .padding(horizontal = 12.dp, vertical = 24.dp),
         verticalAlignment = Alignment.CenterVertically,

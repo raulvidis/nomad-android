@@ -10,6 +10,8 @@ import com.nomad.android.ui.dashboard.DashboardScreen
 import com.nomad.android.ui.emergency.EmergencyScreen
 import com.nomad.android.ui.knowledge.KnowledgeScreen
 import com.nomad.android.ui.maps.MapsScreen
+import com.nomad.android.ui.notes.NoteEditorScreen
+import com.nomad.android.ui.notes.NotesScreen
 import com.nomad.android.ui.settings.SettingsScreen
 
 @Composable
@@ -36,6 +38,13 @@ fun NomadNavHost(
         }
         composable(Routes.EMERGENCY) {
             EmergencyScreen()
+        }
+        composable(Routes.NOTES) {
+            NotesScreen(navController = navController)
+        }
+        composable(Routes.NOTE_EDITOR) { backStackEntry ->
+            val noteId = backStackEntry.arguments?.getString("noteId")?.toLongOrNull() ?: -1L
+            NoteEditorScreen(noteId = noteId, navController = navController)
         }
         composable(Routes.SETTINGS) {
             SettingsScreen()
