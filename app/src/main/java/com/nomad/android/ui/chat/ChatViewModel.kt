@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import java.util.UUID
 import javax.inject.Inject
@@ -262,7 +263,9 @@ class ChatViewModel @Inject constructor(
         }
 
         streamingJob = viewModelScope.launch {
-            // Update session title from first message
+            val currentSessionId = sessionId
+            val currentStreamingMessage = streamingMessage
+
             val currentSession = _uiState.value.data.sessions.find { it.id == sessionId }
             if (currentSession != null && currentSession.title == "New Session") {
                 val title = content.take(50)
@@ -307,11 +310,12 @@ class ChatViewModel @Inject constructor(
                 }
 
                 aiEngine.generateStream(content, fullContext, imagePath).collect { token ->
+                    if (!isActive) return@collect
                     responseBuilder.append(token)
                     val currentResponse = responseBuilder.toString()
                     _uiState.update { state ->
                         val messages = state.data.messages.toMutableList()
-                        messages[messages.lastIndex] = streamingMessage.copy(content = currentResponse)
+                        messages[messages.lastIndex] = currentStreamingMessage.copy(content = currentResponse)
                         state.copy(data = state.data.copy(messages = messages))
                     }
                 }
@@ -322,10 +326,9 @@ class ChatViewModel @Inject constructor(
                     .replace(Regex("""\n{3,}"""), "\n\n")
                     .trim()
 
-                // Update the final message
                 _uiState.update { state ->
                     val messages = state.data.messages.toMutableList()
-                    messages[messages.lastIndex] = streamingMessage.copy(content = finalResponse)
+                    messages[messages.lastIndex] = currentStreamingMessage.copy(content = finalResponse)
                     state.copy(
                         data = state.data.copy(
                             messages = messages,
@@ -346,16 +349,23 @@ class ChatViewModel @Inject constructor(
 
                 autoCompactIfNeeded()
             } catch (e: Throwable) {
+                val partialResponse = responseBuilder.toString()
+                val finalPartial = if (partialResponse.isNotBlank()) partialResponse else "Error: ${e.message}"
                 _uiState.update {
+                    val messages = it.data.messages.toMutableList()
+                    messages[messages.lastIndex] = currentStreamingMessage.copy(content = finalPartial)
                     it.copy(
                         error = "AI Engine error: ${e.message}",
-                        data = it.data.copy(isStreaming = false)
+                        data = it.data.copy(
+                            isStreaming = false,
+                            messages = messages
+                        )
                     )
                 }
+                return@launch
             }
 
-            // Dequeue next message if any
-            processQueue(sessionId)
+            processQueue(currentSessionId)
         }
     }
 
@@ -530,7 +540,6 @@ class ChatViewModel @Inject constructor(
         viewModelScope.launch {
             chatRepository.deleteSessionById(sessionId)
             loadRecentSessions()
-            // If currently viewing this session, clear it
             if (_uiState.value.data.currentSessionId == sessionId) {
                 _uiState.update {
                     it.copy(
@@ -542,6 +551,16 @@ class ChatViewModel @Inject constructor(
                     )
                 }
             }
+        }
+    }
+
+    fun resetStuckState() {
+        streamingJob?.cancel()
+        streamingJob = null
+        _uiState.update {
+            it.copy(
+                data = it.data.copy(isStreaming = false)
+            )
         }
     }
 }

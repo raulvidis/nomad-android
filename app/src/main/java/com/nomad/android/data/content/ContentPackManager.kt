@@ -2,6 +2,7 @@ package com.nomad.android.data.content
 
 import android.content.Context
 import android.util.Log
+import com.nomad.android.DownloadService
 import com.nomad.android.data.ai.LiteRTLMEngine
 import com.nomad.android.data.local.dao.ContentPackDao
 import com.nomad.android.data.local.entity.ContentPackEntity
@@ -106,6 +107,11 @@ class ContentPackManager(
         _activeDownloads.update { it + (packId to 0f) }
         emit(0f)
 
+        val hasOtherDownloads = _activeDownloads.value.size > 1
+        if (!hasOtherDownloads) {
+            DownloadService.start(context)
+        }
+
         try {
             val pack = getBundledPacks().find { it.id == packId }
                 ?: throw IllegalArgumentException("Unknown pack: $packId")
@@ -163,6 +169,9 @@ class ContentPackManager(
             emit(1f)
         } finally {
             _activeDownloads.update { it - packId }
+            if (_activeDownloads.value.isEmpty()) {
+                DownloadService.stop(context)
+            }
         }
     }.flowOn(Dispatchers.IO)
 

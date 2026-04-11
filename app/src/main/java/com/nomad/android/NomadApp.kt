@@ -1,11 +1,20 @@
 package com.nomad.android
 
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
+import android.os.BatteryManager
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.compose.currentBackStackEntryAsState
@@ -28,6 +37,25 @@ fun NomadApp() {
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route ?: "dashboard"
 
+    val context = LocalContext.current
+    var batteryPercent by remember { mutableIntStateOf(getBatteryLevel(context)) }
+
+    androidx.compose.runtime.DisposableEffect(Unit) {
+        val receiver = object : BroadcastReceiver() {
+            override fun onReceive(ctx: Context, intent: Intent) {
+                val level = intent.getIntExtra(BatteryManager.EXTRA_LEVEL, -1)
+                val scale = intent.getIntExtra(BatteryManager.EXTRA_SCALE, -1)
+                if (level >= 0 && scale > 0) {
+                    batteryPercent = (level * 100 / scale)
+                }
+            }
+        }
+        context.registerReceiver(receiver, IntentFilter(Intent.ACTION_BATTERY_CHANGED))
+        onDispose {
+            try { context.unregisterReceiver(receiver) } catch (_: Exception) {}
+        }
+    }
+
     NomadTheme {
         CrtScreen {
             if (showOnboarding) {
@@ -40,17 +68,21 @@ fun NomadApp() {
                 ) {
                     TerminalStatusBar(
                         isAiOnline = onboardingState.data.selectedModel.isNotEmpty(),
-                        storagePercent = onboardingState.data.hardwareInfo?.let {
-                            val stat = android.os.StatFs(android.os.Environment.getDataDirectory().path)
-                            val total = stat.blockCountLong * stat.blockSizeLong
-                            val avail = stat.availableBlocksLong * stat.blockSizeLong
-                            if (total > 0) ((total - avail).toFloat() / total.toFloat() * 100).toInt() else 0
-                        } ?: 0,
+                        batteryPercent = batteryPercent,
                     )
                     NomadNavHost(navController = navController, modifier = Modifier.weight(1f))
                     TerminalBottomNav(navController = navController, currentRoute = currentRoute)
                 }
             }
         }
+    }
+}
+
+private fun getBatteryLevel(context: Context): Int {
+    return try {
+        val bm = context.getSystemService(Context.BATTERY_SERVICE) as BatteryManager
+        bm.getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY)
+    } catch (_: Exception) {
+        0
     }
 }

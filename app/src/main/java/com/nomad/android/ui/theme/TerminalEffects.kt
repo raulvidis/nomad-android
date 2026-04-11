@@ -116,7 +116,7 @@ fun CrtScreen(
 fun TerminalStatusBar(
     modifier: Modifier = Modifier,
     isAiOnline: Boolean = true,
-    storagePercent: Int = 67,
+    batteryPercent: Int = 0,
 ) {
     val colors = LocalNomadColors.current
     val timeFormat = remember { SimpleDateFormat("HH:mm", Locale.US) }
@@ -128,7 +128,7 @@ fun TerminalStatusBar(
         }
     }
 
-    val statusText = "SYS_STATUS: ${if (isAiOnline) "ONLINE" else "OFFLINE"} | BAT: $storagePercent% | $currentTime"
+    val statusText = "SYS_STATUS: ${if (isAiOnline) "ONLINE" else "OFFLINE"} | BAT: $batteryPercent% | $currentTime"
 
     Row(
         modifier = modifier

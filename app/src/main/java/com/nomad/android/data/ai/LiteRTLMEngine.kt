@@ -12,6 +12,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import java.io.ByteArrayOutputStream
 import java.io.File
@@ -41,6 +43,7 @@ class LiteRTLMEngine(
     private val modelDir by lazy { File(context.filesDir, "models").also { it.mkdirs() } }
     private var llmInference: LlmInference? = null
     private var isModelLoaded = false
+    private val inferenceMutex = Mutex()
 
     private val stopTokens = setOf(
         "<end_of_turn>", "<eos>",
@@ -85,112 +88,132 @@ class LiteRTLMEngine(
     }
 
     override suspend fun generate(prompt: String, context: List<String>, imagePath: String?): String = withContext(Dispatchers.IO) {
-        if (!isModelLoaded) {
-            val result = loadModel()
-            if (result.isError) {
-                val modelFile = getModelFile()
-                val fileSizeMB = if (modelFile.exists()) modelFile.length() / 1_048_576 else 0
-                val expectedMB = modelVariant.sizeMB
-                return@withContext if (!modelFile.exists()) {
-                    "No AI model downloaded. Go to Settings and download a model to enable AI chat."
-                } else if (fileSizeMB < expectedMB * 0.9) {
-                    "Model file incomplete (${fileSizeMB}MB of ${expectedMB}MB). Delete and re-download in Settings."
-                } else {
-                    "Failed to load model: ${(result as Result.Error).message}"
+        inferenceMutex.withLock {
+            if (!isModelLoaded) {
+                val result = loadModel()
+                if (result.isError) {
+                    val modelFile = getModelFile()
+                    val fileSizeMB = if (modelFile.exists()) modelFile.length() / 1_048_576 else 0
+                    val expectedMB = modelVariant.sizeMB
+                    return@withContext if (!modelFile.exists()) {
+                        "No AI model downloaded. Go to Settings and download the Gemma model to enable AI chat."
+                    } else if (fileSizeMB < expectedMB * 0.9) {
+                        "Model file incomplete (${fileSizeMB}MB of ${expectedMB}MB). Delete and re-download in Settings."
+                    } else {
+                        "Failed to load model: ${(result as Result.Error).message}"
+                    }
                 }
             }
-        }
 
-        val inference = llmInference ?: return@withContext "Model not loaded. Try restarting the app."
-        val fullPrompt = buildPromptWithContext(prompt, context, imagePath)
+            val inference = llmInference ?: return@withContext "Model not loaded. Try restarting the app."
+            val fullPrompt = buildPromptWithContext(prompt, context, imagePath)
 
-        try {
-            val raw = inference.generateResponse(fullPrompt)
-            cleanFullResponse(raw)
-        } catch (e: Throwable) {
-            Log.e(TAG, "Generation failed", e)
-            "AI generation error. The model may be corrupt — try re-downloading in Settings."
+            try {
+                val raw = inference.generateResponse(fullPrompt)
+                cleanFullResponse(raw)
+            } catch (e: Throwable) {
+                Log.e(TAG, "Generation failed", e)
+                isModelLoaded = false
+                llmInference = null
+                try { llmInference?.close() } catch (_: Exception) {}
+                "AI generation error: ${e.message}. Try sending your message again."
+            }
         }
     }
 
     override fun generateStream(prompt: String, context: List<String>, imagePath: String?): Flow<String> = callbackFlow {
-        if (!isModelLoaded) {
-            withContext(Dispatchers.IO) { loadModel() }.let { result ->
-                if (result.isError) {
-                    trySend("No AI model downloaded. Go to Settings and download a model to enable AI chat.")
-                    close()
-                    return@callbackFlow
-                }
-            }
-        }
-
-        val inference = llmInference
-        if (inference == null) {
-            trySend("No AI model downloaded. Go to Settings and download a model to enable AI chat.")
+        if (!inferenceMutex.tryLock()) {
+            trySend("AI is still processing your previous message. Please wait.")
             close()
             return@callbackFlow
         }
 
-        val fullPrompt = withContext(Dispatchers.IO) { buildPromptWithContext(prompt, context, imagePath) }
-        var shouldStop = false
-        var emittedToken = false
-        val pendingBuffer = StringBuilder()
-
         try {
-            inference.generateResponseAsync(fullPrompt) { partialResult, done ->
-                if (shouldStop) {
-                    if (!isClosedForSend) close()
-                    return@generateResponseAsync
-                }
-
-                if (done) {
-                    // Flush any remaining buffered content
-                    if (pendingBuffer.isNotEmpty()) {
-                        val cleaned = cleanToken(pendingBuffer.toString())
-                        if (!cleaned.isNullOrEmpty()) trySend(cleaned)
-                        pendingBuffer.clear()
+            if (!isModelLoaded) {
+                withContext(Dispatchers.IO) { loadModel() }.let { result ->
+                    if (result.isError) {
+                        trySend("No AI model downloaded. Go to Settings and download the Gemma model to enable AI chat.")
+                        close()
+                        inferenceMutex.unlock()
+                        return@callbackFlow
                     }
-                    if (!isClosedForSend) close()
-                    return@generateResponseAsync
-                }
-
-                pendingBuffer.append(partialResult)
-                val buffered = pendingBuffer.toString()
-
-                // Check if buffer contains a complete stop token
-                if (stopTokens.any { buffered.contains(it) }) {
-                    shouldStop = true
-                    val beforeStop = buffered
-                        .split(Regex("""</?(?:end_of_turn|eos|tool_response|channel|turn)\s*[^>]*>|turn\u25B7"""))
-                        .firstOrNull()
-                    val cleaned = beforeStop?.let { cleanToken(it) }
-                    if (!cleaned.isNullOrEmpty()) trySend(cleaned)
-                    pendingBuffer.clear()
-                    if (!isClosedForSend) close()
-                    return@generateResponseAsync
-                }
-
-                // If buffer might contain a partial stop token (starts with '<'),
-                // hold it until more data arrives
-                if (buffered.contains("<") && !buffered.contains(">")) {
-                    return@generateResponseAsync
-                }
-
-                // No partial tag detected — flush the buffer
-                val cleaned = cleanToken(buffered)
-                pendingBuffer.clear()
-                if (cleaned != null) {
-                    emittedToken = true
-                    trySend(cleaned)
                 }
             }
+
+            val inference = llmInference
+            if (inference == null) {
+                trySend("No AI model downloaded. Go to Settings and download the Gemma model to enable AI chat.")
+                close()
+                inferenceMutex.unlock()
+                return@callbackFlow
+            }
+
+            val fullPrompt = withContext(Dispatchers.IO) { buildPromptWithContext(prompt, context, imagePath) }
+            var shouldStop = false
+            var emittedToken = false
+            val pendingBuffer = StringBuilder()
+
+            try {
+                inference.generateResponseAsync(fullPrompt) { partialResult, done ->
+                    if (shouldStop) {
+                        if (!isClosedForSend) close()
+                        return@generateResponseAsync
+                    }
+
+                    if (done) {
+                        if (pendingBuffer.isNotEmpty()) {
+                            val cleaned = cleanToken(pendingBuffer.toString())
+                            if (!cleaned.isNullOrEmpty()) trySend(cleaned)
+                            pendingBuffer.clear()
+                        }
+                        if (!isClosedForSend) close()
+                        return@generateResponseAsync
+                    }
+
+                    pendingBuffer.append(partialResult)
+                    val buffered = pendingBuffer.toString()
+
+                    if (stopTokens.any { buffered.contains(it) }) {
+                        shouldStop = true
+                        val beforeStop = buffered
+                            .split(Regex("""</?(?:end_of_turn|eos|tool_response|channel|turn)\s*[^>]*>|turn\u25B7"""))
+                            .firstOrNull()
+                        val cleaned = beforeStop?.let { cleanToken(it) }
+                        if (!cleaned.isNullOrEmpty()) trySend(cleaned)
+                        pendingBuffer.clear()
+                        if (!isClosedForSend) close()
+                        return@generateResponseAsync
+                    }
+
+                    if (buffered.contains("<") && !buffered.contains(">")) {
+                        return@generateResponseAsync
+                    }
+
+                    val cleaned = cleanToken(buffered)
+                    pendingBuffer.clear()
+                    if (cleaned != null) {
+                        emittedToken = true
+                        trySend(cleaned)
+                    }
+                }
+            } catch (e: Throwable) {
+                Log.e(TAG, "Streaming generation failed", e)
+                isModelLoaded = false
+                try { llmInference?.close() } catch (_: Exception) {}
+                llmInference = null
+                trySend("AI generation error: ${e.message}")
+                close()
+            }
         } catch (e: Throwable) {
-            Log.e(TAG, "Streaming generation failed", e)
+            Log.e(TAG, "Stream setup failed", e)
             trySend("AI generation error: ${e.message}")
             close()
+            inferenceMutex.unlock()
         }
 
-        awaitClose { }
+        awaitClose {
+            inferenceMutex.unlock()
+        }
     }
 
     override suspend fun isAvailable(): Boolean = getModelFile().let { it.exists() && it.length() > 1_000_000 }
