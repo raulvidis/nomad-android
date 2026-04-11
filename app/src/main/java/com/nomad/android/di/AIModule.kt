@@ -45,11 +45,14 @@ object AIModule {
 
     @Provides
     @Singleton
-    fun provideAIEngineStatus(manager: AIEngineManager): AIEngineStatus {
+    fun provideAIEngineStatus(@ApplicationContext context: Context, manager: AIEngineManager): AIEngineStatus {
         val deviceInfo = manager.getDeviceInfo()
+        val modelsDir = java.io.File(context.filesDir, "models")
+        val modelFile = java.io.File(modelsDir, manager.activeVariant.value.fileName)
+        val isReady = modelFile.exists() && modelFile.length() > 1_000_000
         return AIEngineStatus(
             engineType = AIEngineType.LITERTLM_E2B,
-            isReady = manager.isAvailable(),
+            isReady = isReady,
             modelName = manager.getModelName(),
             ramRequired = "${deviceInfo.totalRamMB}MB total",
             modelSize = "${manager.getModelSizeMB()} MB"
