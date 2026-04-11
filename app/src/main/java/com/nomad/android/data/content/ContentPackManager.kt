@@ -18,6 +18,7 @@ import kotlinx.coroutines.flow.update
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import java.io.File
+import java.io.FileInputStream
 import java.io.FileOutputStream
 
 data class ContentPack(
@@ -216,8 +217,10 @@ class ContentPackManager(
 
             // Validate the downloaded file is not an HTML error page
             if (tmpFile.length() < 1_000_000) {
-                val header = tmpFile.readBytes().take(100).toByteArray().toString(Charsets.UTF_8)
-                if (header.contains("<html", ignoreCase = true) || header.contains("<!DOCTYPE", ignoreCase = true)) {
+                val header = ByteArray(100)
+                FileInputStream(tmpFile).use { it.read(header) }
+                val headerStr = header.toString(Charsets.UTF_8)
+                if (headerStr.contains("<html", ignoreCase = true) || headerStr.contains("<!DOCTYPE", ignoreCase = true)) {
                     tmpFile.delete()
                     throw RuntimeException("Download returned an HTML error page instead of the model file")
                 }

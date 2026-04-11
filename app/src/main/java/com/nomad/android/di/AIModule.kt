@@ -49,7 +49,7 @@ object AIModule {
         val deviceInfo = manager.getDeviceInfo()
         return AIEngineStatus(
             engineType = AIEngineType.LITERTLM_E2B,
-            isReady = false,
+            isReady = manager.isAvailable(),
             modelName = manager.getModelName(),
             ramRequired = "${deviceInfo.totalRamMB}MB total",
             modelSize = "${manager.getModelSizeMB()} MB"

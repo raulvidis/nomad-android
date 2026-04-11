@@ -29,10 +29,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
+import TextStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.withStyle
@@ -43,6 +45,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
 import com.nomad.android.R
 import com.nomad.android.ui.components.TerminalButton
+import com.nomad.android.ui.components.TerminalButtonVariant
 import com.nomad.android.ui.components.TerminalText
 import com.nomad.android.ui.components.TerminalTextField
 import com.nomad.android.ui.theme.BackgroundDark
@@ -111,7 +114,7 @@ private fun NoteEditorContent(
             TerminalText(
                 text = if (uiState.isPreview) "PREVIEW" else "EDIT ENTRY",
                 color = PhosphorGreen,
-                style = androidx.compose.ui.text.TextStyle(
+                style = TextStyle(
                     fontSize = 16.sp,
                     fontFamily = FontFamily(Font(R.font.space_grotesk_semi_bold, FontWeight.SemiBold)),
                 ),
@@ -150,7 +153,7 @@ private fun NoteEditorContent(
                 TerminalText(
                     text = uiState.title.ifBlank { "Untitled" },
                     color = PhosphorGreen,
-                    style = androidx.compose.ui.text.TextStyle(
+                    style = TextStyle(
                         fontSize = 20.sp,
                         fontFamily = FontFamily(Font(R.font.space_grotesk_bold, FontWeight.Bold)),
                     ),
@@ -200,7 +203,7 @@ private fun NoteEditorContent(
                         showDeleteDialog = false
                         onDelete()
                     },
-                    variant = com.nomad.android.ui.components.TerminalButtonVariant.DANGER,
+                    variant = TerminalButtonVariant.DANGER,
                 )
             },
             dismissButton = {
@@ -228,7 +231,7 @@ private fun MarkdownText(content: String) {
                     TerminalText(
                         text = line.removePrefix("### "),
                         color = PhosphorGreen,
-                        style = androidx.compose.ui.text.TextStyle(
+                        style = TextStyle(
                             fontSize = 16.sp,
                             fontFamily = FontFamily(Font(R.font.space_grotesk_semi_bold, FontWeight.SemiBold)),
                         ),
@@ -238,7 +241,7 @@ private fun MarkdownText(content: String) {
                     TerminalText(
                         text = line.removePrefix("## "),
                         color = PhosphorGreen,
-                        style = androidx.compose.ui.text.TextStyle(
+                        style = TextStyle(
                             fontSize = 18.sp,
                             fontFamily = FontFamily(Font(R.font.space_grotesk_semi_bold, FontWeight.SemiBold)),
                         ),
@@ -248,7 +251,7 @@ private fun MarkdownText(content: String) {
                     TerminalText(
                         text = line.removePrefix("# "),
                         color = PhosphorGreen,
-                        style = androidx.compose.ui.text.TextStyle(
+                        style = TextStyle(
                             fontSize = 20.sp,
                             fontFamily = FontFamily(Font(R.font.space_grotesk_bold, FontWeight.Bold)),
                         ),

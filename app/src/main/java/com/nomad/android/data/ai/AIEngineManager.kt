@@ -20,6 +20,7 @@ class AIEngineManager(
 
     private val modelsDir = File(context.filesDir, "models")
 
+    @Volatile
     private var currentEngine: LiteRTLMEngine = LiteRTLMEngine(context, initialVariant, deviceTotalRamMB)
     private val _activeVariant = MutableStateFlow(initialVariant)
     val activeVariant: StateFlow<LiteRTLMEngine.ModelVariant> = _activeVariant.asStateFlow()

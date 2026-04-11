@@ -3,7 +3,9 @@ package com.nomad.android.ui.dashboard
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.nomad.android.data.Result
+import com.nomad.android.data.ai.AIEngineManager
 import com.nomad.android.data.ai.AIEngineStatus
+import com.nomad.android.data.ai.AIEngineType
 import com.nomad.android.data.repository.ContentPackRepository
 import com.nomad.android.data.repository.SettingsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -32,7 +34,7 @@ data class DashboardUiState(
 class DashboardViewModel @Inject constructor(
     private val settingsRepository: SettingsRepository,
     private val contentPackRepository: ContentPackRepository,
-    private val aiEngineStatus: AIEngineStatus
+    private val aiEngineManager: AIEngineManager
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(DashboardUiState(isLoading = true))
@@ -52,7 +54,13 @@ class DashboardViewModel @Inject constructor(
         viewModelScope.launch {
             val storageMetrics = settingsRepository.getStorageMetrics()
 
-            val aiStatus = aiEngineStatus
+            val aiStatus = AIEngineStatus(
+                engineType = AIEngineType.LITERTLM_E2B,
+                isReady = aiEngineManager.isAvailable(),
+                modelName = aiEngineManager.getModelName(),
+                ramRequired = "${aiEngineManager.getDeviceInfo().totalRamMB}MB total",
+                modelSize = "${aiEngineManager.getModelSizeMB()} MB"
+            )
 
             // Get content pack count from the database (first emission only)
             var packCount = 0

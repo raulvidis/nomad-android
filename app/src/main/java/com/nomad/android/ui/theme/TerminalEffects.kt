@@ -21,6 +21,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Book
 import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.Chat
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Map
 import androidx.compose.material.icons.filled.Settings
@@ -28,6 +29,7 @@ import androidx.compose.material.icons.filled.Terminal
 import androidx.compose.material.icons.outlined.Book
 import androidx.compose.material.icons.outlined.Bookmark
 import androidx.compose.material.icons.outlined.Chat
+import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Map
 import androidx.compose.material.icons.outlined.Settings
@@ -194,7 +196,7 @@ val TerminalTabs = listOf(
     TerminalTab("knowledge", "Knowledge", Icons.Filled.Book, Icons.Outlined.Book),
     TerminalTab("chat", "Chat", Icons.Filled.Chat, Icons.Outlined.Chat),
     TerminalTab("emergency", "Emergency", Icons.Filled.Bookmark, Icons.Outlined.Bookmark),
-    TerminalTab("notes", "Notes", Icons.Filled.StickyNote2, Icons.Outlined.StickyNote2),
+    TerminalTab("notes", "Notes", Icons.Filled.Edit, Icons.Outlined.Edit),
 )
 
 @Composable

@@ -330,9 +330,6 @@ private fun ChatContent(
                         StreamingMessageBubble(isStreaming = true)
                     }
                 }
-                if (data.isStreaming) {
-                    item(key = "typing") { TypingIndicator() }
-                }
             }
         }
 

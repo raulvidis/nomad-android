@@ -49,10 +49,7 @@ class LiteRTLMEngine(
         "<end_of_turn>", "<eos>",
         "</end_of_turn>", "</start_of_turn>",
         "<end_of_session>",
-        "```xml", "```",
         "<channel>", "</channel>",
-        "<tool_response>", "</tool_response>",
-        "</think>",
         "<turn", "</turn", "turn\u25B7",
     )
 
@@ -113,9 +110,9 @@ class LiteRTLMEngine(
                 cleanFullResponse(raw)
             } catch (e: Throwable) {
                 Log.e(TAG, "Generation failed", e)
+                try { llmInference?.close() } catch (_: Exception) {}
                 isModelLoaded = false
                 llmInference = null
-                try { llmInference?.close() } catch (_: Exception) {}
                 "AI generation error: ${e.message}. Try sending your message again."
             }
         }
@@ -208,7 +205,6 @@ class LiteRTLMEngine(
             Log.e(TAG, "Stream setup failed", e)
             trySend("AI generation error: ${e.message}")
             close()
-            inferenceMutex.unlock()
         }
 
         awaitClose {

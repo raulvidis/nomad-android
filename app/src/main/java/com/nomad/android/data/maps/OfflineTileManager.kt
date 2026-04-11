@@ -9,6 +9,7 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import java.io.File
 import java.util.UUID
+import java.util.concurrent.ConcurrentHashMap
 
 data class OfflineRegion(
     val id: String,
@@ -38,7 +39,7 @@ class OfflineTileManager(
     private val tileCalculator: TileCalculator = TileCalculator,
     private val httpClient: OkHttpClient = OkHttpClient()
 ) {
-    private val databases = mutableMapOf<String, MBTilesDatabase>()
+    private val databases = ConcurrentHashMap<String, MBTilesDatabase>()
 
     init {
         tilesDir.mkdirs()

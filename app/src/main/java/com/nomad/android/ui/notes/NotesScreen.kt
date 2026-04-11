@@ -14,7 +14,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Search
@@ -30,7 +30,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -45,7 +48,7 @@ import com.nomad.android.ui.components.TerminalListTile
 import com.nomad.android.ui.components.TerminalLoadingScreen
 import com.nomad.android.ui.components.TerminalText
 import com.nomad.android.ui.components.TerminalTextField
-import com.nomad.android.ui.navigation.Routes
+import com.nomad.android.ui.components.TerminalButtonVariant
 import com.nomad.android.ui.theme.BackgroundDark
 import com.nomad.android.ui.theme.PhosphorGreen
 import com.nomad.android.ui.theme.PhosphorGreenDim
@@ -113,10 +116,10 @@ private fun NotesContent(
             TerminalText(
                 text = "DATA LOG",
                 color = PhosphorGreen,
-                style = androidx.compose.ui.text.TextStyle(
+                style = TextStyle(
                     fontSize = 20.sp,
-                    fontFamily = androidx.compose.ui.text.font.FontFamily(
-                        androidx.compose.ui.text.font.Font(R.font.space_grotesk_bold, FontWeight.Bold),
+                    fontFamily = FontFamily(
+                        Font(R.font.space_grotesk_bold, FontWeight.Bold),
                     ),
                 ),
             )
@@ -158,7 +161,7 @@ private fun NotesContent(
                     .fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(4.dp),
             ) {
-                items(data.notes, key = { it.id }) { index, note ->
+                itemsIndexed(data.notes, key = { _, note -> note.id }) { index, note ->
                     val preview = note.content.lines().firstOrNull { it.isNotBlank() } ?: ""
                     TerminalListTile(
                         title = note.title.ifBlank { "Untitled" },
@@ -186,8 +189,8 @@ private fun NotesContent(
             title = {
                 Text(
                     "DELETE ENTRY",
-                    fontFamily = androidx.compose.ui.text.font.FontFamily(
-                        androidx.compose.ui.text.font.Font(R.font.space_grotesk_semi_bold, FontWeight.SemiBold),
+                    fontFamily = FontFamily(
+                        Font(R.font.space_grotesk_semi_bold, FontWeight.SemiBold),
                     ),
                     color = PhosphorGreen,
                 )
@@ -205,7 +208,7 @@ private fun NotesContent(
                         onDeleteNote(noteId)
                         showDeleteDialog = null
                     },
-                    variant = com.nomad.android.ui.components.TerminalButtonVariant.DANGER,
+                    variant = TerminalButtonVariant.DANGER,
                 )
             },
             dismissButton = {
