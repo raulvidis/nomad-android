@@ -79,4 +79,66 @@ class FallbackEngineTest {
         val result = engine.loadModel()
         assertTrue(result is com.nomad.android.data.Result.Success)
     }
+
+    @Test
+    fun `generate with imagePath returns model-required message`() = runTest {
+        val response = engine.generate("How to start a fire?", emptyList(), imagePath = "/some/image.jpg")
+        assertTrue(response.contains("FALLBACK MODE"))
+        assertTrue(response.contains("Image analysis requires the AI model"))
+        assertFalse(response.contains("fire")) // Should NOT return survival info for image prompts
+    }
+
+    @Test
+    fun `generate with imagePath ignores matching keywords`() = runTest {
+        val response = engine.generate("Help with CPR for bleeding", emptyList(), imagePath = "/photo.png")
+        assertTrue(response.contains("Image analysis requires the AI model"))
+        assertFalse(response.contains("chest"))
+        assertFalse(response.contains("bleeding"))
+    }
+
+    @Test
+    fun `getDeviceInfo returns all zeros and false`() {
+        val info = engine.getDeviceInfo()
+        assertEquals(0L, info.totalRamMB)
+        assertEquals(0L, info.availableRamMB)
+        assertFalse(info.hasNPU)
+        assertFalse(info.hasGPU)
+    }
+
+    @Test
+    fun `unloadModel does not crash`() {
+        engine.unloadModel() // Should be a no-op
+    }
+
+    @Test
+    fun `generate returns navigation info`() = runTest {
+        val response = engine.generate("How do I navigate without a compass?", emptyList())
+        assertTrue(response.contains("Navigation") || response.contains("navigation"))
+        assertTrue(response.contains("North Star") || response.contains("north"))
+    }
+
+    @Test
+    fun `generate returns shelter info`() = runTest {
+        val response = engine.generate("How to build a shelter in the woods?", emptyList())
+        assertTrue(response.contains("shelter") || response.contains("Shelter"))
+    }
+
+    @Test
+    fun `generate returns knot info`() = runTest {
+        val response = engine.generate("What knots should I know?", emptyList())
+        assertTrue(response.contains("knot") || response.contains("Knot"))
+        assertTrue(response.contains("Bowline") || response.contains("bowline"))
+    }
+
+    @Test
+    fun `generate returns plant info`() = runTest {
+        val response = engine.generate("Which plants are safe to eat?", emptyList())
+        assertTrue(response.contains("plant") || response.contains("Plant"))
+    }
+
+    @Test
+    fun `generate returns sos info`() = runTest {
+        val response = engine.generate("How do I signal for help?", emptyList())
+        assertTrue(response.contains("SOS") || response.contains("sos") || response.contains("signal"))
+    }
 }

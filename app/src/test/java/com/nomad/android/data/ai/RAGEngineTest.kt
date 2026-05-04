@@ -99,4 +99,84 @@ class RAGEngineTest {
         val similarity = engine.cosineSimilarity(a, b)
         assertEquals(0.0f, similarity, 0.001f)
     }
+
+    @Test
+    fun `chunkText overlaps chunks at boundaries`() {
+        // Create text with exactly CHUNK_SIZE + 1 words to force 2 chunks
+        val words = (1..513).map { "word$it" }
+        val text = words.joinToString(" ")
+        val chunks = engine.chunkText(text)
+
+        assertEquals(2, chunks.size)
+
+        // First chunk should have words 1-512
+        val firstChunkWords = chunks[0].split(Regex("\\s+"))
+        assertEquals(512, firstChunkWords.size)
+
+        // Second chunk should start at word (512 - 128 + 1) = word385
+        // because i advances by CHUNK_SIZE - CHUNK_OVERLAP = 384
+        val secondChunkWords = chunks[1].split(Regex("\\s+"))
+        assertTrue(secondChunkWords.size <= RAGEngine.CHUNK_SIZE)
+
+        // Verify overlap: last 128 words of chunk 0 should be first 128 words of chunk 1
+        val overlapFromFirst = firstChunkWords.takeLast(RAGEngine.CHUNK_OVERLAP)
+        val overlapFromSecond = secondChunkWords.take(RAGEngine.CHUNK_OVERLAP)
+        assertEquals(
+            "Chunks should overlap by ${RAGEngine.CHUNK_OVERLAP} words",
+            overlapFromFirst,
+            overlapFromSecond
+        )
+    }
+
+    @Test
+    fun `chunkText produces correct number of chunks for large text`() {
+        val words = (1..1500).map { "word$it" }
+        val text = words.joinToString(" ")
+        val chunks = engine.chunkText(text)
+
+        // Step size = 512 - 128 = 384. Coverage: 384 * (n-1) + 512 >= 1500
+        // (n-1) >= (1500 - 512) / 384 = 2.57, so n >= 4
+        assertTrue(chunks.size >= 4)
+        assertTrue(chunks.size <= 5)
+
+        // All words should be covered
+        val coveredWords = chunks.flatMap { it.split(Regex("\\s+")) }.toSet()
+        val originalWords = words.toSet()
+        assertTrue(
+            "All original words should appear in chunks",
+            coveredWords.containsAll(originalWords)
+        )
+    }
+
+    @Test
+    fun `chunkText handles text with extra whitespace`() {
+        val text = "hello   world   test   data"
+        val chunks = engine.chunkText(text)
+        assertEquals(1, chunks.size)
+        // Should normalize whitespace
+        assertFalse(chunks[0].contains("  "))
+    }
+
+    @Test
+    fun `chunkText with single word returns single chunk`() {
+        val chunks = engine.chunkText("hello")
+        assertEquals(1, chunks.size)
+        assertEquals("hello", chunks[0])
+    }
+
+    @Test
+    fun `cosineSimilarity with opposite vectors returns -1`() {
+        val a = floatArrayOf(1f, 0f)
+        val b = floatArrayOf(-1f, 0f)
+        val similarity = engine.cosineSimilarity(a, b)
+        assertEquals(-1.0f, similarity, 0.001f)
+    }
+
+    @Test
+    fun `cosineSimilarity with parallel vectors returns 1`() {
+        val a = floatArrayOf(1f, 2f, 3f)
+        val b = floatArrayOf(2f, 4f, 6f) // 2x a
+        val similarity = engine.cosineSimilarity(a, b)
+        assertEquals(1.0f, similarity, 0.001f)
+    }
 }
