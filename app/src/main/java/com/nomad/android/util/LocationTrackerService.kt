@@ -13,6 +13,7 @@ import com.google.android.gms.location.LocationResult
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
 import com.nomad.android.data.local.entity.LocationSnapshotEntity
+import com.nomad.android.data.repository.LocationTracker
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -30,7 +31,7 @@ interface LocationSnapshotDb {
 class LocationTrackerService(
     private val context: Application,
     private val snapshotDb: LocationSnapshotDb? = null
-) {
+) : LocationTracker {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 

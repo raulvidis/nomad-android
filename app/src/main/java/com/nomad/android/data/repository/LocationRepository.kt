@@ -7,19 +7,31 @@ import com.nomad.android.data.local.dao.TrackRouteDao
 import com.nomad.android.data.local.entity.LocationSavedPointEntity
 import com.nomad.android.data.local.entity.LocationSnapshotEntity
 import com.nomad.android.data.local.entity.TrackRouteEntity
-import com.nomad.android.util.LocationTrackerService
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.map
 import java.util.UUID
 import javax.inject.Singleton
+
+/**
+ * Interface for location tracking capabilities used by LocationRepository.
+ * Extracted to enable testability without Android framework dependencies.
+ */
+interface LocationTracker {
+    val currentLocation: StateFlow<android.location.Location?>
+    val isTracking: StateFlow<Boolean>
+    var activeRouteId: String?
+
+    fun startTracking()
+    fun stopTracking()
+    fun requestSingleUpdate()
+}
 
 @Singleton
 class LocationRepository(
     private val snapshotDao: LocationSnapshotDao,
     private val savedPointDao: LocationSavedPointDao,
     private val trackRouteDao: TrackRouteDao,
-    private val trackerService: LocationTrackerService
+    private val tracker: LocationTracker
 ) {
 
     val recentSnapshots: Flow<List<LocationSnapshotEntity>> =
@@ -29,10 +41,10 @@ class LocationRepository(
         savedPointDao.getAll()
 
     val currentLocation: StateFlow<android.location.Location?> =
-        trackerService.currentLocation
+        tracker.currentLocation
 
     val isTracking: StateFlow<Boolean> =
-        trackerService.isTracking
+        tracker.isTracking
 
     val trackingCount: Flow<Int> = snapshotDao.observeCount()
 
@@ -46,8 +58,8 @@ class LocationRepository(
 
     fun startTracking(): Result<String> {
         return try {
-            trackerService.startTracking()
-            Result.success(trackerService.activeRouteId ?: "")
+            tracker.startTracking()
+            Result.success(tracker.activeRouteId ?: "")
         } catch (e: Exception) {
             Result.error("Failed to start tracking", e)
         }
@@ -55,7 +67,7 @@ class LocationRepository(
 
     suspend fun beginRoute(): String {
         val routeId = UUID.randomUUID().toString()
-        val location = trackerService.currentLocation.value
+        val location = tracker.currentLocation.value
         val dateFormat = java.text.SimpleDateFormat("yyyy-MM-dd HH:mm", java.util.Locale.US)
         val route = TrackRouteEntity(
             id = routeId,
@@ -66,13 +78,13 @@ class LocationRepository(
             isActive = true
         )
         trackRouteDao.insert(route)
-        trackerService.activeRouteId = routeId
+        tracker.activeRouteId = routeId
         return routeId
     }
 
     suspend fun endRoute() {
-        val routeId = trackerService.activeRouteId ?: return
-        val location = trackerService.currentLocation.value
+        val routeId = tracker.activeRouteId ?: return
+        val location = tracker.currentLocation.value
         val points = snapshotDao.getByRouteId(routeId)
         val count = points.size
         var totalDist = 0.0
@@ -89,12 +101,12 @@ class LocationRepository(
             pointCount = count,
             totalDistanceMeters = totalDist
         )
-        trackerService.activeRouteId = null
+        tracker.activeRouteId = null
     }
 
     fun stopTracking(): Result<Unit> {
         return try {
-            trackerService.stopTracking()
+            tracker.stopTracking()
             Result.success(Unit)
         } catch (e: Exception) {
             Result.error("Failed to stop tracking", e)
@@ -103,7 +115,7 @@ class LocationRepository(
 
     fun requestCurrentLocation(): Result<Unit> {
         return try {
-            trackerService.requestSingleUpdate()
+            tracker.requestSingleUpdate()
             Result.success(Unit)
         } catch (e: Exception) {
             Result.error("Failed to request location", e)
@@ -112,7 +124,7 @@ class LocationRepository(
 
     suspend fun saveCurrentLocation(name: String, notes: String): Result<Unit> {
         return try {
-            val location = trackerService.currentLocation.value
+            val location = tracker.currentLocation.value
                 ?: return Result.error("No current location available")
             val point = LocationSavedPointEntity(
                 id = UUID.randomUUID().toString(),
