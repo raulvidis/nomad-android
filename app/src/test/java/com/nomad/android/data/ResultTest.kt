@@ -70,14 +70,14 @@ class ResultTest {
     fun `companion success creates Success`() {
         val result = Result.success(42)
         assertTrue(result is Result.Success)
-        assertEquals(42, result.data)
+        assertEquals(42, (result as Result.Success).data)
     }
 
     @Test
     fun `companion error creates Error`() {
         val result = Result.error("something went wrong")
         assertTrue(result is Result.Error)
-        assertEquals("something went wrong", result.message)
+        assertEquals("something went wrong", (result as Result.Error).message)
     }
 
     @Test
@@ -93,8 +93,9 @@ class ResultTest {
             throw IllegalStateException("nope")
         }
         assertTrue(result is Result.Error)
-        assertEquals("nope", result.message)
-        assertTrue(result.exception is IllegalStateException)
+        val err = result as Result.Error
+        assertEquals("nope", err.message)
+        assertTrue(err.exception is IllegalStateException)
     }
 
     @Test
@@ -103,7 +104,7 @@ class ResultTest {
             throw RuntimeException()
         }
         assertTrue(result is Result.Error)
-        assertEquals("Unknown error", result.message)
+        assertEquals("Unknown error", (result as Result.Error).message)
     }
 
     @Test
