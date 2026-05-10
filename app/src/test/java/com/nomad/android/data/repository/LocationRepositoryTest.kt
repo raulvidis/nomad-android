@@ -34,8 +34,8 @@ class LocationRepositoryTest {
         whenever(savedPointDao.getAll()).thenReturn(flow { emit(emptyList()) })
         whenever(trackRouteDao.getAll()).thenReturn(flow { emit(emptyList()) })
         whenever(snapshotDao.observeCount()).thenReturn(flow { emit(0) })
-        whenever(trackerService.currentLocation).thenReturn(MutableStateFlow(null))
-        whenever(trackerService.isTracking).thenReturn(MutableStateFlow(false))
+        locationFlow.value = null
+        trackingFlow.value = false
 
         repository = LocationRepository(
             snapshotDao = snapshotDao,
@@ -52,7 +52,7 @@ class LocationRepositoryTest {
         val snapshots = listOf(
             LocationSnapshotEntity("s1", 44.43, 26.10, 100.0, 5f, 1000L, true, null)
         )
-        whenever(snapshotDao.getRecent(limit = 100)).thenReturn(flow { emit(snapshots) })
+        snapshotsFlow.value = snapshots
 
         val result = repository.recentSnapshots.first()
 
@@ -67,7 +67,7 @@ class LocationRepositoryTest {
         val points = listOf(
             LocationSavedPointEntity("p1", "Home", 44.43, 26.10, 100.0, 1000L, "Base camp")
         )
-        whenever(savedPointDao.getAll()).thenReturn(flow { emit(points) })
+        savedPointsFlow.value = points
 
         val result = repository.savedPoints.first()
 
@@ -83,7 +83,7 @@ class LocationRepositoryTest {
             on { latitude } doReturn 44.43
             on { longitude } doReturn 26.10
         }
-        whenever(trackerService.currentLocation).thenReturn(MutableStateFlow(location))
+        locationFlow.value = location
 
         val result = repository.currentLocation.value
 
@@ -94,7 +94,7 @@ class LocationRepositoryTest {
 
     @Test
     fun `currentLocation returns null when no location available`() = runTest {
-        whenever(trackerService.currentLocation).thenReturn(MutableStateFlow(null))
+        locationFlow.value = null
 
         val result = repository.currentLocation.value
 
@@ -105,7 +105,7 @@ class LocationRepositoryTest {
 
     @Test
     fun `isTracking delegates to tracker service`() = runTest {
-        whenever(trackerService.isTracking).thenReturn(MutableStateFlow(true))
+        trackingFlow.value = true
 
         val result = repository.isTracking.value
 
@@ -114,7 +114,7 @@ class LocationRepositoryTest {
 
     @Test
     fun `isTracking returns false when not tracking`() = runTest {
-        whenever(trackerService.isTracking).thenReturn(MutableStateFlow(false))
+        trackingFlow.value = false
 
         val result = repository.isTracking.value
 
@@ -187,7 +187,7 @@ class LocationRepositoryTest {
 
     @Test
     fun `saveCurrentLocation returns error when no location available`() = runTest {
-        whenever(trackerService.currentLocation).thenReturn(MutableStateFlow(null))
+        locationFlow.value = null
 
         val result = repository.saveCurrentLocation("Test", "Notes")
 
@@ -201,7 +201,7 @@ class LocationRepositoryTest {
             on { longitude } doReturn 26.10
             on { altitude } doReturn 100.0
         }
-        whenever(trackerService.currentLocation).thenReturn(MutableStateFlow(location))
+        locationFlow.value = location
         whenever(savedPointDao.insert(any())).then { }
 
         val result = repository.saveCurrentLocation("Camp", "Base camp")
@@ -223,7 +223,7 @@ class LocationRepositoryTest {
             on { longitude } doReturn 26.10
             on { altitude } doReturn 100.0
         }
-        whenever(trackerService.currentLocation).thenReturn(MutableStateFlow(location))
+        locationFlow.value = location
         whenever(savedPointDao.insert(any())).thenThrow(RuntimeException("DB full"))
 
         val result = repository.saveCurrentLocation("Camp", "Notes")
@@ -278,7 +278,7 @@ class LocationRepositoryTest {
         val routes = listOf(
             TrackRouteEntity("r1", "Morning Run", 44.43, 26.10, null, null, 0, 0.0, 1000L, true)
         )
-        whenever(trackRouteDao.getAll()).thenReturn(flow { emit(routes) })
+        routesFlow.value = routes
 
         val result = repository.savedRoutes.first()
 
@@ -319,7 +319,7 @@ class LocationRepositoryTest {
 
     @Test
     fun `trackingCount returns count from DAO`() = runTest {
-        whenever(snapshotDao.observeCount()).thenReturn(flow { emit(42) })
+        countFlow.value = 42
 
         val result = repository.trackingCount.first()
 
@@ -354,7 +354,7 @@ class LocationRepositoryTest {
             on { latitude } doReturn 44.43
             on { longitude } doReturn 26.10
         }
-        whenever(trackerService.currentLocation).thenReturn(MutableStateFlow(location))
+        locationFlow.value = location
         whenever(trackRouteDao.insert(any())).then { }
 
         val routeId = repository.beginRoute()
@@ -372,7 +372,7 @@ class LocationRepositoryTest {
 
     @Test
     fun `beginRoute uses zero coordinates when no location`() = runTest {
-        whenever(trackerService.currentLocation).thenReturn(MutableStateFlow(null))
+        locationFlow.value = null
         whenever(trackRouteDao.insert(any())).then { }
 
         repository.beginRoute()
@@ -394,7 +394,7 @@ class LocationRepositoryTest {
             on { latitude } doReturn 44.50
             on { longitude } doReturn 26.20
         }
-        whenever(trackerService.currentLocation).thenReturn(MutableStateFlow(location))
+        locationFlow.value = location
 
         val points = listOf(
             LocationSnapshotEntity("s1", 44.43, 26.10, 100.0, 5f, 1000L, true, routeId),
