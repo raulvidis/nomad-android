@@ -27,20 +27,30 @@ interface LocationSnapshotDb {
     suspend fun saveSnapshot(snapshot: LocationSnapshotEntity)
 }
 
+interface LocationTracker {
+    val currentLocation: StateFlow<Location?>
+    val isTracking: StateFlow<Boolean>
+    var activeRouteId: String?
+
+    fun startTracking()
+    fun stopTracking()
+    fun requestSingleUpdate()
+}
+
 class LocationTrackerService(
     private val context: Application,
     private val snapshotDb: LocationSnapshotDb? = null
-) {
+) : LocationTracker {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     private val _currentLocation = MutableStateFlow<Location?>(null)
-    val currentLocation: StateFlow<Location?> = _currentLocation.asStateFlow()
+    override val currentLocation: StateFlow<Location?> = _currentLocation.asStateFlow()
 
     private val _isTracking = MutableStateFlow(false)
-    val isTracking: StateFlow<Boolean> = _isTracking.asStateFlow()
+    override val isTracking: StateFlow<Boolean> = _isTracking.asStateFlow()
 
-    var activeRouteId: String? = null
+    override var activeRouteId: String? = null
 
     private var fusedClient: FusedLocationProviderClient? = null
     private var useFallback = false
@@ -69,7 +79,7 @@ class LocationTrackerService(
     }
 
     @SuppressLint("MissingPermission")
-    fun startTracking() {
+    override fun startTracking() {
         if (_isTracking.value) return
         _isTracking.value = true
 
@@ -87,14 +97,14 @@ class LocationTrackerService(
         }
     }
 
-    fun stopTracking() {
+    override fun stopTracking() {
         _isTracking.value = false
         fusedClient?.removeLocationUpdates(locationCallback)
         stopFallbackTracking()
     }
 
     @SuppressLint("MissingPermission")
-    fun requestSingleUpdate() {
+    override fun requestSingleUpdate() {
         if (!useFallback) {
             fusedClient?.let { client ->
                 val request = LocationRequest.Builder(
