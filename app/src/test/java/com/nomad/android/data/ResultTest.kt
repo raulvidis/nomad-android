@@ -68,27 +68,27 @@ class ResultTest {
 
     @Test
     fun `Error getOrNull returns null`() {
-        val result = Result.error<Int>("fail")
+        val result = Result.error("fail")
         assertNull(result.getOrNull())
     }
 
     @Test
     fun `Error exceptionOrNull returns null when no exception`() {
-        val result = Result.error<Int>("fail")
+        val result = Result.error("fail")
         assertNull(result.exceptionOrNull())
     }
 
     @Test
     fun `Error exceptionOrNull returns exception when provided`() {
         val exception = RuntimeException("boom")
-        val result = Result.error<Int>("fail", exception)
+        val result = Result.error("fail", exception)
         assertNotNull(result.exceptionOrNull())
         assertEquals("boom", result.exceptionOrNull()!!.message)
     }
 
     @Test
     fun `Error message property holds message`() {
-        val result = Result.error<Int>("Something went wrong") as Result.Error
+        val result = Result.error("Something went wrong") as Result.Error
         assertEquals("Something went wrong", result.message)
     }
 
