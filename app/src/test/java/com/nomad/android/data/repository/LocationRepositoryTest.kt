@@ -403,7 +403,7 @@ class LocationRepositoryTest {
             eq(44.50),
             eq(26.20),
             eq(3),
-            anyDouble()
+            any<Double>()
         )
         verify(trackerService).activeRouteId = null
     }
