@@ -1,6 +1,5 @@
 package com.nomad.android.data.ai
 
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.*
@@ -12,9 +11,10 @@ class FallbackEngineTest {
 
     @Test
     fun `generate returns CPR info when prompt contains cpr`() = runTest {
-        val response = engine.generate("How do I perform CPR?", emptyList())
+        val response = engine.generate("How do I perform cpr?", emptyList())
         assertTrue(response.contains("CPR"))
         assertTrue(response.contains("chest"))
+        assertTrue(response.contains("[FALLBACK MODE"))
     }
 
     @Test
@@ -78,5 +78,88 @@ class FallbackEngineTest {
     fun `loadModel returns custom Result type`() = runTest {
         val result = engine.loadModel()
         assertTrue(result is com.nomad.android.data.Result.Success)
+    }
+
+    // --- Additional tests for exact keyword matching ---
+
+    @Test
+    fun `generate matches keyword navigation exactly`() = runTest {
+        // CRITICAL: "navigation" must appear as a substring in the prompt
+        val response = engine.generate("Help with navigation in the wilderness", emptyList())
+        assertTrue(response.contains("FALLBACK MODE"))
+        assertTrue(response.contains("Using offline knowledge base"))
+        assertTrue(response.contains("Navigation"))
+    }
+
+    @Test
+    fun `generate matches keyword bleeding`() = runTest {
+        val response = engine.generate("How to stop severe bleeding", emptyList())
+        assertTrue(response.contains("FALLBACK MODE"))
+        assertTrue(response.contains("bleeding"))
+    }
+
+    @Test
+    fun `generate matches keyword shelter`() = runTest {
+        val response = engine.generate("Build emergency shelter", emptyList())
+        assertTrue(response.contains("FALLBACK MODE"))
+        assertTrue(response.contains("shelter") || response.contains("Shelter"))
+    }
+
+    @Test
+    fun `generate matches keyword knot`() = runTest {
+        val response = engine.generate("Tie a knot for securing rope", emptyList())
+        assertTrue(response.contains("FALLBACK MODE"))
+        assertTrue(response.contains("knot") || response.contains("Knot"))
+    }
+
+    @Test
+    fun `generate matches keyword plant`() = runTest {
+        val response = engine.generate("Identify edible plant species", emptyList())
+        assertTrue(response.contains("FALLBACK MODE"))
+        assertTrue(response.contains("plant") || response.contains("Plant"))
+    }
+
+    @Test
+    fun `generate matches keyword sos`() = runTest {
+        val response = engine.generate("How to send sos signal", emptyList())
+        assertTrue(response.contains("FALLBACK MODE"))
+        assertTrue(response.contains("SOS") || response.contains("sos"))
+    }
+
+    @Test
+    fun `generate matches keyword first aid`() = runTest {
+        val response = engine.generate("Basic first aid procedures", emptyList())
+        assertTrue(response.contains("FALLBACK MODE"))
+        assertTrue(response.contains("first aid") || response.contains("First aid"))
+    }
+
+    @Test
+    fun `generate returns image fallback when imagePath provided`() = runTest {
+        val response = engine.generate("cpr", emptyList(), imagePath = "/some/image.jpg")
+        assertTrue(response.contains("FALLBACK MODE"))
+        assertTrue(response.contains("Image analysis requires"))
+    }
+
+    @Test
+    fun `generate no-match response suggests available topics`() = runTest {
+        val response = engine.generate("quantum physics equations", emptyList())
+        assertTrue(response.contains("CPR"))
+        assertTrue(response.contains("navigation"))
+        assertTrue(response.contains("knots"))
+    }
+
+    @Test
+    fun `getDeviceInfo returns zeros and false`() {
+        val info = engine.getDeviceInfo()
+        assertEquals(0L, info.totalRamMB)
+        assertEquals(0L, info.availableRamMB)
+        assertFalse(info.hasNPU)
+        assertFalse(info.hasGPU)
+    }
+
+    @Test
+    fun `unloadModel does nothing`() {
+        // Just verify it doesn't throw
+        engine.unloadModel()
     }
 }
