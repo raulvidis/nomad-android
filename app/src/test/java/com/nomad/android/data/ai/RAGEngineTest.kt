@@ -1,5 +1,8 @@
 package com.nomad.android.data.ai
 
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.test.runTest
 import org.junit.Assert.*
 import org.junit.Test
 
@@ -23,6 +26,7 @@ class RAGEngineTest {
         val text = "Hello world this is short"
         val chunks = engine.chunkText(text)
         assertEquals(1, chunks.size)
+        // For short text (<=512 words), chunkText returns the ORIGINAL text unchanged
         assertEquals(text, chunks[0])
     }
 
@@ -30,6 +34,16 @@ class RAGEngineTest {
     fun `chunkText with empty string returns single empty chunk`() {
         val chunks = engine.chunkText("")
         assertEquals(1, chunks.size)
+        assertEquals("", chunks[0])
+    }
+
+    @Test
+    fun `chunkText short text preserves original whitespace`() {
+        // chunkText returns listOf(text) for short texts — original whitespace is preserved
+        val text = "Hello  world   multiple    spaces"
+        val chunks = engine.chunkText(text)
+        assertEquals(1, chunks.size)
+        assertEquals(text, chunks[0])
     }
 
     @Test
@@ -46,6 +60,23 @@ class RAGEngineTest {
                 chunkWords.size <= RAGEngine.CHUNK_SIZE,
             )
         }
+    }
+
+    @Test
+    fun `chunkText with exactly 512 words returns single chunk`() {
+        val words = (1..512).map { "word$it" }
+        val text = words.joinToString(" ")
+        val chunks = engine.chunkText(text)
+        assertEquals(1, chunks.size)
+        assertEquals(text, chunks[0])
+    }
+
+    @Test
+    fun `chunkText with 513 words returns multiple chunks`() {
+        val words = (1..513).map { "word$it" }
+        val text = words.joinToString(" ")
+        val chunks = engine.chunkText(text)
+        assertTrue("Expected multiple chunks for 513 words", chunks.size > 1)
     }
 
     @Test
@@ -98,5 +129,53 @@ class RAGEngineTest {
         val b = floatArrayOf(1f, 1f)
         val similarity = engine.cosineSimilarity(a, b)
         assertEquals(0.0f, similarity, 0.001f)
+    }
+
+    @Test
+    fun `cosineSimilarity with opposite vectors returns -1`() {
+        val a = floatArrayOf(1f, 0f)
+        val b = floatArrayOf(-1f, 0f)
+        val similarity = engine.cosineSimilarity(a, b)
+        assertEquals(-1.0f, similarity, 0.001f)
+    }
+
+    // --- query and querySync ---
+
+    @Test
+    fun `querySync returns AI engine response with matching documents`() = runTest {
+        val result = engine.querySync(
+            question = "fire safety",
+            documents = listOf("Fire safety is important", "Cooking tips for chefs")
+        )
+        // The mock engine returns "mock"
+        assertEquals("mock", result)
+    }
+
+    @Test
+    fun `querySync with no matching documents still returns response`() = runTest {
+        val result = engine.querySync(
+            question = "xyzabc",
+            documents = listOf("Fire safety is important", "Cooking tips")
+        )
+        assertEquals("mock", result)
+    }
+
+    @Test
+    fun `query returns streaming response`() = runTest {
+        val flow = engine.query(
+            question = "fire",
+            documents = listOf("Fire safety is important")
+        )
+        val results = flow.toList()
+        assertTrue(results.isNotEmpty())
+    }
+
+    @Test
+    fun `query with empty documents returns response`() = runTest {
+        val result = engine.querySync(
+            question = "anything",
+            documents = emptyList()
+        )
+        assertEquals("mock", result)
     }
 }
