@@ -425,3 +425,4 @@ class LocationRepositoryTest {
         verify(trackRouteDao, never()).finalizeRoute(any(), any(), any(), any(), any())
     }
 }
+# CI trigger
