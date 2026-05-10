@@ -12,6 +12,9 @@ import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import okhttp3.OkHttpClient
+import okhttp3.mockwebserver.MockResponse
+import okhttp3.mockwebserver.MockWebServer
+import okio.Buffer
 import org.junit.After
 import org.junit.Assert.*
 import org.junit.Before
@@ -228,12 +231,12 @@ class ContentPackRepositoryTest {
 
     @Test
     fun `downloadPack emits progress and creates file`() = runTest {
-        val server = okhttp3.mockwebserver.MockWebServer()
+        val server = MockWebServer()
         server.start()
         val bodyBytes = ByteArray(256) { it.toByte() }
         server.enqueue(
-            okhttp3.mockwebserver.MockResponse()
-                .setBody(okio.Buffer().write(bodyBytes))
+            MockResponse()
+                .setBody(Buffer().write(bodyBytes))
                 .setHeader("Content-Length", bodyBytes.size.toLong())
         )
 
@@ -256,9 +259,9 @@ class ContentPackRepositoryTest {
 
     @Test
     fun `downloadPack throws on HTTP error`() = runTest {
-        val server = okhttp3.mockwebserver.MockWebServer()
+        val server = MockWebServer()
         server.start()
-        server.enqueue(okhttp3.mockwebserver.MockResponse().setResponseCode(500))
+        server.enqueue(MockResponse().setResponseCode(500))
 
         try {
             val url = server.url("/bad-pack").toString()
@@ -280,9 +283,9 @@ class ContentPackRepositoryTest {
 
     @Test
     fun `downloadPack cleans up tmp file on failure`() = runTest {
-        val server = okhttp3.mockwebserver.MockWebServer()
+        val server = MockWebServer()
         server.start()
-        server.enqueue(okhttp3.mockwebserver.MockResponse().setResponseCode(403))
+        server.enqueue(MockResponse().setResponseCode(403))
 
         try {
             val url = server.url("/forbidden").toString()
