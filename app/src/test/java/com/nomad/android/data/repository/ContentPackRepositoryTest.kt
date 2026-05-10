@@ -1,9 +1,7 @@
 package com.nomad.android.data.repository
 
 import android.content.Context
-import android.content.Intent
-import android.content.IntentFilter
-import android.content.BroadcastReceiver
+import androidx.test.core.app.ApplicationProvider
 import com.nomad.android.data.local.dao.ContentPackDao
 import com.nomad.android.data.local.entity.ContentPackEntity
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -19,13 +17,18 @@ import org.junit.After
 import org.junit.Assert.*
 import org.junit.Before
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 import java.io.File
 
 @ExperimentalCoroutinesApi
+@RunWith(RobolectricTestRunner::class)
+@Config(manifest = Config.NONE, sdk = [34])
 class ContentPackRepositoryTest {
 
     private lateinit var fakeDao: FakeContentPackDao
-    private lateinit var tempDir: File
+    private lateinit var context: Context
     private lateinit var contentPacksDir: File
     private lateinit var okHttpClient: OkHttpClient
     private lateinit var mockWebServer: MockWebServer
@@ -46,24 +49,18 @@ class ContentPackRepositoryTest {
     @Before
     fun setUp() {
         fakeDao = FakeContentPackDao()
-        tempDir = createTempDir()
-        contentPacksDir = File(tempDir, "contentPacks").also { it.mkdirs() }
+        context = ApplicationProvider.getApplicationContext()
+        contentPacksDir = File(context.filesDir, "contentPacks").also { it.mkdirs() }
         mockWebServer = MockWebServer()
         mockWebServer.start()
         okHttpClient = OkHttpClient.Builder().build()
-
-        val context = object : android.test.mock.MockContext() {
-            override fun getFilesDir() = tempDir
-            override fun getPackageName() = "com.nomad.android.test"
-        }
-
         repository = ContentPackRepository(fakeDao, context, okHttpClient)
     }
 
     @After
     fun tearDown() {
         mockWebServer.shutdown()
-        tempDir.deleteRecursively()
+        contentPacksDir.deleteRecursively()
     }
 
     // --- getAllPacks ---
