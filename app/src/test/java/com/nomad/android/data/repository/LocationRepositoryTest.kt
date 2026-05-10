@@ -29,6 +29,14 @@ class LocationRepositoryTest {
 
     @Before
     fun setUp() {
+        // Default stubs for property-initialized flows (called during construction)
+        whenever(snapshotDao.getRecent(any())).thenReturn(flow { emit(emptyList()) })
+        whenever(savedPointDao.getAll()).thenReturn(flow { emit(emptyList()) })
+        whenever(trackRouteDao.getAll()).thenReturn(flow { emit(emptyList()) })
+        whenever(snapshotDao.observeCount()).thenReturn(flow { emit(0) })
+        whenever(trackerService.currentLocation).thenReturn(MutableStateFlow(null))
+        whenever(trackerService.isTracking).thenReturn(MutableStateFlow(false))
+
         repository = LocationRepository(
             snapshotDao = snapshotDao,
             savedPointDao = savedPointDao,
@@ -414,7 +422,6 @@ class LocationRepositoryTest {
 
         repository.endRoute()
 
-        verifyNoInteractions(snapshotDao)
-        verifyNoInteractions(trackRouteDao)
+        verify(trackRouteDao, never()).finalizeRoute(any(), any(), any(), any(), any())
     }
 }
