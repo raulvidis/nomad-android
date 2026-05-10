@@ -123,8 +123,8 @@ class ResultTest {
             throw IllegalStateException("bad state")
         }
         assertTrue(result.isError)
-        assertEquals("bad state", result.getOrNull()) // getOrNull returns null for Error
         assertNull(result.getOrNull())
+        assertEquals("bad state", (result as Result.Error).message)
     }
 
     @Test
