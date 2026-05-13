@@ -106,37 +106,11 @@ class KiwixManager(private val context: Context) {
         ContentPack("stackexchange_survival", "Survival Stack Exchange", "wikipedia", 536870912L, "Community Q&A", PackStatus.AVAILABLE),
     )
 
-    private fun searchBundledContent(query: String): List<ZimSearchResult> {
-        val lowercaseQuery = query.lowercase()
-        return bundledKnowledge
-            .filter { it.title.lowercase().contains(lowercaseQuery) || it.content.lowercase().contains(lowercaseQuery) }
-            .map { ZimSearchResult("A/${it.title}", it.title, it.content.take(100) + "...") }
-            .ifEmpty { listOf(ZimSearchResult("A/Search", "Search: $query", "No matches in bundled content. Try downloading knowledge packs in Settings.")) }
-    }
+    private fun searchBundledContent(query: String): List<ZimSearchResult> =
+        BundledContentSearch.search(query)
 
-    private fun mockSearchResults(query: String): List<ZimSearchResult> = listOf(
-        ZimSearchResult("A/Water", "Water", "Water is essential for survival. The human body can survive only 3 days without water..."),
-        ZimSearchResult("A/Water_purification", "Water purification", "Water purification is the process of removing undesirable chemicals..."),
-        ZimSearchResult("A/Solar_still", "Solar still", "A solar still is a device that uses solar energy to distill water..."),
-    ).filter { it.title.contains(query, ignoreCase = true) || it.snippet.contains(query, ignoreCase = true) }
-        .ifEmpty { listOf(ZimSearchResult("A/Search", "Search: $query", "No exact matches found. Try broader terms.")) }
+    private fun mockSearchResults(query: String): List<ZimSearchResult> =
+        ZimMockSearch.search(query)
 
-    companion object {
-        private val bundledKnowledge = listOf(
-            "CPR Basics" to "To perform CPR: Check responsiveness, call emergency services, push hard and fast in the center of the chest at 100-120 compressions per minute, give rescue breaths if trained.",
-            "Water Purification" to "Boil water for at least 1 minute (3 minutes above 6,500 ft). Use purification tablets or chlorine dioxide drops. Solar disinfection: clear bottle in direct sunlight for 6 hours.",
-            "Fire Starting" to "Gather tinder, kindling, and fuel. Create a fire lay. Use matches, lighter, or friction method. Shield from wind. Never leave unattended.",
-            "Shelter Building" to "Find natural windbreaks. Use branches and leaves for insulation. Build a lean-to or debris hut. Insulate the ground. Keep shelter small to retain body heat.",
-            "Navigation" to "Sun rises in east, sets in west. North Star (Polaris) indicates north. Follow waterways downstream to civilization. Note landmarks.",
-            "Edible Plants" to "Only eat plants you can positively identify. Safe bets: dandelion, clover, cattail, pine needles (tea). Avoid: milky sap, umbrella-shaped flowers, almond scent.",
-            "SOS Signals" to "Three of anything (fires, whistle blasts, flashes). Ground-to-air signals: use contrasting materials, minimum 10ft tall. Mirror signaling: flash toward aircraft.",
-            "First Aid" to "Stop bleeding first. Treat for shock (lay down, elevate legs, keep warm). Splint fractures with rigid materials. Burns: cool with water, cover with clean dressing.",
-            "Knots" to "Essential knots: Bowline (secure loop), Clove hitch (quick attachment), Square knot (joining ropes), Taut-line hitch (adjustable tension), Figure-eight (stopper knot)."
-        ).map { (title, content) ->
-            object {
-                val title = title
-                val content = content
-            }
-        }
-    }
+    companion object
 }
