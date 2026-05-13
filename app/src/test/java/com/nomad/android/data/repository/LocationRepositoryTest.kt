@@ -1,5 +1,6 @@
 package com.nomad.android.data.repository
 
+import android.location.Location
 import com.nomad.android.data.local.dao.LocationSavedPointDao
 import com.nomad.android.data.local.dao.LocationSnapshotDao
 import com.nomad.android.data.local.dao.TrackRouteDao
@@ -25,17 +26,35 @@ class LocationRepositoryTest {
     private val trackRouteDao: TrackRouteDao = mock()
     private val trackerService: LocationTrackerService = mock()
 
+    // Mutable backing flows for controlling test state
+    private val locationFlow = MutableStateFlow<Location?>(null)
+    private val trackingFlow = MutableStateFlow(false)
+    private val snapshotsFlow = MutableStateFlow<List<LocationSnapshotEntity>>(emptyList())
+    private val savedPointsFlow = MutableStateFlow<List<LocationSavedPointEntity>>(emptyList())
+    private val routesFlow = MutableStateFlow<List<TrackRouteEntity>>(emptyList())
+    private val countFlow = MutableStateFlow(0)
+
     private lateinit var repository: LocationRepository
 
     @Before
     fun setUp() {
-        // Default stubs for property-initialized flows (called during construction)
-        whenever(snapshotDao.getRecent(any())).thenReturn(flow { emit(emptyList()) })
-        whenever(savedPointDao.getAll()).thenReturn(flow { emit(emptyList()) })
-        whenever(trackRouteDao.getAll()).thenReturn(flow { emit(emptyList()) })
-        whenever(snapshotDao.observeCount()).thenReturn(flow { emit(0) })
+        // Wire tracker service flows
+        whenever(trackerService.currentLocation).thenReturn(locationFlow)
+        whenever(trackerService.isTracking).thenReturn(trackingFlow)
+
+        // Wire DAO flows
+        whenever(snapshotDao.getRecent(any())).thenReturn(snapshotsFlow)
+        whenever(savedPointDao.getAll()).thenReturn(savedPointsFlow)
+        whenever(trackRouteDao.getAll()).thenReturn(routesFlow)
+        whenever(snapshotDao.observeCount()).thenReturn(countFlow)
+
+        // Reset flows to defaults
         locationFlow.value = null
         trackingFlow.value = false
+        snapshotsFlow.value = emptyList()
+        savedPointsFlow.value = emptyList()
+        routesFlow.value = emptyList()
+        countFlow.value = 0
 
         repository = LocationRepository(
             snapshotDao = snapshotDao,
@@ -79,7 +98,7 @@ class LocationRepositoryTest {
 
     @Test
     fun `currentLocation delegates to tracker service`() = runTest {
-        val location = mock<android.location.Location> {
+        val location = mock<Location> {
             on { latitude } doReturn 44.43
             on { longitude } doReturn 26.10
         }
@@ -196,7 +215,7 @@ class LocationRepositoryTest {
 
     @Test
     fun `saveCurrentLocation saves point with current location`() = runTest {
-        val location = mock<android.location.Location> {
+        val location = mock<Location> {
             on { latitude } doReturn 44.43
             on { longitude } doReturn 26.10
             on { altitude } doReturn 100.0
@@ -218,7 +237,7 @@ class LocationRepositoryTest {
 
     @Test
     fun `saveCurrentLocation returns error when DAO throws`() = runTest {
-        val location = mock<android.location.Location> {
+        val location = mock<Location> {
             on { latitude } doReturn 44.43
             on { longitude } doReturn 26.10
             on { altitude } doReturn 100.0
@@ -350,7 +369,7 @@ class LocationRepositoryTest {
 
     @Test
     fun `beginRoute creates route with current location`() = runTest {
-        val location = mock<android.location.Location> {
+        val location = mock<Location> {
             on { latitude } doReturn 44.43
             on { longitude } doReturn 26.10
         }
@@ -390,7 +409,7 @@ class LocationRepositoryTest {
     fun `endRoute finalizes route with points and location`() = runTest {
         val routeId = "route-123"
         whenever(trackerService.activeRouteId).thenReturn(routeId)
-        val location = mock<android.location.Location> {
+        val location = mock<Location> {
             on { latitude } doReturn 44.50
             on { longitude } doReturn 26.20
         }
@@ -425,4 +444,3 @@ class LocationRepositoryTest {
         verify(trackRouteDao, never()).finalizeRoute(any(), any(), any(), any(), any())
     }
 }
-# CI trigger
