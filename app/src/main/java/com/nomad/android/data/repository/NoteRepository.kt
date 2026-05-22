@@ -27,7 +27,8 @@ class NoteRepository @Inject constructor(
         Result.runCatching {
             val now = System.currentTimeMillis()
             if (existingId != null && existingId > 0) {
-                val existing = noteDao.getById(existingId)!!
+                val existing = noteDao.getById(existingId)
+                    ?: throw NoSuchElementException("Note $existingId not found — may have been deleted")
                 noteDao.update(existing.copy(title = title, content = content, updatedAt = now))
                 existingId
             } else {
