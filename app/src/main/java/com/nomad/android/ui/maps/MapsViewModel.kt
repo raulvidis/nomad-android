@@ -97,7 +97,7 @@ class MapsViewModel @Inject constructor(
                 locationRepository.savedPoints,
                 locationRepository.recentSnapshots,
                 locationRepository.savedRoutes
-            ) { location, isTracking, savedPoints, _, savedRoutes ->
+            ) { location, isTracking, savedPoints, recentSnapshots, savedRoutes ->
                 val locText = location?.let {
                     "%.6f, %.6f".format(it.latitude, it.longitude)
                 } ?: "NO FIX"
@@ -109,6 +109,7 @@ class MapsViewModel @Inject constructor(
                             currentLongitude = location?.longitude,
                             isTracking = isTracking,
                             savedPoints = savedPoints,
+                            snapshotCount = recentSnapshots.size,
                             savedRoutes = savedRoutes,
                         )
                     )
