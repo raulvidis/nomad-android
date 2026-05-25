@@ -11,6 +11,9 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import java.io.File
+import java.util.concurrent.locks.ReentrantReadWriteLock
+import kotlin.concurrent.read
+import kotlin.concurrent.write
 
 class AIEngineManager(
     private val context: Context,
@@ -26,6 +29,7 @@ class AIEngineManager(
     private val _activeVariant = MutableStateFlow(initialVariant)
     val activeVariant: StateFlow<LiteRTLMEngine.ModelVariant> = _activeVariant.asStateFlow()
     private val engineLock = Mutex()
+    private val engineRwLock = ReentrantReadWriteLock()
     private val _engineStatus = MutableStateFlow(computeCurrentStatus())
     val engineStatus: StateFlow<AIEngineStatus> = _engineStatus.asStateFlow()
 
@@ -37,10 +41,12 @@ class AIEngineManager(
 
     suspend fun switchModel(variant: LiteRTLMEngine.ModelVariant) {
         engineLock.withLock {
-            currentEngine.unloadModel()
-            currentEngine = LiteRTLMEngine(context, variant, deviceTotalRamMB)
-            _activeVariant.value = variant
-            _engineStatus.value = computeCurrentStatus()
+            engineRwLock.write {
+                currentEngine.unloadModel()
+                currentEngine = LiteRTLMEngine(context, variant, deviceTotalRamMB)
+                _activeVariant.value = variant
+                _engineStatus.value = computeCurrentStatus()
+            }
         }
     }
 
@@ -79,9 +85,9 @@ class AIEngineManager(
         return engine.isAvailable()
     }
 
-    override fun getModelName(): String = currentEngine.getModelName()
+    override fun getModelName(): String = engineRwLock.read { currentEngine.getModelName() }
 
-    override fun getDeviceInfo(): DeviceInfo = currentEngine.getDeviceInfo()
+    override fun getDeviceInfo(): DeviceInfo = engineRwLock.read { currentEngine.getDeviceInfo() }
 
     override suspend fun loadModel(): com.nomad.android.data.Result<Unit> {
         val engine = engineLock.withLock { currentEngine }
