@@ -55,14 +55,15 @@ class ContentPackManager(
 
         val bundled = getBundledPacks()
         val downloadedContentIds = downloadDir.listFiles()?.map { it.name } ?: emptyList()
-        val downloadedModelFiles = modelsDir.listFiles()?.map { it.name } ?: emptyList()
 
         val packs = bundled.map { pack ->
             val isDownloaded = when (pack.type) {
                 "ai_model" -> {
-                    // Check if the actual model file exists in models dir
+                    // Check if the actual model file exists in models dir with valid size
                     val variant = getModelVariantForPack(pack.id)
-                    variant != null && downloadedModelFiles.contains(variant.fileName)
+                    variant != null && File(modelsDir, variant.fileName).let {
+                        it.exists() && it.length() > 1_000_000
+                    }
                 }
                 else -> downloadedContentIds.contains(pack.id)
             }
@@ -255,7 +256,7 @@ class ContentPackManager(
     fun isPackDownloaded(packId: String): Boolean {
         val variant = getModelVariantForPack(packId)
         if (variant != null) {
-            return File(modelsDir, variant.fileName).exists()
+            return File(modelsDir, variant.fileName).let { it.exists() && it.length() > 1_000_000 }
         }
         return File(downloadDir, packId).exists()
     }
