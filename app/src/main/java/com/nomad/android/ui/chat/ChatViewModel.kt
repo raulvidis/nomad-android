@@ -521,9 +521,9 @@ class ChatViewModel @Inject constructor(
             val sessionId = _uiState.value.data.currentSessionId
             if (sessionId != null) {
                 val compacted = _uiState.value.data.messages
-                chatRepository.deleteMessagesBySession(sessionId)
-                compacted.forEach { msg ->
-                    chatRepository.insertMessage(
+                chatRepository.replaceMessagesForSession(
+                    sessionId,
+                    compacted.map { msg ->
                         ChatMessageEntity(
                             sessionId = msg.sessionId,
                             role = msg.role,
@@ -531,8 +531,8 @@ class ChatViewModel @Inject constructor(
                             timestamp = msg.timestamp,
                             imageUri = msg.imageUri
                         )
-                    )
-                }
+                    }
+                )
             }
         }
     }
