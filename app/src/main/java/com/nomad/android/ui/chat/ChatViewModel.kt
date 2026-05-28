@@ -345,8 +345,6 @@ class ChatViewModel @Inject constructor(
                 }
 
                 val finalResponse = responseBuilder.toString()
-                    .replace(Regex("""</?(?:start_of_turn|end_of_turn|end_of_session|eos|turn|bos|tool_response|channel|thought|system)\s*[^>]*>"""), "")
-                    .replace("turn\u25B7", "")
                     .replace(Regex("""\n{3,}"""), "\n\n")
                     .trim()
 

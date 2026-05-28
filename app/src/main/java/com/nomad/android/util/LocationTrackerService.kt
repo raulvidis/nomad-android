@@ -167,7 +167,8 @@ class LocationTrackerService(
                     listener,
                     Looper.getMainLooper()
                 )
-            } catch (_: Exception) {
+            } catch (e: Exception) {
+                Log.w(TAG, "Fallback location updates request failed", e)
             }
         }
     }
@@ -191,8 +192,13 @@ class LocationTrackerService(
             }
             try {
                 lm.getLastKnownLocation(provider)?.let { _currentLocation.value = it }
-            } catch (_: Exception) {
+            } catch (e: Exception) {
+                Log.w(TAG, "Fallback single location request failed", e)
             }
         }
+    }
+
+    companion object {
+        private const val TAG = "LocationTracker"
     }
 }
