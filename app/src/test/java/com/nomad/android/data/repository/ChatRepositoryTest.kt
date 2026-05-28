@@ -196,4 +196,14 @@ class FakeChatMessageDao(
     override suspend fun deleteMessagesBySession(sessionId: String) {
         if (shouldFail) throw RuntimeException("DB error")
     }
+
+    override suspend fun insertMessages(messages: List<ChatMessageEntity>) {
+        if (shouldFail) throw RuntimeException("DB error")
+        insertedMessages.addAll(messages)
+    }
+
+    override suspend fun replaceMessagesForSession(sessionId: String, messages: List<ChatMessageEntity>) {
+        if (shouldFail) throw RuntimeException("DB error")
+        insertMessages(messages)
+    }
 }
