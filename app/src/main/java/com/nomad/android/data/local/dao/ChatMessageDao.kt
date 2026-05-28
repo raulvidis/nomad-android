@@ -55,9 +55,18 @@ interface ChatMessageDao {
     @Query("DELETE FROM chat_sessions")
     suspend fun deleteAllSessions()
 
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertMessages(messages: List<ChatMessageEntity>)
+
     @Transaction
     suspend fun deleteAllInTransaction() {
         deleteAllMessages()
         deleteAllSessions()
+    }
+
+    @Transaction
+    suspend fun replaceMessagesForSession(sessionId: String, messages: List<ChatMessageEntity>) {
+        deleteMessagesBySession(sessionId)
+        insertMessages(messages)
     }
 }
