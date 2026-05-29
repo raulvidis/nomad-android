@@ -38,6 +38,16 @@ android {
         }
     }
 
+    // Name the built APK `nomad-android-<version>.apk` instead of the default
+    // `app-debug.apk`, for local builds and the CI artifact alike.
+    applicationVariants.all {
+        val variant = this
+        outputs.all {
+            (this as com.android.build.gradle.internal.api.BaseVariantOutputImpl)
+                .outputFileName = "nomad-android-${variant.versionName}.apk"
+        }
+    }
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17

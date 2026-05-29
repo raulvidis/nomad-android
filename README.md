@@ -101,7 +101,8 @@ cd nomad-android
 ./gradlew clean assembleDebug
 ```
 
-The debug APK will be at `app/build/outputs/apk/debug/`.
+The debug APK will be at `app/build/outputs/apk/debug/nomad-android-<version>.apk`
+(e.g. `nomad-android-1.0.0.apk`). Install it with `adb install app/build/outputs/apk/debug/nomad-android-*.apk`.
 
 ## Project Structure
 
