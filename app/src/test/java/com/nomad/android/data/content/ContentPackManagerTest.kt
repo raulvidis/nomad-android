@@ -41,28 +41,28 @@ class ContentPackManagerTest {
 
     @Test
     fun `isPackDownloaded returns false when model file does not exist`() {
-        assertFalse(manager.isPackDownloaded("ai_gemma4"))
+        assertFalse(manager.isPackDownloaded("ai_minicpm5"))
     }
 
     @Test
     fun `isPackDownloaded returns false when model file is too small`() {
-        val modelFile = File(modelsDir, "gemma-4-E2B-it.litertlm")
+        val modelFile = File(modelsDir, "MiniCPM5-1B-Q4_K_M.gguf")
         modelFile.writeText("tiny") // 4 bytes — way below 1MB threshold
-        assertFalse(manager.isPackDownloaded("ai_gemma4"))
+        assertFalse(manager.isPackDownloaded("ai_minicpm5"))
     }
 
     @Test
     fun `isPackDownloaded returns false when model file is exactly 1MB`() {
-        val modelFile = File(modelsDir, "gemma-4-E2B-it.litertlm")
+        val modelFile = File(modelsDir, "MiniCPM5-1B-Q4_K_M.gguf")
         modelFile.writeBytes(ByteArray(1_000_000)) // Exactly 1MB — NOT > 1MB
-        assertFalse(manager.isPackDownloaded("ai_gemma4"))
+        assertFalse(manager.isPackDownloaded("ai_minicpm5"))
     }
 
     @Test
     fun `isPackDownloaded returns true when model file exceeds 1MB`() {
-        val modelFile = File(modelsDir, "gemma-4-E2B-it.litertlm")
+        val modelFile = File(modelsDir, "MiniCPM5-1B-Q4_K_M.gguf")
         modelFile.writeBytes(ByteArray(1_000_001)) // Just over 1MB
-        assertTrue(manager.isPackDownloaded("ai_gemma4"))
+        assertTrue(manager.isPackDownloaded("ai_minicpm5"))
     }
 
     @Test
