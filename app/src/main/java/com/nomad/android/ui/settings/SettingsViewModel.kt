@@ -5,7 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.nomad.android.data.Result
 import com.nomad.android.data.ai.AIEngineManager
 import com.nomad.android.data.ai.AIEngineStatus
-import com.nomad.android.data.ai.LiteRTLMEngine
+import com.nomad.android.data.ai.LlamaCppEngine
 import com.nomad.android.data.content.ContentPackManager
 import com.nomad.android.data.content.PackStatus
 import com.nomad.android.data.repository.SettingsRepository
@@ -29,7 +29,7 @@ data class ContentPackInfo(
 )
 
 data class DownloadedModel(
-    val variant: LiteRTLMEngine.ModelVariant,
+    val variant: LlamaCppEngine.ModelVariant,
     val isActive: Boolean
 )
 
@@ -199,7 +199,7 @@ class SettingsViewModel @Inject constructor(
         }
     }
 
-    fun switchModel(variant: LiteRTLMEngine.ModelVariant) {
+    fun switchModel(variant: LlamaCppEngine.ModelVariant) {
         viewModelScope.launch {
             aiEngineManager.switchModel(variant)
         }

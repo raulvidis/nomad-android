@@ -3,7 +3,7 @@ package com.nomad.android.data.content
 import android.content.Context
 import android.util.Log
 import com.nomad.android.DownloadService
-import com.nomad.android.data.ai.LiteRTLMEngine
+import com.nomad.android.data.ai.LlamaCppEngine
 import com.nomad.android.data.local.dao.ContentPackDao
 import com.nomad.android.data.local.entity.ContentPackEntity
 import kotlinx.coroutines.Dispatchers
@@ -73,7 +73,7 @@ class ContentPackManager(
     }.flowOn(Dispatchers.IO)
 
     private fun getBundledPacks(): List<ContentPack> {
-        val modelPacks = LiteRTLMEngine.ModelVariant.entries.map { variant ->
+        val modelPacks = LlamaCppEngine.ModelVariant.entries.map { variant ->
             ContentPack(
                 id = modelVariantToPackId(variant),
                 name = variant.displayName,
@@ -96,12 +96,12 @@ class ContentPackManager(
         )
     }
 
-    private fun modelVariantToPackId(variant: LiteRTLMEngine.ModelVariant): String = when (variant) {
-        LiteRTLMEngine.ModelVariant.GEMMA4_E2B -> "ai_gemma4"
+    private fun modelVariantToPackId(variant: LlamaCppEngine.ModelVariant): String = when (variant) {
+        LlamaCppEngine.ModelVariant.MINICPM5_1B -> "ai_minicpm5"
     }
 
-    private fun getModelVariantForPack(packId: String): LiteRTLMEngine.ModelVariant? = when (packId) {
-        "ai_gemma4" -> LiteRTLMEngine.ModelVariant.GEMMA4_E2B
+    private fun getModelVariantForPack(packId: String): LlamaCppEngine.ModelVariant? = when (packId) {
+        "ai_minicpm5" -> LlamaCppEngine.ModelVariant.MINICPM5_1B
         else -> null
     }
 
@@ -279,7 +279,7 @@ class ContentPackManager(
 
     private fun cleanupOldModelFiles() {
         // Remove model files from previous versions with wrong filenames
-        val validFileNames = LiteRTLMEngine.ModelVariant.entries.map { it.fileName }.toSet()
+        val validFileNames = LlamaCppEngine.ModelVariant.entries.map { it.fileName }.toSet()
         modelsDir.listFiles()?.forEach { file ->
             if (file.name !in validFileNames && !file.name.endsWith(".tmp")) {
                 Log.i(TAG, "Cleaning up old model file: ${file.name}")

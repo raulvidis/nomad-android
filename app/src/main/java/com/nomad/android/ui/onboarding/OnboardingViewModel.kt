@@ -6,7 +6,7 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.nomad.android.data.ai.AIEngine
-import com.nomad.android.data.ai.LiteRTLMEngine
+import com.nomad.android.data.ai.LlamaCppEngine
 import com.nomad.android.data.content.ContentPackManager
 import com.nomad.android.data.repository.SettingsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -66,7 +66,7 @@ class OnboardingViewModel @Inject constructor(
             activityManager.getMemoryInfo(memoryInfo)
             val totalRamMB = memoryInfo.totalMem / (1024 * 1024)
 
-            val recommendedModel = LiteRTLMEngine.recommendedVariant(totalRamMB)
+            val recommendedModel = LlamaCppEngine.recommendedVariant(totalRamMB)
 
             _uiState.update {
                 it.copy(
@@ -106,9 +106,9 @@ class OnboardingViewModel @Inject constructor(
 
     fun downloadSelectedModel() {
         val modelName = _uiState.value.data.selectedModel
-        val variant = LiteRTLMEngine.ModelVariant.entries.find { it.displayName == modelName } ?: return
+        val variant = LlamaCppEngine.ModelVariant.entries.find { it.displayName == modelName } ?: return
         val packId = when (variant) {
-            LiteRTLMEngine.ModelVariant.GEMMA4_E2B -> "ai_gemma4"
+            LlamaCppEngine.ModelVariant.MINICPM5_1B -> "ai_minicpm5"
         }
         viewModelScope.launch {
             try {

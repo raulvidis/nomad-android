@@ -7,7 +7,7 @@ import com.nomad.android.data.ai.AIEngineManager
 import com.nomad.android.data.ai.AIEngineStatus
 import com.nomad.android.data.ai.AIEngineType
 import com.nomad.android.data.ai.FallbackEngine
-import com.nomad.android.data.ai.LiteRTLMEngine
+import com.nomad.android.data.ai.LlamaCppEngine
 import com.nomad.android.data.ai.RAGEngine
 import dagger.Module
 import dagger.Provides
@@ -36,10 +36,10 @@ object AIModule {
         val totalRamMB = memoryInfo.totalMem / (1024 * 1024)
 
         val modelsDir = java.io.File(context.filesDir, "models")
-        val downloadedVariant = LiteRTLMEngine.ModelVariant.entries.firstOrNull { variant ->
+        val downloadedVariant = LlamaCppEngine.ModelVariant.entries.firstOrNull { variant ->
             java.io.File(modelsDir, variant.fileName).let { it.exists() && it.length() > 1_000_000 }
         }
-        val variant = downloadedVariant ?: LiteRTLMEngine.recommendedVariant(totalRamMB)
+        val variant = downloadedVariant ?: LlamaCppEngine.recommendedVariant(totalRamMB)
         return AIEngineManager(context, totalRamMB, variant, fallbackEngine)
     }
 

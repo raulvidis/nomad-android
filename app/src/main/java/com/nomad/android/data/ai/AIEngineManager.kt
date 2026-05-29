@@ -18,32 +18,32 @@ import kotlin.concurrent.write
 class AIEngineManager(
     private val context: Context,
     private val deviceTotalRamMB: Long,
-    initialVariant: LiteRTLMEngine.ModelVariant,
+    initialVariant: LlamaCppEngine.ModelVariant,
     private val fallbackEngine: FallbackEngine
 ) : AIEngine {
 
     private val modelsDir = File(context.filesDir, "models")
 
     @Volatile
-    private var currentEngine: LiteRTLMEngine = LiteRTLMEngine(context, initialVariant, deviceTotalRamMB)
+    private var currentEngine: LlamaCppEngine = LlamaCppEngine(context, initialVariant, deviceTotalRamMB)
     private val _activeVariant = MutableStateFlow(initialVariant)
-    val activeVariant: StateFlow<LiteRTLMEngine.ModelVariant> = _activeVariant.asStateFlow()
+    val activeVariant: StateFlow<LlamaCppEngine.ModelVariant> = _activeVariant.asStateFlow()
     private val engineLock = Mutex()
     private val engineRwLock = ReentrantReadWriteLock()
     private val _engineStatus = MutableStateFlow(computeCurrentStatus())
     val engineStatus: StateFlow<AIEngineStatus> = _engineStatus.asStateFlow()
 
-    fun getDownloadedVariants(): List<LiteRTLMEngine.ModelVariant> {
-        return LiteRTLMEngine.ModelVariant.entries.filter { variant ->
+    fun getDownloadedVariants(): List<LlamaCppEngine.ModelVariant> {
+        return LlamaCppEngine.ModelVariant.entries.filter { variant ->
             File(modelsDir, variant.fileName).let { it.exists() && it.length() > 1_000_000 }
         }
     }
 
-    suspend fun switchModel(variant: LiteRTLMEngine.ModelVariant) {
+    suspend fun switchModel(variant: LlamaCppEngine.ModelVariant) {
         engineLock.withLock {
             engineRwLock.write {
                 currentEngine.unloadModel()
-                currentEngine = LiteRTLMEngine(context, variant, deviceTotalRamMB)
+                currentEngine = LlamaCppEngine(context, variant, deviceTotalRamMB)
                 _activeVariant.value = variant
                 _engineStatus.value = computeCurrentStatus()
             }
@@ -52,7 +52,7 @@ class AIEngineManager(
 
     private suspend fun refreshEngineIfNeeded() {
         if (!currentEngine.getModelFile().exists()) {
-            val downloaded = LiteRTLMEngine.ModelVariant.entries.firstOrNull { variant ->
+            val downloaded = LlamaCppEngine.ModelVariant.entries.firstOrNull { variant ->
                 File(modelsDir, variant.fileName).let { it.exists() && it.length() > 1_000_000 }
             }
             if (downloaded != null) {

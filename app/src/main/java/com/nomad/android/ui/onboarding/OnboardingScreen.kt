@@ -245,12 +245,12 @@ private fun ModelSelectionStep(
     onAdvance: () -> Unit,
 ) {
     val models = remember {
-        com.nomad.android.data.ai.LiteRTLMEngine.ModelVariant.entries.map { variant ->
+        com.nomad.android.data.ai.LlamaCppEngine.ModelVariant.entries.map { variant ->
             Triple(
                 variant.displayName,
                 "%.1f GB".format(variant.sizeMB / 1024.0),
                 when (variant) {
-                    com.nomad.android.data.ai.LiteRTLMEngine.ModelVariant.GEMMA4_E2B -> "Multimodal — text, image, audio"
+                    com.nomad.android.data.ai.LlamaCppEngine.ModelVariant.MINICPM5_1B -> "Compact on-device LLM (GGUF, ~656 MB)"
                 }
             )
         }
