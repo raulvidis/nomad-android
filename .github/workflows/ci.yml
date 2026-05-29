@@ -43,25 +43,28 @@ jobs:
         run: |
           ./gradlew assembleDebug
 
+      # Build artifacts are only kept for PR review; on push to main they
+      # just accumulate Actions storage with no consumer.
       - name: Upload APK
+        if: github.event_name == 'pull_request'
         uses: actions/upload-artifact@v4
         with:
-          name: nomad-debug
+          name: nomad-debug-pr${{ github.event.pull_request.number }}
           path: app/build/outputs/apk/debug/*.apk
           retention-days: 7
 
       - name: Upload lint results
-        if: always()
+        if: always() && github.event_name == 'pull_request'
         uses: actions/upload-artifact@v4
         with:
-          name: lint-results
+          name: lint-results-pr${{ github.event.pull_request.number }}
           path: app/build/reports/lint-results-*.html
           retention-days: 7
 
       - name: Upload test results
-        if: always()
+        if: always() && github.event_name == 'pull_request'
         uses: actions/upload-artifact@v4
         with:
-          name: test-results
+          name: test-results-pr${{ github.event.pull_request.number }}
           path: app/build/reports/tests/testDebugUnitTest/
           retention-days: 7
