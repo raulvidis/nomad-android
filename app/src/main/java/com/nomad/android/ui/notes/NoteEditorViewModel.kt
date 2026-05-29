@@ -36,21 +36,18 @@ class NoteEditorViewModel @Inject constructor(
         _uiState.update { it.copy(isLoading = true) }
         viewModelScope.launch {
             val result = noteRepository.getNote(noteId)
-            when {
-                result.isSuccess -> {
-                    val note = result.getOrNull()!!
-                    _uiState.update {
-                        it.copy(
-                            noteId = note.id,
-                            title = note.title,
-                            content = note.content,
-                            isLoading = false,
-                        )
-                    }
+            if (result.isSuccess) {
+                val note = result.getOrNull() ?: return@launch
+                _uiState.update {
+                    it.copy(
+                        noteId = note.id,
+                        title = note.title,
+                        content = note.content,
+                        isLoading = false,
+                    )
                 }
-                result.isError -> {
-                    _uiState.update { it.copy(isLoading = false, error = result.exceptionOrNull()?.message) }
-                }
+            } else {
+                _uiState.update { it.copy(isLoading = false, error = result.exceptionOrNull()?.message) }
             }
         }
     }

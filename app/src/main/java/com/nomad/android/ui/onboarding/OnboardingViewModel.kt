@@ -11,7 +11,6 @@ import com.nomad.android.data.content.ContentPackManager
 import com.nomad.android.data.repository.SettingsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
@@ -92,12 +91,7 @@ class OnboardingViewModel @Inject constructor(
         _uiState.update { state ->
             val current = state.data
             if (current.currentStep < current.totalSteps - 1) {
-                val nextStep = current.currentStep + 1
-                // Simulate download progress on step 3
-                if (nextStep == 3) {
-                    simulateDownload()
-                }
-                state.copy(data = current.copy(currentStep = nextStep))
+                state.copy(data = current.copy(currentStep = current.currentStep + 1))
             } else {
                 state
             }
@@ -125,17 +119,6 @@ class OnboardingViewModel @Inject constructor(
                 }
             } catch (e: Exception) {
                 Log.e("OnboardingViewModel", "Model download failed", e)
-            }
-        }
-    }
-
-    private fun simulateDownload() {
-        viewModelScope.launch {
-            for (i in 0..100 step 5) {
-                _uiState.update {
-                    it.copy(data = it.data.copy(downloadProgress = i / 100f))
-                }
-                delay(100)
             }
         }
     }
