@@ -16,10 +16,9 @@
     volatile <fields>;
 }
 
-# MediaPipe GenAI / LiteRT
--keep class com.google.mediapipe.** { *; }
--keep class org.tensorflow.lite.** { *; }
--keep class com.google.ai.edge.** { *; }
+# llama.cpp JNI bridge — keep the class + native method declarations so R8
+# doesn't rename symbols the .so binds to by name.
+-keep class com.nomad.android.data.ai.LlamaBridge { *; }
 
 # MapLibre
 -keep class org.maplibre.gl.** { *; }
