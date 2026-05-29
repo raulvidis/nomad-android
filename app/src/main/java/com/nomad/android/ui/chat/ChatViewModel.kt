@@ -186,7 +186,10 @@ class ChatViewModel @Inject constructor(
     }
 
     fun sendMessage(content: String, imagePath: String? = null) {
-        if (content.length > 10000) return
+        if (content.length > 10000) {
+            _uiState.update { it.copy(error = "Message too long (${content.length} chars, max 10000)") }
+            return
+        }
         val state = _uiState.value
         val image = imagePath ?: state.data.pendingImagePath
 
