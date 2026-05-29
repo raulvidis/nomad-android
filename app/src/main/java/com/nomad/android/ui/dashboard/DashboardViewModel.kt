@@ -55,7 +55,7 @@ class DashboardViewModel @Inject constructor(
             val storageMetrics = settingsRepository.getStorageMetrics()
 
             val aiStatus = AIEngineStatus(
-                engineType = AIEngineType.LITERTLM_E2B,
+                engineType = AIEngineType.LLAMACPP_MINICPM5,
                 isReady = aiEngineManager.isAvailable(),
                 modelName = aiEngineManager.getModelName(),
                 ramRequired = "${aiEngineManager.getDeviceInfo().totalRamMB}MB total",

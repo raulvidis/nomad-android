@@ -20,7 +20,7 @@ data class DeviceInfo(
 )
 
 enum class AIEngineType(val displayName: String) {
-    LITERTLM_E2B("LiteRT-LM (Gemma 4 E2B)"),
+    LLAMACPP_MINICPM5("llama.cpp (MiniCPM5 1B)"),
     FALLBACK("Fallback (Rule-Based)"),
     NONE("No AI Engine Available")
 }

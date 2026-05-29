@@ -9,7 +9,7 @@ class AIEngineTypesTest {
     fun `AIEngineType enum has all values`() {
         val values = AIEngineType.values()
         assertEquals(3, values.size)
-        assertTrue(values.contains(AIEngineType.LITERTLM_E2B))
+        assertTrue(values.contains(AIEngineType.LLAMACPP_MINICPM5))
         assertTrue(values.contains(AIEngineType.FALLBACK))
         assertTrue(values.contains(AIEngineType.NONE))
     }
@@ -17,15 +17,15 @@ class AIEngineTypesTest {
     @Test
     fun `AIEngineStatus data class holds values`() {
         val status = AIEngineStatus(
-            engineType = AIEngineType.LITERTLM_E2B,
+            engineType = AIEngineType.LLAMACPP_MINICPM5,
             isReady = true,
-            modelName = "Gemma 4 E2B",
+            modelName = "MiniCPM5 1B",
             ramRequired = "6144MB total",
-            modelSize = "3000 MB"
+            modelSize = "656 MB"
         )
-        assertEquals(AIEngineType.LITERTLM_E2B, status.engineType)
+        assertEquals(AIEngineType.LLAMACPP_MINICPM5, status.engineType)
         assertTrue(status.isReady)
-        assertEquals("Gemma 4 E2B", status.modelName)
+        assertEquals("MiniCPM5 1B", status.modelName)
     }
 
     @Test
@@ -40,24 +40,6 @@ class AIEngineTypesTest {
         assertEquals(4096L, info.availableRamMB)
         assertTrue(info.hasNPU)
         assertTrue(info.hasGPU)
-    }
-
-    @Test
-    fun `LiteRTLMEngine ModelVariant GEMMA4_E2B has correct properties`() {
-        val gemma4 = LiteRTLMEngine.ModelVariant.GEMMA4_E2B
-        assertEquals("Gemma 4 E2B", gemma4.displayName)
-        assertEquals("gemma-4-E2B-it.litertlm", gemma4.fileName)
-        assertEquals(2048L, gemma4.ramRequiredMB)
-        assertEquals(2643, gemma4.sizeMB)
-        assertTrue(gemma4.downloadUrl.startsWith("https://"))
-        assertTrue(gemma4.downloadUrl.contains("huggingface"))
-    }
-
-    @Test
-    fun `recommendedVariant always selects Gemma4`() {
-        assertEquals(LiteRTLMEngine.ModelVariant.GEMMA4_E2B, LiteRTLMEngine.recommendedVariant(8192))
-        assertEquals(LiteRTLMEngine.ModelVariant.GEMMA4_E2B, LiteRTLMEngine.recommendedVariant(2048))
-        assertEquals(LiteRTLMEngine.ModelVariant.GEMMA4_E2B, LiteRTLMEngine.recommendedVariant(1024))
     }
 
     @Test
