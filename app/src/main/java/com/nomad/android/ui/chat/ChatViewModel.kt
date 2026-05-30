@@ -515,10 +515,19 @@ class ChatViewModel @Inject constructor(
     private suspend fun autoCompactIfNeeded() {
         val tokens = _uiState.value.data.contextTokenCount
         if (tokens > AUTO_COMPACT_THRESHOLD) {
-            compactContext()
+            val messages = _uiState.value.data.messages
+            if (messages.size <= 4) return
             val sessionId = _uiState.value.data.currentSessionId
+
+            val compacted = messages.take(1) + ChatMessage(
+                sessionId = messages.first().sessionId,
+                role = "assistant",
+                content = "[${messages.size - 4} earlier messages compacted]",
+                timestamp = messages[messages.size / 2].timestamp
+            ) + messages.takeLast(3)
+
+            // Write to DB first — if this fails, UI stays consistent with DB
             if (sessionId != null) {
-                val compacted = _uiState.value.data.messages
                 chatRepository.replaceMessagesForSession(
                     sessionId,
                     compacted.map { msg ->
@@ -530,6 +539,16 @@ class ChatViewModel @Inject constructor(
                             imageUri = msg.imageUri
                         )
                     }
+                )
+            }
+
+            // Update UI only after DB write succeeds
+            _uiState.update {
+                it.copy(
+                    data = it.data.copy(
+                        messages = compacted,
+                        contextTokenCount = estimateTokenCount(compacted)
+                    )
                 )
             }
         }
