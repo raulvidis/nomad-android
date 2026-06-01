@@ -89,32 +89,4 @@ class RAGEngine(
         """.trimIndent()
     }
 
-    fun serializeVector(vector: FloatArray): ByteArray {
-        val buffer = java.nio.ByteBuffer.allocate(vector.size * 4)
-        buffer.order(java.nio.ByteOrder.LITTLE_ENDIAN)
-        vector.forEach { buffer.putFloat(it) }
-        return buffer.array()
-    }
-
-    fun deserializeVector(bytes: ByteArray): FloatArray {
-        val buffer = java.nio.ByteBuffer.wrap(bytes)
-        buffer.order(java.nio.ByteOrder.LITTLE_ENDIAN)
-        val vector = FloatArray(bytes.size / 4)
-        for (i in vector.indices) {
-            vector[i] = buffer.getFloat()
-        }
-        return vector
-    }
-
-    fun cosineSimilarity(a: FloatArray, b: FloatArray): Float {
-        var dotProduct = 0f
-        var normA = 0f
-        var normB = 0f
-        for (i in a.indices) {
-            dotProduct += a[i] * b[i]
-            normA += a[i] * a[i]
-            normB += b[i] * b[i]
-        }
-        return if (normA == 0f || normB == 0f) 0f else dotProduct / (kotlin.math.sqrt(normA) * kotlin.math.sqrt(normB))
-    }
 }

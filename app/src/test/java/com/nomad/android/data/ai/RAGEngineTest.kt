@@ -99,46 +99,6 @@ class RAGEngineTest {
         assertEquals(384, RAGEngine.EMBEDDING_DIMENSION)
     }
 
-    @Test
-    fun `serializeVector and deserializeVector round-trip`() {
-        val original = FloatArray(384) { it.toFloat() * 0.1f }
-        val serialized = engine.serializeVector(original)
-        val result = engine.deserializeVector(serialized)
-
-        assertArrayEquals(original, result, 0.001f)
-    }
-
-    @Test
-    fun `cosineSimilarity with identical vectors returns 1`() {
-        val vec = floatArrayOf(1f, 0f, 0f, 0f)
-        val similarity = engine.cosineSimilarity(vec, vec)
-        assertEquals(1.0f, similarity, 0.001f)
-    }
-
-    @Test
-    fun `cosineSimilarity with orthogonal vectors returns 0`() {
-        val a = floatArrayOf(1f, 0f)
-        val b = floatArrayOf(0f, 1f)
-        val similarity = engine.cosineSimilarity(a, b)
-        assertEquals(0.0f, similarity, 0.001f)
-    }
-
-    @Test
-    fun `cosineSimilarity with zero vectors returns 0`() {
-        val a = floatArrayOf(0f, 0f)
-        val b = floatArrayOf(1f, 1f)
-        val similarity = engine.cosineSimilarity(a, b)
-        assertEquals(0.0f, similarity, 0.001f)
-    }
-
-    @Test
-    fun `cosineSimilarity with opposite vectors returns -1`() {
-        val a = floatArrayOf(1f, 0f)
-        val b = floatArrayOf(-1f, 0f)
-        val similarity = engine.cosineSimilarity(a, b)
-        assertEquals(-1.0f, similarity, 0.001f)
-    }
-
     // --- query and querySync ---
 
     @Test
