@@ -511,7 +511,7 @@ class ChatViewModel @Inject constructor(
     }
 
     private fun estimateTokenCount(text: String): Int {
-        // Gemma tokenizer averages ~4 chars per token for English
+        // MiniCPM5-1B tokenizer averages ~4 chars per token for English
         return (text.length / 4.0).toInt().coerceAtLeast(1)
     }
 
@@ -577,9 +577,9 @@ class ChatViewModel @Inject constructor(
     }
 
     companion object {
-        // Gemma 4 E2B: 128K context, reserve 1024 for generation output
-        private const val MAX_CONTEXT_TOKENS = 127_000
-        private const val AUTO_COMPACT_THRESHOLD = 100_000
+        // MiniCPM5-1B: 4096 context (LlamaCppEngine.DEFAULT_CTX), reserve ~512 for generation
+        private const val MAX_CONTEXT_TOKENS = 3_500
+        private const val AUTO_COMPACT_THRESHOLD = 3_000
         // Approximate tokens for the system prompt + turn formatting overhead
         private const val SYSTEM_PROMPT_TOKENS = 80
 
