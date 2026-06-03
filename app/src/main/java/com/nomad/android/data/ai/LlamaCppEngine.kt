@@ -68,13 +68,8 @@ class LlamaCppEngine(
 
     override fun generateStream(prompt: String, context: List<String>, imagePath: String?): Flow<String> =
         callbackFlow {
-            val locked = inferenceMutex.tryLock()
-            if (!locked) {
-                trySend("AI is still processing your previous message. Please wait.")
-                close()
-                awaitClose { }
-                return@callbackFlow
-            }
+            // Suspend until inference mutex is available — queued, not silently dropped.
+            inferenceMutex.lock()
             try {
                 val ensured = ensureLoaded()
                 if (ensured is Result.Error) {
