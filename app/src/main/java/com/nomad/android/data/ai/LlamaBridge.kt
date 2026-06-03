@@ -21,7 +21,7 @@ object LlamaBridge {
         System.loadLibrary("nomad_llm")
         nativeInit()
         true
-    } catch (e: UnsatisfiedLinkError) {
+    } catch (e: Throwable) {
         Log.e(TAG, "native library not available", e)
         false
     }
