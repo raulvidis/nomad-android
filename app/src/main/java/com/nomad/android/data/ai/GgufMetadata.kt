@@ -131,7 +131,7 @@ object GgufMetadata {
                 if (buf.remaining() < 12) return false
                 val elemType = buf.int
                 val count = buf.long
-                if (count < 0) return false
+                if (count < 0 || count > 1_000_000) return false
                 // We don't care about array contents — skip element by element.
                 for (i in 0 until count) {
                     if (!skipValueCapturing(buf, elemType, key) { _, _ -> }) return false
