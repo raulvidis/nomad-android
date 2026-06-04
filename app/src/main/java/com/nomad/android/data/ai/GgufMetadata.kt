@@ -101,7 +101,7 @@ object GgufMetadata {
     private fun readString(buf: java.nio.ByteBuffer): String? {
         if (buf.remaining() < 8) return null
         val len = buf.long
-        if (len < 0 || len > buf.remaining()) return null
+        if (len < 0 || len > Int.MAX_VALUE || len > buf.remaining()) return null
         val bytes = ByteArray(len.toInt())
         buf.get(bytes)
         return String(bytes, Charsets.UTF_8)
