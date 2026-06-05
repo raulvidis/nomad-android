@@ -41,10 +41,10 @@ class DownloadService : Service() {
             PowerManager.PARTIAL_WAKE_LOCK,
             "nomad::download-wakelock"
         ).apply {
-            // No timeout — held until ContentPackManager signals all downloads
-            // complete and calls DownloadService.stop(), which triggers
-            // onDestroy() → releaseWakeLock().
-            acquire()
+            // 2-hour safety net: prevents indefinite WakeLock leak if the
+            // ContentPackManager callback never fires (crash, ANR, process kill).
+            // The service can re-acquire if downloads legitimately take longer.
+            acquire(2 * 60 * 60 * 1000L)
         }
     }
 
