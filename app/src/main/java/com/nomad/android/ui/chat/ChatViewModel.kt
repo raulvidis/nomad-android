@@ -438,19 +438,13 @@ class ChatViewModel @Inject constructor(
         }
     }
 
-    private fun buildContext(): List<String> {
-        val data = _uiState.value.data
-        val messages = data.messages
-        val maxContextTokens = MAX_CONTEXT_TOKENS
-
+    /**
+     * Selects messages that fit within the effective token budget
+     * (after reserving KB space). Returns lines in chronological order.
+     */
+    private fun selectMessagesInBudget(messages: List<ChatMessage>): List<String> {
         val selected = mutableListOf<String>()
-        var tokenBudget = maxContextTokens
-
-        // Reserve budget for knowledge base context
-        val knowledgeBudget = (maxContextTokens * 0.15).toInt() // 15% for KB
-        tokenBudget -= knowledgeBudget
-
-        // Walk backwards from recent messages, accumulating tokens until budget is hit
+        var tokenBudget = (MAX_CONTEXT_TOKENS * (1 - KNOWLEDGE_BUDGET_FRACTION)).toInt()
         val history = messages.dropLast(2) // exclude current user msg + empty assistant placeholder
         for (msg in history.reversed()) {
             val line = "${msg.role}: ${msg.content}"
@@ -459,8 +453,11 @@ class ChatViewModel @Inject constructor(
             tokenBudget -= tokens
             selected.add(0, line)
         }
-
         return selected
+    }
+
+    private fun buildContext(): List<String> {
+        return selectMessagesInBudget(_uiState.value.data.messages)
     }
 
     private fun retrieveKnowledgeContext(query: String): String {
@@ -491,21 +488,11 @@ class ChatViewModel @Inject constructor(
     }
 
     private fun estimateTokenCount(messages: List<ChatMessage>): Int {
-        var total = SYSTEM_PROMPT_TOKENS
-        val maxContextTokens = MAX_CONTEXT_TOKENS
-        val knowledgeBudget = (maxContextTokens * 0.15).toInt()
-        var tokenBudget = maxContextTokens - knowledgeBudget
-        val history = messages.dropLast(2)
-        for (msg in history.reversed()) {
-            val line = "${msg.role}: ${msg.content}"
-            val tokens = (line.length / 4.0).toInt().coerceAtLeast(1)
-            if (tokenBudget - tokens < 0) break
-            tokenBudget -= tokens
-            total += tokens
-        }
+        val selected = selectMessagesInBudget(messages)
+        var total = SYSTEM_PROMPT_TOKENS + selected.sumOf { estimateTokenCount(it) }
         val lastUserMsg = messages.lastOrNull { it.role == "user" }
         if (lastUserMsg != null) {
-            total += (lastUserMsg.content.length / 4.0).toInt().coerceAtLeast(1)
+            total += estimateTokenCount(lastUserMsg.content)
         }
         return total
     }
@@ -582,6 +569,7 @@ class ChatViewModel @Inject constructor(
         private const val AUTO_COMPACT_THRESHOLD = 3_000
         // Approximate tokens for the system prompt + turn formatting overhead
         private const val SYSTEM_PROMPT_TOKENS = 80
+        private const val KNOWLEDGE_BUDGET_FRACTION = 0.15
 
         // Built-in knowledge base entries: (category, title, content)
         private val KNOWLEDGE_BASE = listOf(
