@@ -420,6 +420,7 @@ class ChatViewModel @Inject constructor(
     fun compactContext() {
         val messages = _uiState.value.data.messages
         if (messages.size <= 4) return
+        val sessionId = _uiState.value.data.currentSessionId
 
         val compacted = messages.take(1) + ChatMessage(
             sessionId = messages.first().sessionId,
@@ -427,6 +428,24 @@ class ChatViewModel @Inject constructor(
             content = "[${messages.size - 4} earlier messages compacted]",
             timestamp = messages[messages.size / 2].timestamp
         ) + messages.takeLast(3)
+
+        // Persist to DB first — mirrors autoCompactIfNeeded() pattern
+        if (sessionId != null) {
+            viewModelScope.launch {
+                chatRepository.replaceMessagesForSession(
+                    sessionId,
+                    compacted.map { msg ->
+                        ChatMessageEntity(
+                            sessionId = msg.sessionId,
+                            role = msg.role,
+                            content = msg.content,
+                            timestamp = msg.timestamp,
+                            imageUri = msg.imageUri
+                        )
+                    }
+                )
+            }
+        }
 
         _uiState.update {
             it.copy(
