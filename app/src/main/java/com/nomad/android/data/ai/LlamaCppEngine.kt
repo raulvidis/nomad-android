@@ -92,9 +92,12 @@ class LlamaCppEngine(
                     if (res.isFailure) trySend("AI generation error: ${res.exceptionOrNull()?.message}")
                 }
             } finally {
-                close()
+                // Unlock in finally to guarantee release even on cancellation.
+                // close() is implicit — callbackFlow closes the channel when the
+                // builder body returns (including via this finally).
+                inferenceMutex.unlock()
             }
-            awaitClose { inferenceMutex.unlock() }
+            awaitClose { /* mutex already released in finally above */ }
         }
 
     override suspend fun isAvailable(): Boolean =
