@@ -135,7 +135,8 @@ class ContentPackManager(
                 }
             } else {
                 // Simulated download for non-AI packs (no real CDN yet)
-                val destFile = File(downloadDir, packId)
+                val destFile = sanitizePath(packId)
+                    ?: throw IllegalArgumentException("Invalid pack path: $packId")
                 if (destFile.exists()) {
                     emit(1f)
                     return@flow
