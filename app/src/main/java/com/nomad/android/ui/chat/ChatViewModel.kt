@@ -535,9 +535,9 @@ class ChatViewModel @Inject constructor(
                 timestamp = messages[messages.size / 2].timestamp
             ) + messages.takeLast(3)
 
-            // Write to DB first — if this fails, UI stays consistent with DB
+            // Write to DB first — if this fails, leave UI consistent with DB
             if (sessionId != null) {
-                chatRepository.replaceMessagesForSession(
+                val result = chatRepository.replaceMessagesForSession(
                     sessionId,
                     compacted.map { msg ->
                         ChatMessageEntity(
@@ -549,6 +549,10 @@ class ChatViewModel @Inject constructor(
                         )
                     }
                 )
+                if (result is Result.Error) {
+                    Log.e("ChatViewModel", "autoCompact: DB write failed, skipping UI update — ${result.message}")
+                    return
+                }
             }
 
             // Update UI only after DB write succeeds
