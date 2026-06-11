@@ -24,7 +24,6 @@ class RAGEngine(
         const val CHUNK_SIZE = 512
         const val CHUNK_OVERLAP = 128
         const val DEFAULT_TOP_K = 5
-        const val EMBEDDING_DIMENSION = 384
     }
 
     fun chunkText(text: String): List<String> {
