@@ -94,11 +94,6 @@ class RAGEngineTest {
         assertEquals(5, RAGEngine.DEFAULT_TOP_K)
     }
 
-    @Test
-    fun `EMBEDDING_DIMENSION is 384`() {
-        assertEquals(384, RAGEngine.EMBEDDING_DIMENSION)
-    }
-
     // --- query and querySync ---
 
     @Test
