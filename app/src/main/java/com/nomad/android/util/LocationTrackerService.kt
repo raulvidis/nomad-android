@@ -20,6 +20,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import java.util.UUID
 import java.util.concurrent.TimeUnit
@@ -196,6 +197,15 @@ class LocationTrackerService(
                 Log.w(TAG, "Fallback single location request failed", e)
             }
         }
+    }
+
+    /**
+     * Cancel the internal CoroutineScope. Call during DI teardown or tests
+     * to prevent leaked coroutines from outliving the tracker.
+     */
+    fun destroy() {
+        scope.cancel()
+        stopTracking()
     }
 
     companion object {
