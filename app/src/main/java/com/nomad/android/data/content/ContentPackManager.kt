@@ -20,6 +20,7 @@ import okhttp3.Request
 import java.io.File
 import java.io.FileInputStream
 import java.io.FileOutputStream
+import java.io.IOException
 
 data class ContentPack(
     val id: String,
@@ -239,6 +240,25 @@ class ContentPackManager(
         }
     }
 
+    /**
+     * Validates that the resolved path stays within [downloadDir].
+     * Returns null if the name contains a path traversal attempt.
+     */
+    private fun sanitizePath(name: String): File? {
+        return try {
+            val resolved = File(downloadDir, name).canonicalFile
+            if (resolved.path.startsWith(downloadDir.canonicalPath + File.separator) || resolved == downloadDir.canonicalFile) {
+                resolved
+            } else {
+                Log.w(TAG, "Path traversal attempt blocked: $name")
+                null
+            }
+        } catch (e: IOException) {
+            Log.w(TAG, "Invalid path: $name", e)
+            null
+        }
+    }
+
     suspend fun deletePack(packId: String) {
         // Delete model file if AI pack
         val variant = getModelVariantForPack(packId)
@@ -246,9 +266,9 @@ class ContentPackManager(
             val modelFile = File(modelsDir, variant.fileName)
             if (modelFile.exists()) modelFile.delete()
         }
-        // Delete content pack file
-        val file = File(downloadDir, packId)
-        if (file.exists()) file.delete()
+        // Delete content pack file (validated against path traversal)
+        val file = sanitizePath(packId)
+        if (file != null && file.exists()) file.delete()
         // Remove from database
         contentPackDao.deleteById(packId)
     }
@@ -258,7 +278,7 @@ class ContentPackManager(
         if (variant != null) {
             return File(modelsDir, variant.fileName).let { it.exists() && it.length() > 1_000_000 }
         }
-        return File(downloadDir, packId).exists()
+        return sanitizePath(packId)?.exists() ?: false
     }
 
     fun getDownloadedPackSize(packId: String): Long {
@@ -267,8 +287,8 @@ class ContentPackManager(
             val file = File(modelsDir, variant.fileName)
             return if (file.exists()) file.length() else 0L
         }
-        val file = File(downloadDir, packId)
-        return if (file.exists()) file.length() else 0L
+        val file = sanitizePath(packId)
+        return if (file != null && file.exists()) file.length() else 0L
     }
 
     fun formatSize(bytes: Long): String = when {
