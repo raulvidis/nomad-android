@@ -179,11 +179,14 @@ class OfflineTileManager(
     }
 
     fun getTile(z: Int, x: Int, y: Int): ByteArray? {
-        val entries = lock.withLock { databases.entries.toList() }
-        for (entry in entries) {
-            val db = lock.withLock { databases[entry.key] } ?: continue
-            val tile = db.getTile(z, x, y)
-            if (tile != null) return tile
+        val dbs = lock.withLock { databases.values.toList() }
+        for (db in dbs) {
+            try {
+                val tile = db.getTile(z, x, y)
+                if (tile != null) return tile
+            } catch (_: Exception) {
+                // Database may have been closed by concurrent deleteRegion
+            }
         }
         return null
     }
