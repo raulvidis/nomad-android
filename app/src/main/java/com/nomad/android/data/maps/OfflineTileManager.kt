@@ -150,8 +150,15 @@ class OfflineTileManager(
             emit(DownloadProgress(downloaded, total, bytesDownloaded, tileCalculator.estimateSizeBytes(total), false))
         }
 
-        db.setMetadata("tilecount", downloaded.toString())
-        db.setMetadata("sizebytes", bytesDownloaded.toString())
+        // Guard the trailing metadata writes: if deleteRegion() closes the db
+        // mid-download, setMetadata would throw and abort the flow before the
+        // completion emission. Swallow it so the region completes cleanly.
+        try {
+            db.setMetadata("tilecount", downloaded.toString())
+            db.setMetadata("sizebytes", bytesDownloaded.toString())
+        } catch (e: Exception) {
+            Log.w(TAG, "Failed to write final region metadata (db may have been closed)", e)
+        }
         emit(DownloadProgress(downloaded, total, bytesDownloaded, bytesDownloaded, true))
     }.flowOn(Dispatchers.IO)
 
