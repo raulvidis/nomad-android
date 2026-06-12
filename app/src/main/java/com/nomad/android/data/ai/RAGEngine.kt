@@ -24,6 +24,13 @@ class RAGEngine(
         const val CHUNK_SIZE = 512
         const val CHUNK_OVERLAP = 128
         const val DEFAULT_TOP_K = 5
+        private val STOPWORDS = setOf(
+            "the", "and", "for", "are", "but", "not", "you", "all", "can", "her",
+            "was", "one", "our", "out", "has", "had", "from", "this", "that", "with",
+            "they", "will", "would", "there", "their", "what", "about", "which",
+            "when", "who", "how", "why", "into", "your", "its", "over", "than",
+            "them", "were", "been", "more", "some", "such", "also", "any", "just"
+        )
     }
 
     fun chunkText(text: String): List<String> {
@@ -52,10 +59,24 @@ class RAGEngine(
         return aiEngine.generate(ragPrompt, emptyList())
     }
 
+    /**
+     * Normalize text into a set of searchable tokens: lowercase, strip
+     * non-alphanumeric characters, then drop stopwords and tokens of length <= 2.
+     * Mirrors the length>2 rule used in ChatViewModel so common words ("the",
+     * "how", "what") and trailing punctuation ("water?") don't inflate overlap
+     * scores and degrade retrieval relevance.
+     */
+    private fun tokenize(text: String): Set<String> {
+        return text.lowercase().split(Regex("\\s+"))
+            .map { it.replace(Regex("[^a-z0-9]"), "") }
+            .filter { it.length > 2 && it !in STOPWORDS }
+            .toSet()
+    }
+
     private fun search(query: String, topK: Int, documents: List<String>): List<RAGChunk> {
-        val queryWords = query.lowercase().split(Regex("\\s+")).toSet()
+        val queryWords = tokenize(query)
         val scored = documents.mapIndexed { index, doc ->
-            val docWords = doc.lowercase().split(Regex("\\s+")).toSet()
+            val docWords = tokenize(doc)
             val overlap = queryWords.intersect(docWords).size
             index to overlap
         }.filter { it.second > 0 }
