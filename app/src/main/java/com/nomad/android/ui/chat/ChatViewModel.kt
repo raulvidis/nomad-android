@@ -259,6 +259,12 @@ class ChatViewModel @Inject constructor(
     }
 
     private fun sendUserMessage(sessionId: String, content: String, imagePath: String? = null) {
+        // Cancel the DB message collector so the streaming placeholder (id < 0) isn't
+        // clobbered when the user-message insert re-emits Room rows. The collector
+        // is re-established by loadSession() when the chat is re-entered.
+        messagesCollectionJob?.cancel()
+        messagesCollectionJob = null
+
         val userMessage = ChatMessage(
             sessionId = sessionId,
             role = "user",
