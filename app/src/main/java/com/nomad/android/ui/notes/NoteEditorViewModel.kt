@@ -68,14 +68,21 @@ class NoteEditorViewModel @Inject constructor(
         val state = _uiState.value
         val title = state.title.ifBlank { "Untitled" }
         viewModelScope.launch {
-            noteRepository.saveNote(title, state.content, state.noteId.let { if (it > 0) it else null })
+            val result = noteRepository.saveNote(title, state.content, state.noteId.let { if (it > 0) it else null })
+            if (result.isError) {
+                _uiState.update { it.copy(error = result.exceptionOrNull()?.message ?: "Failed to save note") }
+            }
         }
     }
 
     fun deleteAndNavigateBack(noteId: Long, onNavigateBack: () -> Unit) {
         viewModelScope.launch {
             if (noteId > 0) {
-                noteRepository.deleteNote(noteId)
+                val result = noteRepository.deleteNote(noteId)
+                if (result.isError) {
+                    _uiState.update { it.copy(error = result.exceptionOrNull()?.message ?: "Failed to delete note") }
+                    return@launch
+                }
             }
             onNavigateBack()
         }
