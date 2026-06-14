@@ -114,6 +114,7 @@ class OfflineTileManager(
         val total = tiles.size
         var downloaded = 0
         var bytesDownloaded = 0L
+        var failed = 0
 
         emit(DownloadProgress(0, total, 0, tileCalculator.estimateSizeBytes(total), false))
 
@@ -126,7 +127,6 @@ class OfflineTileManager(
                 continue
             }
 
-            var failed = 0
             try {
                 val url = tileCalculator.tileUrl(tile.x, tile.y, tile.z)
                 val request = Request.Builder().url(url)
@@ -159,7 +159,8 @@ class OfflineTileManager(
         } catch (e: Exception) {
             Log.w(TAG, "Failed to write final region metadata (db may have been closed)", e)
         }
-        emit(DownloadProgress(downloaded, total, bytesDownloaded, bytesDownloaded, true))
+        val errorMsg = if (failed > 0) "$failed of $total tiles failed to download" else null
+        emit(DownloadProgress(downloaded, total, bytesDownloaded, bytesDownloaded, true, errorMsg))
     }.flowOn(Dispatchers.IO)
 
     fun getDownloadedRegions(): List<OfflineRegion> {

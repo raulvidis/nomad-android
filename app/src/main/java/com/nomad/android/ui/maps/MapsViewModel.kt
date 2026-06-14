@@ -278,12 +278,16 @@ class MapsViewModel @Inject constructor(
         }
 
         viewModelScope.launch {
+            var downloadError: String? = null
             offlineTileManager.downloadRegion(
                 id, north, south, east, west,
                 minZoom, maxZoom
             ).collect { progress ->
                 _uiState.update {
                     it.copy(data = it.data.copy(downloadProgress = progress))
+                }
+                if (progress.isComplete && progress.error != null) {
+                    downloadError = progress.error
                 }
             }
             val regions = offlineTileManager.getDownloadedRegions()
@@ -293,7 +297,8 @@ class MapsViewModel @Inject constructor(
                         isDownloading = false,
                         downloadProgress = null,
                         downloadedRegions = regions
-                    )
+                    ),
+                    error = downloadError
                 )
             }
         }
