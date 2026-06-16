@@ -42,9 +42,19 @@ class OfflineTileManager(
     private val httpClient: OkHttpClient = OkHttpClient()
 ) {
     private val lock = ReentrantLock()
+    private val pinnedDatabases = mutableSetOf<String>()
     private val databases = object : LinkedHashMap<String, MBTilesDatabase>(8, 0.75f, true) {
         override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, MBTilesDatabase>?): Boolean {
             if (size > MAX_OPEN_DATABASES) {
+                val key = eldest?.key
+                if (key != null && pinnedDatabases.contains(key)) {
+                    // This handle is in active use (e.g. a running region
+                    // download). Keep it open so its tiles aren't silently
+                    // dropped by eviction mid-operation. The map may briefly
+                    // exceed MAX_OPEN_DATABASES, bounded by the number of
+                    // pinned handles.
+                    return false
+                }
                 eldest?.value?.close()
                 return true
             }
@@ -110,57 +120,67 @@ class OfflineTileManager(
             return@flow
         }
 
-        val tiles = tileCalculator.getTilesForBounds(north, south, east, west, minZoom, maxZoom)
-        val total = tiles.size
-        var downloaded = 0
-        var bytesDownloaded = 0L
-        var failed = 0
-
-        emit(DownloadProgress(0, total, 0, tileCalculator.estimateSizeBytes(total), false))
-
-        for (tile in tiles) {
-            val existing = db.getTile(tile.z, tile.x, tile.y)
-            if (existing != null) {
-                downloaded++
-                bytesDownloaded += existing.size
-                emit(DownloadProgress(downloaded, total, bytesDownloaded, tileCalculator.estimateSizeBytes(total), false))
-                continue
-            }
-
-            try {
-                val url = tileCalculator.tileUrl(tile.x, tile.y, tile.z)
-                val request = Request.Builder().url(url)
-                    .header("User-Agent", "NOMAD-Android/1.0")
-                    .build()
-                val response = httpClient.newCall(request).execute()
-                response.use {
-                    val body = it.body?.bytes()
-                    if (it.isSuccessful && body != null) {
-                        db.insertTile(tile.z, tile.x, tile.y, body)
-                        bytesDownloaded += body.size
-                        downloaded++
-                    } else {
-                        failed++
-                    }
-                }
-            } catch (e: Exception) {
-                failed++
-                Log.w(TAG, "Failed to download tile ${tile.z}/${tile.x}/${tile.y}", e)
-            }
-            emit(DownloadProgress(downloaded, total, bytesDownloaded, tileCalculator.estimateSizeBytes(total), false))
-        }
-
-        // Guard the trailing metadata writes: if deleteRegion() closes the db
-        // mid-download, setMetadata would throw and abort the flow before the
-        // completion emission. Swallow it so the region completes cleanly.
+        // Pin this handle so the access-order LRU cannot evict (and close) it
+        // while tiles are streaming in. Without this, opening other region
+        // databases (e.g. via getDownloadedRegions) can close() this handle
+        // mid-download, after which insertTile() is a silent no-op and the
+        // region reports 'complete' with missing tiles.
+        lock.withLock { pinnedDatabases.add(regionId) }
         try {
-            db.setMetadata("tilecount", downloaded.toString())
-            db.setMetadata("sizebytes", bytesDownloaded.toString())
-        } catch (e: Exception) {
-            Log.w(TAG, "Failed to write final region metadata (db may have been closed)", e)
+            val tiles = tileCalculator.getTilesForBounds(north, south, east, west, minZoom, maxZoom)
+            val total = tiles.size
+            var downloaded = 0
+            var bytesDownloaded = 0L
+            var failed = 0
+
+            emit(DownloadProgress(0, total, 0, tileCalculator.estimateSizeBytes(total), false))
+
+            for (tile in tiles) {
+                val existing = db.getTile(tile.z, tile.x, tile.y)
+                if (existing != null) {
+                    downloaded++
+                    bytesDownloaded += existing.size
+                    emit(DownloadProgress(downloaded, total, bytesDownloaded, tileCalculator.estimateSizeBytes(total), false))
+                    continue
+                }
+
+                try {
+                    val url = tileCalculator.tileUrl(tile.x, tile.y, tile.z)
+                    val request = Request.Builder().url(url)
+                        .header("User-Agent", "NOMAD-Android/1.0")
+                        .build()
+                    val response = httpClient.newCall(request).execute()
+                    response.use {
+                        val body = it.body?.bytes()
+                        if (it.isSuccessful && body != null) {
+                            db.insertTile(tile.z, tile.x, tile.y, body)
+                            bytesDownloaded += body.size
+                            downloaded++
+                        } else {
+                            failed++
+                        }
+                    }
+                } catch (e: Exception) {
+                    failed++
+                    Log.w(TAG, "Failed to download tile ${tile.z}/${tile.x}/${tile.y}", e)
+                }
+                emit(DownloadProgress(downloaded, total, bytesDownloaded, tileCalculator.estimateSizeBytes(total), false))
+            }
+
+            // Guard the trailing metadata writes: if deleteRegion() closes the db
+            // mid-download, setMetadata would throw and abort the flow before the
+            // completion emission. Swallow it so the region completes cleanly.
+            try {
+                db.setMetadata("tilecount", downloaded.toString())
+                db.setMetadata("sizebytes", bytesDownloaded.toString())
+            } catch (e: Exception) {
+                Log.w(TAG, "Failed to write final region metadata (db may have been closed)", e)
+            }
+            val errorMsg = if (failed > 0) "$failed of $total tiles failed to download" else null
+            emit(DownloadProgress(downloaded, total, bytesDownloaded, bytesDownloaded, true, errorMsg))
+        } finally {
+            lock.withLock { pinnedDatabases.remove(regionId) }
         }
-        val errorMsg = if (failed > 0) "$failed of $total tiles failed to download" else null
-        emit(DownloadProgress(downloaded, total, bytesDownloaded, bytesDownloaded, true, errorMsg))
     }.flowOn(Dispatchers.IO)
 
     fun getDownloadedRegions(): List<OfflineRegion> {
