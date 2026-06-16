@@ -71,6 +71,12 @@ class NoteEditorViewModel @Inject constructor(
             val result = noteRepository.saveNote(title, state.content, state.noteId.let { if (it > 0) it else null })
             if (result.isError) {
                 _uiState.update { it.copy(error = result.exceptionOrNull()?.message ?: "Failed to save note") }
+            } else {
+                // Reconcile the row id so a subsequent save updates the same
+                // row instead of inserting a duplicate (noteId starts at -1).
+                result.getOrNull()?.takeIf { it > 0 }?.let { newId ->
+                    _uiState.update { it.copy(noteId = newId) }
+                }
             }
         }
     }
