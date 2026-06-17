@@ -45,9 +45,14 @@ class KnowledgeBaseTest {
     @Test
     fun `search respects topK`() {
         val big = KnowledgeBase(
-            base.entries + KnowledgeEntry("4", "Survival", "Signal Fires", "Fire can be used as a distress signal."),
+            listOf(
+                KnowledgeEntry("1", "Survival", "Fire Starting", "Gather tinder and fuel to make a fire."),
+                KnowledgeEntry("2", "Survival", "Signal Fires", "Fire can be used as a distress signal."),
+            ),
         )
+        // Both entries match "fire", but topK limits the result count.
         assertEquals(1, big.search("fire", topK = 1).size)
+        assertEquals(2, big.search("fire", topK = 5).size)
     }
 
     @Test
