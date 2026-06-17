@@ -16,7 +16,7 @@ An offline-first survival knowledge app for Android, featuring on-device AI, off
 
 ## Features
 
-- **On-Device AI Chat** — Local AI powered by MediaPipe LiteRT-LM (Gemma models) with retrieval-augmented generation. Falls back to a built-in rule-based engine when no model is available.
+- **On-Device AI Chat** — Local AI powered by llama.cpp running **OpenBMB MiniCPM5-1B** (Q4_K_M GGUF, ~656 MB) with retrieval-augmented generation. Falls back to a built-in rule-based engine when no model is available. MiniCPM5-1B is the **only** model this app supports.
 - **Offline Maps** — MapLibre-based mapping with MBTiles storage, GPS tracking, waypoints, and route recording.
 - **Knowledge Browser** — Offline Wikipedia via Kiwix ZIM archives, bundled survival content, and content pack management.
 - **Emergency Tools** — First aid guides, survival checklists, and quick-reference emergency procedures.
@@ -52,9 +52,11 @@ Three implementations behind a common `AIEngine` interface:
 
 | Engine | Description |
 |--------|-------------|
-| `LiteRTLMEngine` | On-device Gemma models via MediaPipe LiteRT-LM. Model variant selected by device RAM. |
+| `LlamaCppEngine` | On-device inference via a vendored llama.cpp build (`libnomad_llm.so`). Runs exactly one model — **OpenBMB MiniCPM5-1B** (Q4_K_M GGUF, ~656 MB). |
 | `RAGEngine` | Retrieval-augmented generation wrapper around any AIEngine. |
 | `FallbackEngine` | Rule-based responses for survival topics — no model required. |
+
+> **Single-model policy.** This app installs and runs only [`openbmb/MiniCPM5-1B`](https://huggingface.co/openbmb/MiniCPM5-1B). The GGUF artifact (`MiniCPM5-1B-Q4_K_M.gguf`, ~656 MB) is downloaded from the official sibling repo [`openbmb/MiniCPM5-1B-GGUF`](https://huggingface.co/openbmb/MiniCPM5-1B-GGUF), because llama.cpp requires a GGUF file and the base repo ships `safetensors` weights only. There is no vision/multimodal ("-V") model involved.
 
 ### Navigation
 
@@ -68,7 +70,7 @@ Eight routes via Compose Navigation: Dashboard, Maps, Knowledge, Chat, Notes, No
 | DI | Hilt (KSP) |
 | Database | Room (KSP) |
 | Maps | MapLibre Native |
-| AI | MediaPipe LiteRT-LM |
+| AI | llama.cpp (GGUF) — OpenBMB MiniCPM5-1B |
 | Networking | OkHttp |
 | Language | Kotlin 2.0.21 |
 | Build | Gradle 8.13, AGP 8.13.2 |

@@ -169,7 +169,7 @@ private fun DeviceScanStep(
     val specs = listOf(
         "RAM: $ramMB MB [OK]" to 500L,
         "STORAGE: $storageGB GB AVAILABLE [OK]" to 400L,
-        "AI CAPABILITY: LITERT-LM SUPPORTED [OK]" to 600L,
+        "AI CAPABILITY: LLAMA.CPP + MINICPM5-1B [OK]" to 600L,
         "GPU: ${if (hasGPU) "DETECTED" else "NOT FOUND"} [${if (hasGPU) "OK" else "WARN"}]" to 350L,
         "NPU: ${if (hasNPU) "AVAILABLE" else "NOT AVAILABLE"} [${if (hasNPU) "OK" else "WARN"}]" to 300L,
     )
