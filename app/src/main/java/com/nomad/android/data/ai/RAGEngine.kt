@@ -18,7 +18,8 @@ data class RAGQuery(
 )
 
 class RAGEngine(
-    private val aiEngine: AIEngine
+    private val aiEngine: AIEngine,
+    private val knowledgeBase: KnowledgeBase? = null,
 ) {
     companion object {
         const val CHUNK_SIZE = 512
@@ -74,6 +75,20 @@ class RAGEngine(
     }
 
     private fun search(query: String, topK: Int, documents: List<String>): List<RAGChunk> {
+        // When no raw documents are supplied but a KnowledgeBase is attached, defer
+        // retrieval to it so RAG queries run over the canonical bundled knowledge.
+        if (documents.isEmpty() && knowledgeBase != null) {
+            return knowledgeBase.search(query, topK).mapIndexed { index, entry ->
+                RAGChunk(
+                    id = index.toLong(),
+                    source = entry.source.ifBlank { "local://knowledge" },
+                    title = entry.title,
+                    chunkText = entry.content,
+                    chunkIndex = index,
+                )
+            }
+        }
+
         val queryWords = tokenize(query)
         val scored = documents.mapIndexed { index, doc ->
             val docWords = tokenize(doc)

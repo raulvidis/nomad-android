@@ -1,12 +1,116 @@
-[
-  {"id":"first_aid_01","category":"first_aid","title":"CPR - Cardiopulmonary Resuscitation","content":"Step-by-step CPR instructions...","steps":["Check for responsiveness","Call emergency services","Begin chest compressions...","Give rescue breaths...","Continue cycle"]},
-  {"id":"first_aid_02","category":"first_aid","title":"Treating Severe Bleeding","content":"How to control severe bleeding...","steps":["Apply direct pressure","Elevate wound","Apply bandage","Seek medical help"]},
-  {"id":"survival_01","category":"survival","title":"Water Purification","content":"Methods for purifying water in the wild...","steps":["Boiling (rolling boil for 1 minute)","Chemical treatment (iodine/chlorine)","Solar disinfection","Filtration"]},
-  {"id":"survival_02","category":"survival","title":"Building Emergency Shelter","content":"How to build basic shelters...","steps":["Find suitable location","Gather materials","Construct framework","Add insulation","Weatherproof"]},
-  {"id":"survival_03","category":"survival","title":"Fire Starting Methods","content":"Multiple ways to start a fire...","steps":["Friction methods","Spark-based methods","Solar methods","Chemical methods"]},
-  {"id":"survival_04","category":"survival","title":"SOS Signals","content":"International distress signals...","steps":["Three of anything (fires, whistle blasts)","Ground-to-air signals","Mirror signals","Signal fire"]},
-  {"id":"survival_05","category":"survival","title":"Navigation Without Compass","content":"Celestial and natural navigation...","steps":["North Star method","Sun shadow method","Moss on trees","Wind patterns"]},
-  {"id":"survival_06","category":"survival","title":"Knot Tying Essentials","content":"8 essential knots for survival...","steps":["Bowline","Clove hitch","Figure-eight","Taut-line hitch","Square knot","Sheet bend","Timber hitch","Prusik knot"]},
-  {"id":"survival_07","category":"survival","title":"Edible Plants Identification","content":"Common edible plants and safety rules...","steps":["Universal edibility test","Avoid: white berries, milky sap","Safe: dandelion, cattail, pine","Always cook when in doubt"]},
-  {"id":"survival_08","category":"survival","title":"Water Sources and Collection","content":"Finding and collecting water...","steps":["Dew collection","Solar still","Transpiration bag","Rain catchment","Animal tracking"]}
-]
+{
+  "articles": [
+    {
+      "id": "survival_fire",
+      "category": "Survival",
+      "title": "Fire Starting",
+      "content": "Gather tinder (dry leaves, bark), kindling (small sticks), and fuel (logs). Create a teepee or log cabin fire lay. Use matches, lighter, ferro rod, or bow-drill friction method. Shield from wind. Never leave unattended.",
+      "steps": ["Gather tinder, kindling, fuel", "Build a teepee or log cabin fire lay", "Ignite with matches, lighter, ferro rod, or friction", "Shield from wind", "Never leave unattended"]
+    },
+    {
+      "id": "survival_water",
+      "category": "Survival",
+      "title": "Water Purification",
+      "content": "Boil water for at least 1 minute (3 minutes above 6,500 ft). Use purification tablets or chlorine dioxide drops. Solar disinfection: clear bottle in direct sunlight for 6 hours. Filter through cloth first to remove sediment.",
+      "steps": ["Boil for 1 minute (3 minutes above 6,500 ft)", "Use purification tablets or chlorine dioxide", "Solar disinfection: clear bottle in sun for 6 hours", "Filter through cloth to remove sediment"]
+    },
+    {
+      "id": "survival_shelter",
+      "category": "Survival",
+      "title": "Shelter Building",
+      "content": "Find natural windbreaks (rock faces, fallen trees). Build lean-to with branches at 45 degrees. Insulate ground with leaves/pine needles. Keep shelter small to retain body heat. Ensure ventilation if using fire nearby.",
+      "steps": ["Find a natural windbreak", "Build a lean-to at 45 degrees", "Insulate the ground with leaves/pine needles", "Keep it small to retain heat", "Ensure ventilation if using fire nearby"]
+    },
+    {
+      "id": "survival_edible",
+      "category": "Survival",
+      "title": "Edible Plants",
+      "content": "Only eat plants you can positively identify. Safe: dandelion (all parts), clover, cattail (roots/shoots), pine needles (tea), chickweed. Avoid: milky sap, umbrella-shaped flowers, almond scent, three-leaved growth, white/yellow berries.",
+      "steps": ["Only eat plants you can positively identify", "Safe: dandelion, clover, cattail, pine needles, chickweed", "Avoid: milky sap, umbrella flowers, almond scent", "Avoid three-leaved growth and white/yellow berries"]
+    },
+    {
+      "id": "survival_sos",
+      "category": "Survival",
+      "title": "SOS Signals",
+      "content": "Three of anything: fires, whistle blasts, mirror flashes. Ground-to-air: use contrasting materials, minimum 10ft letters. Mirror signal toward aircraft. At night, use bright fires. Universal distress: SOS (... --- ...) in Morse code.",
+      "steps": ["Three of anything: fires, whistles, flashes", "Ground-to-air: 10ft contrasting letters", "Mirror signal toward aircraft", "Bright fires at night", "SOS in Morse code"]
+    },
+    {
+      "id": "survival_morse",
+      "category": "Survival",
+      "title": "Morse Code",
+      "content": "International communication system using dots and dashes. SOS = ... --- ... Key letters: E=. T=- A=.- I=.. M=-- N=-. Useful for emergency signaling with light, sound, or tapping.",
+      "steps": ["SOS = ... --- ...", "E=. T=- A=.- I=.. M=-- N=-.", "Signal with light, sound, or tapping"]
+    },
+    {
+      "id": "navigation_basics",
+      "category": "Navigation",
+      "title": "Navigation Without Tools",
+      "content": "Sun rises in east, sets in west. North Star (Polaris) indicates north in the northern hemisphere. Moss often grows thicker on north side of trees. Follow waterways downstream toward civilization. Leave trail markers.",
+      "steps": ["Sun rises east, sets west", "North Star (Polaris) marks north", "Moss grows thicker on the north side of trees", "Follow waterways downstream", "Leave trail markers"]
+    },
+    {
+      "id": "navigation_directions",
+      "category": "Navigation",
+      "title": "Cardinal Directions",
+      "content": "North, South, East, West. The sun rises in the east and sets in the west. Compass points to magnetic north. True north differs from magnetic north by the declination angle.",
+      "steps": ["North, South, East, West", "Sun rises east, sets west", "Compass points to magnetic north", "True north differs by the declination angle"]
+    },
+    {
+      "id": "firstaid_cpr",
+      "category": "First Aid",
+      "title": "CPR Basics",
+      "content": "To perform CPR: Check responsiveness, call emergency services, push hard and fast in the center of the chest at 100-120 compressions per minute, give rescue breaths if trained. Continue until help arrives or an AED is available.",
+      "steps": ["Check responsiveness", "Call emergency services", "Push hard and fast, 100-120 compressions/min", "Give rescue breaths if trained", "Continue until help arrives or an AED is available"]
+    },
+    {
+      "id": "firstaid_bleeding",
+      "category": "First Aid",
+      "title": "Bleeding Control",
+      "content": "Apply direct pressure with clean cloth. Elevate wound above heart. Apply pressure bandage. For severe limb bleeding, apply tourniquet 2-3 inches above wound. Do not remove soaked cloths—add more on top.",
+      "steps": ["Apply direct pressure with clean cloth", "Elevate wound above heart", "Apply pressure bandage", "Tourniquet 2-3 inches above severe limb wounds", "Do not remove soaked cloths—add more on top"]
+    },
+    {
+      "id": "firstaid_burns",
+      "category": "First Aid",
+      "title": "Burns Treatment",
+      "content": "Cool burn immediately with cool (not cold) running water for 10-20 minutes. Cover with sterile non-stick dressing. Do not apply ice, butter, or toothpaste. Seek medical help for burns larger than palm size or on face/joints/genitals.",
+      "steps": ["Cool with running water 10-20 minutes", "Cover with sterile non-stick dressing", "Do not apply ice, butter, or toothpaste", "Seek help for large burns or burns on face/joints/genitals"]
+    },
+    {
+      "id": "firstaid_shock",
+      "category": "First Aid",
+      "title": "Shock Treatment",
+      "content": "Lay person down with legs elevated 12 inches. Keep warm with blankets. Do not give food or water. Monitor breathing. If unconscious but breathing, place in recovery position. Call emergency services immediately.",
+      "steps": ["Lay down, elevate legs 12 inches", "Keep warm with blankets", "Do not give food or water", "Monitor breathing; recovery position if unconscious", "Call emergency services immediately"]
+    },
+    {
+      "id": "firstaid_fractures",
+      "category": "First Aid",
+      "title": "Fracture Splinting",
+      "content": "Immobilize the joint above and below the fracture. Use rigid materials (sticks, boards) padded with cloth. Secure with bandages but don't restrict circulation. Check pulse below splint regularly.",
+      "steps": ["Immobilize joints above and below the fracture", "Use padded rigid materials", "Secure with bandages without restricting circulation", "Check pulse below the splint regularly"]
+    },
+    {
+      "id": "firstaid_hypothermia",
+      "category": "First Aid",
+      "title": "Hypothermia",
+      "content": "Move to shelter. Remove wet clothing. Warm gradually with blankets, skin-to-skin contact. Give warm sweet drinks if conscious. Do not rub limbs, apply direct heat, or give alcohol. Severe cases: call emergency services.",
+      "steps": ["Move to shelter", "Remove wet clothing", "Warm gradually with blankets/skin-to-skin contact", "Warm sweet drinks if conscious", "Do not rub limbs or give alcohol", "Severe cases: call emergency services"]
+    },
+    {
+      "id": "firstaid_dehydration",
+      "category": "First Aid",
+      "title": "Dehydration",
+      "content": "Occurs when body loses more fluid than it takes in. Symptoms: thirst, dark urine, dizziness, fatigue. Prevention: drink water regularly, more in heat/exertion. Treatment: oral rehydration salts, sip water slowly.",
+      "steps": ["Symptoms: thirst, dark urine, dizziness, fatigue", "Prevent by drinking water regularly", "Drink more in heat/exertion", "Treat with oral rehydration salts", "Sip water slowly"]
+    },
+    {
+      "id": "firstaid_wilderness",
+      "category": "First Aid",
+      "title": "Wilderness First Aid",
+      "content": "The practice of medicine in environments where definitive care is delayed. Priorities: scene safety, primary survey (ABCs), secondary survey. Evacuation decisions based on mechanism of injury and patient condition.",
+      "steps": ["Ensure scene safety first", "Primary survey: Airway, Breathing, Circulation", "Secondary survey for other injuries", "Decide on evacuation based on mechanism and condition"]
+    }
+  ]
+}
