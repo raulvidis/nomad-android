@@ -13,6 +13,15 @@ class KnowledgeBase(entries: List<KnowledgeEntry>) {
     private val entries: List<KnowledgeEntry> = entries
 
     /**
+     * Each entry paired with its precomputed token set, built once at
+     * construction so [search] compares token sets instead of re-tokenizing
+     * every entry on every query. The knowledge base is loaded once and is
+     * immutable, so caching these sets is safe.
+     */
+    private val indexed: List<Pair<KnowledgeEntry, Set<String>>> =
+        entries.map { it to tokenize("${it.title} ${it.content}") }
+
+    /**
      * Distinct categories present in the base, sorted alphabetically, with "All"
      * prepended. Used to drive UI filter chips and unfiltered retrieval.
      */
@@ -42,13 +51,13 @@ class KnowledgeBase(entries: List<KnowledgeEntry>) {
         if (queryTokens.isEmpty()) return emptyList()
 
         val candidates = if (categoryFilter.isNullOrBlank() || categoryFilter.equals("All", ignoreCase = true)) {
-            entries
+            indexed
         } else {
-            entries.filter { it.category.equals(categoryFilter, ignoreCase = true) }
+            indexed.filter { it.first.category.equals(categoryFilter, ignoreCase = true) }
         }
 
         return candidates
-            .map { entry -> entry to queryTokens.intersect(tokenize("${entry.title} ${entry.content}")).size }
+            .map { (entry, tokens) -> entry to queryTokens.intersect(tokens).size }
             .filter { it.second > 0 }
             .sortedWith(
                 compareByDescending<Pair<KnowledgeEntry, Int>> { it.second }
