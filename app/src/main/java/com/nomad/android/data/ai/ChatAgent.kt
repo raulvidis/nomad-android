@@ -2,8 +2,10 @@ package com.nomad.android.data.ai
 
 import com.nomad.android.data.ai.tools.ChatToolRegistry
 import com.nomad.android.data.ai.tools.ToolResult
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.channelFlow
+import kotlinx.coroutines.flow.flowOn
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -126,7 +128,7 @@ class ChatAgent @Inject constructor(
                 cappedNote = "Stopped after $MAX_ITERATIONS tool iterations.",
             ),
         )
-    }
+    }.flowOn(Dispatchers.Default) // keep JNI parse + tool execution off the main thread
 
     companion object {
         const val MAX_ITERATIONS = 5
