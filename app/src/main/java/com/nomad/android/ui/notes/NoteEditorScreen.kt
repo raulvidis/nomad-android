@@ -285,30 +285,28 @@ private fun MarkdownText(content: String) {
 }
 
 private fun AnnotatedString.Builder.appendMarkdownInline(text: String, baseStyle: SpanStyle) {
-    val boldRegex = Regex("""\*\*(.+?)\*\*""")
-    val italicRegex = Regex("""\*(.+?)\*""")
-    val codeRegex = Regex("""`(.+?)`""")
+    // Single alternation regex: `\*\*` must precede `\*` so that `**bold**` is
+    // matched as one bold span instead of also yielding an overlapping italic
+    // range. The inner text is read straight from the captured group, so there
+    // is no fragile delimiter-width arithmetic that dropped/mangled characters
+    // (a single `*` italic marker was previously treated as width 2).
+    val inlineRegex = Regex("""\*\*(.+?)\*\*|\*(.+?)\*|`(.+?)`""")
 
     var currentIndex = 0
-    val allMatches = mutableListOf<Pair<IntRange, SpanStyle>>()
 
-    boldRegex.findAll(text).forEach { match ->
-        allMatches.add(match.range to SpanStyle(fontWeight = FontWeight.Bold))
-    }
-    italicRegex.findAll(text).forEach { match ->
-        allMatches.add(match.range to SpanStyle(fontStyle = FontStyle.Italic))
-    }
-    codeRegex.findAll(text).forEach { match ->
-        allMatches.add(match.range to SpanStyle(fontFamily = FontFamily.Monospace))
-    }
-
-    allMatches.sortedBy { it.first.first }.forEach { (range, style) ->
+    inlineRegex.findAll(text).forEach { match ->
+        val range = match.range
+        val (innerText, style) = when {
+            match.groupValues[1].isNotEmpty() ->
+                match.groupValues[1] to SpanStyle(fontWeight = FontWeight.Bold)
+            match.groupValues[2].isNotEmpty() ->
+                match.groupValues[2] to SpanStyle(fontStyle = FontStyle.Italic)
+            else ->
+                match.groupValues[3] to SpanStyle(fontFamily = FontFamily.Monospace)
+        }
         if (range.first > currentIndex) {
             withStyle(baseStyle) { append(text.substring(currentIndex, range.first)) }
         }
-        val delimiter = text.substring(range.first, range.first + 1)
-        val delimiterWidth = if (delimiter == "`") 1 else 2
-        val innerText = text.substring(range.first + delimiterWidth, range.last - delimiterWidth + 1)
         withStyle(baseStyle.merge(style)) { append(innerText) }
         currentIndex = range.last + 1
     }
