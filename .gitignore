@@ -11,10 +11,6 @@ local.properties
 /app/build
 opencode.json
 opencode.jsonc
-CLAUDE.md
-GEMINI.md
-AGENTS.md
-.opencode/
 
 *.apk
 *.aab
