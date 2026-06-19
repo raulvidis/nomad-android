@@ -50,14 +50,13 @@ class LlamaCppEngine(
             downloadUrl = "https://huggingface.co/unsloth/Qwen3.5-0.8B-GGUF/resolve/main/Qwen3.5-0.8B-Q4_K_M.gguf",
         ),
         // Gemma-4 E2B is a multimodal (vision) model; we run its language tower
-        // text-only (no mmproj). Unsloth ships no Q4_K_M, so we use the dynamic
-        // Q4_K_XL quant. Larger RAM footprint than the 1B models.
+        // text-only (no mmproj). Larger RAM footprint than the 1B models.
         GEMMA4_E2B(
             displayName = "Gemma-4 E2B",
-            fileName = "gemma-4-E2B-it-qat-UD-Q4_K_XL.gguf",
-            ramRequiredMB = 4096,
-            sizeMB = 2499,
-            downloadUrl = "https://huggingface.co/unsloth/gemma-4-E2B-it-qat-GGUF/resolve/main/gemma-4-E2B-it-qat-UD-Q4_K_XL.gguf",
+            fileName = "gemma-4-E2B-it-Q4_K_M.gguf",
+            ramRequiredMB = 4608,
+            sizeMB = 2963,
+            downloadUrl = "https://huggingface.co/unsloth/gemma-4-E2B-it-GGUF/resolve/main/gemma-4-E2B-it-Q4_K_M.gguf",
         )
     }
 

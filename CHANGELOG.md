@@ -5,7 +5,7 @@ All notable changes to this project are documented here. Format is loosely based
 ## [Unreleased]
 
 ### Added
-- Models: two additional downloadable AI models at onboarding/settings — **Qwen3.5-0.8B** (Q4_K_M, ~508 MB) and **Gemma-4-E2B** (Q4_K_XL, ~2.5 GB; a multimodal model run text-only). MiniCPM5-1B remains the default/recommended. Supersedes the prior single-model policy.
+- Models: two additional downloadable AI models at onboarding/settings — **Qwen3.5-0.8B** (Q4_K_M, ~508 MB) and **Gemma-4-E2B** (Q4_K_M, ~2.9 GB; a multimodal model run text-only). MiniCPM5-1B remains the default/recommended. Supersedes the prior single-model policy.
 - Chat: model-driven tool calling — the LLM decides when to read offline data via `search_knowledge_base` and `search_notes` tools (read-only, auto-run, no approval prompt), driven by a new `ChatAgent` loop over the existing `LlamaBridge` tool primitives.
 - Chat: collapsible "thinking" UI — model reasoning (`<think>…</think>`, including MiniCPM5's implicit-close form) renders as a tappable "THOUGHT FOR A MOMENT" section instead of being discarded.
 - Chat: interleaved tool-call cards showing the tool, arguments, status, and a collapsible result.

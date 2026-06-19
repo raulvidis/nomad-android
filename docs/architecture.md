@@ -47,7 +47,7 @@ Two implementations behind a common `AIEngine` interface:
 | `LlamaCppEngine` | On-device inference via vendored llama.cpp (`libnomad_llm.so`). Runs one of several downloadable GGUF text models (`ModelVariant`). |
 | `FallbackEngine` | Rule-based survival responses; no model required. Used when no model is loaded. |
 
-**Models:** downloadable GGUF text models in `LlamaCppEngine.ModelVariant` — MiniCPM5-1B (default/recommended, ~656 MB), Qwen3.5-0.8B (~508 MB), and Gemma-4-E2B (~2.5 GB, a multimodal model run text-only). Add a variant via the enum + `ContentPackManager` pack-id mapping + onboarding description.
+**Models:** downloadable GGUF text models in `LlamaCppEngine.ModelVariant` — MiniCPM5-1B (default/recommended, ~656 MB), Qwen3.5-0.8B (~508 MB), and Gemma-4-E2B (~2.9 GB, a multimodal model run text-only). Add a variant via the enum + `ContentPackManager` pack-id mapping + onboarding description.
 
 ### Tool-driven retrieval (chat)
 
