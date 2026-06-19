@@ -29,6 +29,7 @@ Work style: telegraph; noun-phrases ok; drop grammar; min tokens. Hard rules onl
 - UI aesthetic: retro Pip-Boy CRT terminal — phosphor green `#00FF41`, scanlines, monospace, no rounded Material corners, no multi-color icons. Follow `docs/design.md`.
 - Bug fix → add regression test. Refactor → delete old paths by default.
 - Read repo docs before coding; update docs + CHANGELOG for visible changes.
+- Session start + before coding: run $docs-list (`python3 .agents/skills/docs-list/scripts/docs-list.py`); read docs whose read_when matches.
 - New dep → health check + offline-first audit first (reject anything phoning home).
 
 ## PR / CI
@@ -38,6 +39,10 @@ Work style: telegraph; noun-phrases ok; drop grammar; min tokens. Hard rules onl
 - Cite fix + file/line in review comments.
 - After landing: recap what landed (2-5 sentences).
 - Contributor PRs: thank in CHANGELOG, include `#PR` + `@contributor`, preserve credit.
+
+## Reviews
+- Pre-commit / pre-land: run $autoreview until no actionable findings remain.
+- $autoreview delegates to installed review skills (/code-review, superpowers) — don't hand-roll review.
 
 ## Git
 - Safe by default (status/diff/log). Push only when asked.
@@ -55,3 +60,4 @@ Work style: telegraph; noun-phrases ok; drop grammar; min tokens. Hard rules onl
 ## Workflows
 Procedures in `.agents/commands/`. To run one, read the file and follow it.
 - handoff · pickup · commit · fix · release
+Shared skills in .agents/skills/: $docs-list, $autoreview.

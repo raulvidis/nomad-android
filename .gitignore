@@ -32,3 +32,6 @@ google-services.json
 *.swo
 *~
 Thumbs.db
+
+# personal shared skills (symlink to ../agent-repo-standards/skills)
+.agents/skills
