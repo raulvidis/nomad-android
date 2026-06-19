@@ -139,7 +139,12 @@ abstract class NomadDatabase : RoomDatabase() {
                     )
                     """.trimIndent()
                 )
-                db.execSQL("INSERT INTO location_snapshots_new SELECT * FROM location_snapshots")
+                db.execSQL(
+                    """
+                    INSERT INTO location_snapshots_new (id, latitude, longitude, altitude, accuracy, timestamp, isTracking, routeId)
+                    SELECT id, latitude, longitude, altitude, accuracy, timestamp, isTracking, routeId FROM location_snapshots
+                    """.trimIndent()
+                )
                 db.execSQL("DROP TABLE location_snapshots")
                 db.execSQL("ALTER TABLE location_snapshots_new RENAME TO location_snapshots")
                 db.execSQL("CREATE INDEX IF NOT EXISTS index_location_snapshots_routeId ON location_snapshots(routeId)")
