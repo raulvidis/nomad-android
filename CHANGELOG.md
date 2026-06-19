@@ -4,6 +4,22 @@ All notable changes to this project are documented here. Format is loosely based
 
 ## [Unreleased]
 
+### Added
+- Models: two additional downloadable AI models at onboarding/settings — **Qwen3.5-0.8B** (Q4_K_M, ~508 MB) and **Gemma-4-E2B** (Q4_K_XL, ~2.5 GB; a multimodal model run text-only). MiniCPM5-1B remains the default/recommended. Supersedes the prior single-model policy.
+- Chat: model-driven tool calling — the LLM decides when to read offline data via `search_knowledge_base` and `search_notes` tools (read-only, auto-run, no approval prompt), driven by a new `ChatAgent` loop over the existing `LlamaBridge` tool primitives.
+- Chat: collapsible "thinking" UI — model reasoning (`<think>…</think>`, including MiniCPM5's implicit-close form) renders as a tappable "THOUGHT FOR A MOMENT" section instead of being discarded.
+- Chat: interleaved tool-call cards showing the tool, arguments, status, and a collapsible result.
+- Chat: stick-to-bottom streaming scroll that disengages when the user scrolls up and re-engages on send, with a jump-to-latest button.
+
+### Changed
+- Chat: retrieval is now tool-driven — the always-on RAG context injection in `ChatViewModel` is replaced by model-decided `search_knowledge_base` calls. When no model is loaded, chat still falls back to the rule-based engine.
+
+### Removed
+- `RAGEngine` (and its DI provider/tests): superseded by tool-driven retrieval; it had no remaining consumer.
+
+### Fixed
+- Database: remove `fallbackToDestructiveMigrationFrom(1, 2, 3, 4)` from the Room builder, which overlapped the supplied `MIGRATION_1_2`..`MIGRATION_4_5` start versions and made `Room.Builder.build()` throw `IllegalArgumentException` on every launch (including fresh installs), crashing the app before any UI rendered. The full 1→6 migration chain makes destructive fallback unnecessary.
+
 ## [1.0.0] - 2026-06-19
 
 ### Added

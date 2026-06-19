@@ -41,20 +41,4 @@ class AIEngineTypesTest {
         assertTrue(info.hasNPU)
         assertTrue(info.hasGPU)
     }
-
-    @Test
-    fun `RAGChunk data class holds values`() {
-        val chunk = RAGChunk(1L, "local://doc0", "Document 0", "Boil water...", 0)
-        assertEquals(1L, chunk.id)
-        assertEquals("local://doc0", chunk.source)
-        assertEquals("Document 0", chunk.title)
-        assertEquals("Boil water...", chunk.chunkText)
-    }
-
-    @Test
-    fun `RAGQuery data class has default empty sources`() {
-        val query = RAGQuery("question", emptyList())
-        assertEquals("question", query.question)
-        assertTrue(query.sources.isEmpty())
-    }
 }

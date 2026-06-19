@@ -28,10 +28,13 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -63,13 +66,13 @@ import com.nomad.android.ui.theme.SurfaceContainerLow
 import com.nomad.android.ui.theme.TerminalDanger
 import java.io.File
 
-private val SpaceGroteskBold = androidx.compose.ui.text.font.FontFamily(
+internal val SpaceGroteskBold = androidx.compose.ui.text.font.FontFamily(
     androidx.compose.ui.text.font.Font(R.font.space_grotesk_bold, FontWeight.Bold),
 )
-private val SpaceGroteskSemiBold = androidx.compose.ui.text.font.FontFamily(
+internal val SpaceGroteskSemiBold = androidx.compose.ui.text.font.FontFamily(
     androidx.compose.ui.text.font.Font(R.font.space_grotesk_semi_bold, FontWeight.Medium),
 )
-private val SpaceGroteskRegular = androidx.compose.ui.text.font.FontFamily(
+internal val SpaceGroteskRegular = androidx.compose.ui.text.font.FontFamily(
     androidx.compose.ui.text.font.Font(R.font.space_grotesk_regular, FontWeight.Normal),
 )
 
@@ -103,6 +106,8 @@ fun ChatScreen(
             onCompact = { viewModel.compactContext() },
             onSetPendingImage = { viewModel.setPendingImage(it) },
             onRemoveFromQueue = { viewModel.removeFromQueue(it) },
+            onToggleThinking = { viewModel.toggleThinking(it) },
+            onToggleToolResult = { viewModel.toggleToolResult(it) },
         )
     }
 }
@@ -218,9 +223,12 @@ private fun ChatContent(
     onCompact: () -> Unit,
     onSetPendingImage: (String?) -> Unit,
     onRemoveFromQueue: (Int) -> Unit,
+    onToggleThinking: (Long) -> Unit,
+    onToggleToolResult: (Long) -> Unit,
 ) {
     val context = LocalContext.current
     var inputText by remember { mutableStateOf("") }
+    var autoFollowBottom by remember { mutableStateOf(true) }
     var showAttachmentOptions by remember { mutableStateOf(false) }
 
     // Camera: create a temp file and get its URI
@@ -304,29 +312,71 @@ private fun ChatContent(
             }
         } else {
             val listState = rememberLazyListState()
+            val scope = rememberCoroutineScope()
 
-            LaunchedEffect(data.messages.lastOrNull()?.content) {
-                if (data.messages.isNotEmpty()) {
-                    listState.animateScrollToItem(data.messages.size - 1)
+            // Stick-to-bottom: true while the last item's end is visible. Translated
+            // from opendroid's RecyclerView pin logic (ChatFragment.pinStreamingBottom).
+            val atBottom by remember {
+                derivedStateOf {
+                    val info = listState.layoutInfo
+                    val last = info.visibleItemsInfo.lastOrNull()
+                    last == null || (last.index == info.totalItemsCount - 1 &&
+                        last.offset + last.size <= info.viewportEndOffset + 8)
+                }
+            }
+            // Disengage following when the user drags away from the bottom; re-engage
+            // when they return there.
+            LaunchedEffect(listState.isScrollInProgress) {
+                if (listState.isScrollInProgress) autoFollowBottom = atBottom
+            }
+            // While following, keep the latest content pinned as tokens stream in.
+            val lastContentLen = data.messages.lastOrNull()?.content?.length ?: 0
+            LaunchedEffect(data.messages.size, lastContentLen, autoFollowBottom) {
+                if (autoFollowBottom && data.messages.isNotEmpty()) {
+                    listState.scrollToItem(data.messages.size - 1)
                 }
             }
 
-            LazyColumn(
-                state = listState,
-                modifier = Modifier
-                    .weight(1f)
-                    .padding(horizontal = 12.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                items(data.messages, key = { it.id }) { message ->
-                    if (message.content.isNotEmpty() || message.imageUri != null) {
-                        MessageBubble(
-                            isUser = message.role == "user",
-                            text = message.content,
-                            imageUri = message.imageUri,
+            Box(modifier = Modifier.weight(1f)) {
+                LazyColumn(
+                    state = listState,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = 12.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    items(data.messages, key = { it.id }) { message ->
+                        when {
+                            message.kind == MessageKind.ToolCall && message.toolCall != null ->
+                                ToolCallCard(
+                                    tool = message.toolCall,
+                                    onToggle = { onToggleToolResult(message.id) },
+                                )
+                            message.role == "user" -> {
+                                if (message.content.isNotEmpty() || message.imageUri != null) {
+                                    MessageBubble(isUser = true, text = message.content, imageUri = message.imageUri)
+                                }
+                            }
+                            else -> AssistantMessage(
+                                message = message,
+                                onToggleThinking = { onToggleThinking(message.id) },
+                            )
+                        }
+                    }
+                }
+
+                if (!autoFollowBottom) {
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.BottomEnd)
+                            .padding(12.dp),
+                    ) {
+                        ScrollToBottomButton(
+                            onClick = {
+                                autoFollowBottom = true
+                                scope.launch { listState.scrollToItem(data.messages.size - 1) }
+                            },
                         )
-                    } else if (data.isStreaming && message.role == "assistant") {
-                        StreamingMessageBubble(isStreaming = true)
                     }
                 }
             }
@@ -637,6 +687,7 @@ private fun ChatContent(
                     text = if (data.isStreaming) "Queue" else "Send",
                     onClick = {
                         if (inputText.isNotBlank() || data.pendingImagePath != null) {
+                            autoFollowBottom = true
                             onSendMessage(inputText, null)
                             inputText = ""
                         }
@@ -646,6 +697,28 @@ private fun ChatContent(
             }
 
             Spacer(modifier = Modifier.height(8.dp))
+        }
+    }
+}
+
+@Composable
+private fun AssistantMessage(message: ChatMessage, onToggleThinking: () -> Unit) {
+    val reasoning = message.isStreaming && message.content.isEmpty()
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        if (message.thinkingText.isNotBlank() || reasoning) {
+            ThinkingSection(
+                thinking = message.thinkingText,
+                expanded = message.isThinkingExpanded,
+                streaming = reasoning,
+                onToggle = onToggleThinking,
+            )
+        }
+        when {
+            message.content.isNotEmpty() ->
+                MessageBubble(isUser = false, text = message.content, imageUri = message.imageUri)
+            // Still streaming with no thinking shown yet → generic processing indicator.
+            message.isStreaming && message.thinkingText.isBlank() ->
+                StreamingMessageBubble(isStreaming = true)
         }
     }
 }

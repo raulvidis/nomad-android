@@ -9,7 +9,6 @@ import com.nomad.android.data.ai.AIEngineType
 import com.nomad.android.data.ai.FallbackEngine
 import com.nomad.android.data.ai.KnowledgeBase
 import com.nomad.android.data.ai.LlamaCppEngine
-import com.nomad.android.data.ai.RAGEngine
 import com.nomad.android.data.content.KnowledgePackLoader
 import dagger.Module
 import dagger.Provides
@@ -53,13 +52,6 @@ object AIModule {
     @Singleton
     fun provideKnowledgeBase(@ApplicationContext context: Context): KnowledgeBase =
         KnowledgeBase(KnowledgePackLoader.load(context))
-
-    @Provides
-    @Singleton
-    fun provideRAGEngine(
-        engine: AIEngine,
-        knowledgeBase: KnowledgeBase,
-    ): RAGEngine = RAGEngine(engine, knowledgeBase)
 
     @Provides
     fun provideAIEngineStatus(manager: AIEngineManager): AIEngineStatus = manager.engineStatus.value

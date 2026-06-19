@@ -4,7 +4,10 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.nomad.android.data.Result
 import com.nomad.android.data.ai.AIEngine
+import com.nomad.android.data.ai.AgentEvent
+import com.nomad.android.data.ai.ChatAgent
 import com.nomad.android.data.ai.KnowledgeBase
+import com.nomad.android.data.ai.LlamaCppEngine
 import com.nomad.android.data.local.entity.ChatMessageEntity
 import com.nomad.android.data.local.entity.ChatSessionEntity
 import com.nomad.android.data.repository.ChatRepository
@@ -20,13 +23,35 @@ import kotlinx.coroutines.launch
 import java.util.UUID
 import javax.inject.Inject
 
+/** Kind of chat list item — a normal bubble or an interleaved tool-call card. */
+enum class MessageKind { Normal, ToolCall }
+
+enum class ToolStatus { Running, Ok, Err }
+
+/** Transient UI state for a model tool call (never persisted to Room). */
+data class ToolCallUi(
+    val callId: String,
+    val name: String,
+    val args: String,
+    val status: ToolStatus = ToolStatus.Running,
+    val resultText: String = "",
+    val durationMs: Long = 0,
+    val isResultExpanded: Boolean = false,
+)
+
 data class ChatMessage(
     val id: Long = 0,
     val sessionId: String,
     val role: String,
     val content: String,
     val timestamp: Long = System.currentTimeMillis(),
-    val imageUri: String? = null
+    val imageUri: String? = null,
+    // Transient turn state — only [content] (final answer) is persisted to Room.
+    val thinkingText: String = "",
+    val isThinkingExpanded: Boolean = false,
+    val isStreaming: Boolean = false,
+    val kind: MessageKind = MessageKind.Normal,
+    val toolCall: ToolCallUi? = null,
 )
 
 data class QueuedMessage(
@@ -71,6 +96,7 @@ class ChatViewModel @Inject constructor(
     private val chatRepository: ChatRepository,
     private val aiEngine: AIEngine,
     private val knowledgeBase: KnowledgeBase,
+    private val chatAgent: ChatAgent,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(
@@ -85,7 +111,11 @@ class ChatViewModel @Inject constructor(
     private var streamingJob: Job? = null
     private var sessionsCollectionJob: Job? = null
     private var messagesCollectionJob: Job? = null
-    private var streamingMessageId: Long? = null
+
+    // Transient (negative) ids for in-flight streaming bubbles and tool-call cards.
+    // Negative so they never collide with positive Room row ids.
+    private val transientIdGen = java.util.concurrent.atomic.AtomicLong(0)
+    private fun nextTransientId(): Long = transientIdGen.decrementAndGet()
 
     init {
         loadRecentSessions()
@@ -256,6 +286,36 @@ class ChatViewModel @Inject constructor(
         _uiState.update { it.copy(data = it.data.copy(pendingImagePath = path)) }
     }
 
+    /** Expand/collapse a message's reasoning ("Thought for a moment") section. */
+    fun toggleThinking(messageId: Long) {
+        _uiState.update { state ->
+            state.copy(
+                data = state.data.copy(
+                    messages = state.data.messages.map {
+                        if (it.id == messageId) it.copy(isThinkingExpanded = !it.isThinkingExpanded) else it
+                    },
+                ),
+            )
+        }
+    }
+
+    /** Expand/collapse a tool-call card's result body. */
+    fun toggleToolResult(messageId: Long) {
+        _uiState.update { state ->
+            state.copy(
+                data = state.data.copy(
+                    messages = state.data.messages.map {
+                        if (it.id == messageId && it.toolCall != null) {
+                            it.copy(toolCall = it.toolCall.copy(isResultExpanded = !it.toolCall.isResultExpanded))
+                        } else {
+                            it
+                        }
+                    },
+                ),
+            )
+        }
+    }
+
     fun removeFromQueue(index: Int) {
         _uiState.update {
             if (index < 0 || index >= it.data.messageQueue.size) return@update it
@@ -281,19 +341,10 @@ class ChatViewModel @Inject constructor(
             imageUri = imagePath
         )
 
-        val streamId = -System.nanoTime()
-        val streamingMessage = ChatMessage(
-            id = streamId,
-            sessionId = sessionId,
-            role = "assistant",
-            content = ""
-        )
-        streamingMessageId = streamId
-
         _uiState.update {
             it.copy(
                 data = it.data.copy(
-                    messages = it.data.messages + userMessage + streamingMessage,
+                    messages = it.data.messages + userMessage,
                     isStreaming = true
                 )
             )
@@ -301,7 +352,6 @@ class ChatViewModel @Inject constructor(
 
         streamingJob = viewModelScope.launch {
             val currentSessionId = sessionId
-            val currentStreamingMessage = streamingMessage
 
             val currentSession = _uiState.value.data.sessions.find { it.id == sessionId }
             if (currentSession != null && currentSession.title == "New Session") {
@@ -340,83 +390,129 @@ class ChatViewModel @Inject constructor(
                 }
             }
 
-            val responseBuilder = StringBuilder()
-            try {
-                val conversationContext = buildContext()
-                val knowledgeContext = knowledgeBase.retrieveContext(
-                    content,
-                    categoryFilter = _uiState.value.data.selectedFilter,
-                )
-                val fullContext = if (knowledgeContext.isNotEmpty()) {
-                    listOf(knowledgeContext) + conversationContext
-                } else {
-                    conversationContext
-                }
+            // Tool-driven retrieval: the model decides when to read the knowledge
+            // base / notes via tool calls, so no always-on RAG injection here. Prior
+            // turns are inlined into the prompt (ChatAgent resets native state per turn).
+            val conversationContext = buildContext()
+            val prompt = LlamaCppEngine.buildPromptWithContext(content, conversationContext)
 
-                aiEngine.generateStream(content, fullContext, imagePath).collect { token ->
+            var reducerState = ChatTurnReducer.State()
+            var finalAnswer: String? = null
+            var modelUnavailable = false
+            var errorMessage: String? = null
+
+            fun apply(event: AgentEvent) {
+                val current = _uiState.value.data.messages
+                val (msgs, st) = ChatTurnReducer.reduce(current, reducerState, event, sessionId, ::nextTransientId)
+                reducerState = st
+                _uiState.update { it.copy(data = it.data.copy(messages = msgs)) }
+            }
+
+            try {
+                chatAgent.run(prompt).collect { event ->
                     if (!isActive) return@collect
-                    responseBuilder.append(token)
-                    val currentResponse = responseBuilder.toString()
-                    _uiState.update { state ->
-                        val messages = state.data.messages.toMutableList()
-                        val idx = messages.indexOfFirst { it.id == streamingMessageId }
-                        if (idx >= 0) messages[idx] = currentStreamingMessage.copy(content = currentResponse)
-                        state.copy(data = state.data.copy(messages = messages))
+                    when (event) {
+                        is AgentEvent.ModelUnavailable -> modelUnavailable = true
+                        is AgentEvent.Error -> errorMessage = event.message
+                        is AgentEvent.Finished -> { finalAnswer = event.answer; apply(event) }
+                        else -> apply(event)
                     }
                 }
+            } catch (e: Throwable) {
+                errorMessage = e.message ?: "unexpected error"
+            }
 
-                val finalResponse = responseBuilder.toString()
-                    .replace(Regex("""\n{3,}"""), "\n\n")
-                    .trim()
+            // No model loaded → fall back to the rule-based engine (no tools).
+            if (modelUnavailable) {
+                streamFallback(sessionId, content, conversationContext, imagePath)
+                processQueue(currentSessionId)
+                return@launch
+            }
 
+            if (errorMessage != null) {
                 _uiState.update { state ->
-                    val messages = state.data.messages.toMutableList()
-                    val idx = messages.indexOfFirst { it.id == streamingMessageId }
-                    if (idx >= 0) messages[idx] = currentStreamingMessage.copy(content = finalResponse)
+                    val messages = state.data.messages.map { msg ->
+                        if (msg.id == reducerState.currentAssistantId) {
+                            msg.copy(content = msg.content.ifBlank { "Error: $errorMessage" }, isStreaming = false)
+                        } else {
+                            msg
+                        }
+                    }
                     state.copy(
-                        data = state.data.copy(
-                            messages = messages,
-                            isStreaming = false,
-                            contextTokenCount = estimateTokenCount(messages)
-                        )
+                        error = "AI Engine error: $errorMessage",
+                        data = state.data.copy(isStreaming = false, messages = messages),
                     )
                 }
-                streamingMessageId = null
+                return@launch
+            }
 
+            val answer = (finalAnswer ?: "").replace(Regex("""\n{3,}"""), "\n\n").trim()
+            _uiState.update {
+                it.copy(data = it.data.copy(isStreaming = false, contextTokenCount = estimateTokenCount(it.data.messages)))
+            }
+            if (answer.isNotBlank()) {
                 chatRepository.insertMessage(
                     ChatMessageEntity(
                         sessionId = sessionId,
                         role = "assistant",
-                        content = finalResponse,
-                        timestamp = System.currentTimeMillis()
-                    )
+                        content = answer,
+                        timestamp = System.currentTimeMillis(),
+                    ),
                 ).let { result ->
                     if (result is Result.Error) {
                         Log.e("ChatViewModel", "Failed to insert message: ${result.message}")
                     }
                 }
-
-                autoCompactIfNeeded()
-            } catch (e: Throwable) {
-                val partialResponse = responseBuilder.toString()
-                val finalPartial = if (partialResponse.isNotBlank()) partialResponse else "Error: ${e.message}"
-                _uiState.update {
-                    val messages = it.data.messages.toMutableList()
-                    val idx = messages.indexOfFirst { msg -> msg.id == streamingMessageId }
-                    if (idx >= 0) messages[idx] = currentStreamingMessage.copy(content = finalPartial)
-                    it.copy(
-                        error = "AI Engine error: ${e.message}",
-                        data = it.data.copy(
-                            isStreaming = false,
-                            messages = messages
-                        )
-                    )
-                }
-                streamingMessageId = null
-                return@launch
             }
 
+            autoCompactIfNeeded()
             processQueue(currentSessionId)
+        }
+    }
+
+    /**
+     * Streams a rule-based answer when no LLM is loaded. Mirrors the prior
+     * always-on path: stream into a fresh assistant bubble, then persist the final
+     * text. No tools (the fallback engine can't call them).
+     */
+    private suspend fun streamFallback(
+        sessionId: String,
+        content: String,
+        conversationContext: List<String>,
+        imagePath: String?,
+    ) {
+        val id = nextTransientId()
+        _uiState.update {
+            it.copy(
+                data = it.data.copy(
+                    messages = it.data.messages + ChatMessage(
+                        id = id, sessionId = sessionId, role = "assistant", content = "", isStreaming = true,
+                    ),
+                ),
+            )
+        }
+        val sb = StringBuilder()
+        aiEngine.generateStream(content, conversationContext, imagePath).collect { token ->
+            if (!kotlin.coroutines.coroutineContext.isActive) return@collect
+            sb.append(token)
+            val text = sb.toString()
+            _uiState.update { state ->
+                state.copy(data = state.data.copy(messages = state.data.messages.map { if (it.id == id) it.copy(content = text) else it }))
+            }
+        }
+        val finalResponse = sb.toString().replace(Regex("""\n{3,}"""), "\n\n").trim()
+        _uiState.update { state ->
+            state.copy(
+                data = state.data.copy(
+                    isStreaming = false,
+                    messages = state.data.messages.map { if (it.id == id) it.copy(content = finalResponse, isStreaming = false) else it },
+                ),
+            )
+        }
+        if (finalResponse.isNotBlank()) {
+            chatRepository.insertMessage(
+                ChatMessageEntity(sessionId = sessionId, role = "assistant", content = finalResponse, timestamp = System.currentTimeMillis()),
+            )
         }
     }
 
@@ -566,7 +662,6 @@ class ChatViewModel @Inject constructor(
     fun deleteAllSessions() {
         streamingJob?.cancel()
         streamingJob = null
-        streamingMessageId = null
         viewModelScope.launch {
             chatRepository.deleteAllSessions()
             _uiState.update {
@@ -598,7 +693,6 @@ class ChatViewModel @Inject constructor(
     fun deleteSession(sessionId: String) {
         streamingJob?.cancel()
         streamingJob = null
-        streamingMessageId = null
         viewModelScope.launch {
             chatRepository.deleteSessionById(sessionId)
             loadRecentSessions()
@@ -619,7 +713,6 @@ class ChatViewModel @Inject constructor(
     fun resetStuckState() {
         streamingJob?.cancel()
         streamingJob = null
-        streamingMessageId = null
         _uiState.update {
             it.copy(
                 data = it.data.copy(isStreaming = false),
