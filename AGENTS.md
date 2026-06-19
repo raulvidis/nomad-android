@@ -11,7 +11,7 @@ generic Project Defaults, Workflows) live in `AGENTS.base.md` — not duplicated
 - Native: `app/src/main/cpp/` — llama.cpp submodule + JNI → `libnomad_llm.so`.
 - Branch: `main`. versionName `1.0.0`.
 - **OFFLINE-FIRST is the product.** NEVER add network/cloud/telemetry/analytics deps. App must work fully with no internet. OkHttp exists for user-initiated downloads (models, ZIM, tiles) ONLY.
-- **Single-model policy:** only OpenBMB MiniCPM5-1B (Q4_K_M GGUF). No other LLM, no vision/"-V" model.
+- **Models:** multiple downloadable GGUF text models, defined in `LlamaCppEngine.ModelVariant`. Default/recommended = OpenBMB MiniCPM5-1B (Q4_K_M). Also Qwen3.5-0.8B (Q4_K_M) and Gemma-4-E2B (Q4_K_XL — a multimodal model run TEXT-ONLY, no mmproj/vision). Add a variant → enum entry + `ContentPackManager` pack-id mapping + onboarding description.
 - Release = git tag (semver), not a `main` merge. `latest-build` = CI rolling artifact, NOT a release.
 - Contributing rules: see `CONTRIBUTING.md`.
 

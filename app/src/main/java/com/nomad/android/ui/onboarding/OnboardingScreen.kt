@@ -251,6 +251,8 @@ private fun ModelSelectionStep(
                 "%.1f GB".format(variant.sizeMB / 1024.0),
                 when (variant) {
                     com.nomad.android.data.ai.LlamaCppEngine.ModelVariant.MINICPM5_1B -> "Compact on-device LLM (GGUF, ~656 MB)"
+                    com.nomad.android.data.ai.LlamaCppEngine.ModelVariant.QWEN3_5_0_8B -> "Qwen3.5 0.8B — small, fast text LLM (GGUF, ~508 MB)"
+                    com.nomad.android.data.ai.LlamaCppEngine.ModelVariant.GEMMA4_E2B -> "Gemma-4 E2B — larger LLM, runs text-only (GGUF, ~2.5 GB)"
                 }
             )
         }

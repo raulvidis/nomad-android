@@ -109,6 +109,8 @@ class OnboardingViewModel @Inject constructor(
         val variant = LlamaCppEngine.ModelVariant.entries.find { it.displayName == modelName } ?: return
         val packId = when (variant) {
             LlamaCppEngine.ModelVariant.MINICPM5_1B -> "ai_minicpm5"
+            LlamaCppEngine.ModelVariant.QWEN3_5_0_8B -> "ai_qwen3_5"
+            LlamaCppEngine.ModelVariant.GEMMA4_E2B -> "ai_gemma4_e2b"
         }
         viewModelScope.launch {
             try {

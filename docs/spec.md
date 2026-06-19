@@ -10,7 +10,7 @@ read_when:
 ## Goals (what NOMAD Android IS)
 
 - A self-contained survival knowledge app that works with **zero internet connectivity**.
-- On-device AI chat (llama.cpp + MiniCPM5-1B) with retrieval-augmented answers from local content.
+- On-device AI chat (llama.cpp; selectable GGUF text model — MiniCPM5-1B default) with tool-driven access to local content (the model calls knowledge-base/notes search tools).
 - Offline maps (MapLibre + MBTiles), GPS, waypoints, route recording.
 - Offline knowledge: Kiwix ZIM (Wikipedia) + bundled survival content + content packs.
 - Emergency tools and markdown notes, fully local.
@@ -19,7 +19,7 @@ read_when:
 ## Non-goals (what it is NOT)
 
 - NOT a cloud/online app. No telemetry, analytics, accounts, or sync.
-- NOT multi-model. Only OpenBMB MiniCPM5-1B (Q4_K_M GGUF). No other LLM, no vision/"-V" model.
+- Text LLMs only. Multiple downloadable GGUF text models are supported (MiniCPM5-1B default, Qwen3.5-0.8B, Gemma-4-E2B run text-only); vision/multimodal inference (mmproj) is NOT used.
 - NOT multi-ABI. arm64-v8a only.
 - NOT a server/desktop port. Android, physical arm64 devices.
 
@@ -28,7 +28,7 @@ read_when:
 - **Offline-first is permanent.** Network code is allowed ONLY for explicit, user-initiated downloads (model, ZIM, tiles) via OkHttp. Anything that phones home is rejected.
 - minSdk 26 — do not raise without approval.
 - Room schema is forward-migrated; every schema change ships a migration (no destructive recreate).
-- Single-model and single-ABI policies hold across versions unless explicitly revised here.
+- Text-only-LLM and single-ABI (arm64-v8a) policies hold across versions unless explicitly revised here.
 
 ## Bundling / build constraints
 
