@@ -40,15 +40,28 @@ Data Sources (Room DAOs · ContentPackManager · AIEngine · MBTiles/tiles)
 
 ## AI engine stack
 
-Three implementations behind a common `AIEngine` interface:
+Two implementations behind a common `AIEngine` interface:
 
 | Engine | Role |
 |---|---|
-| `LlamaCppEngine` | On-device inference via vendored llama.cpp (`libnomad_llm.so`). Runs exactly one model: OpenBMB MiniCPM5-1B (Q4_K_M GGUF, ~656 MB). |
-| `RAGEngine` | Retrieval-augmented wrapper; grounds answers in a searchable offline knowledge base (keyword search, stopword-filtered). |
-| `FallbackEngine` | Rule-based survival responses; no model required. |
+| `LlamaCppEngine` | On-device inference via vendored llama.cpp (`libnomad_llm.so`). Runs one of several downloadable GGUF text models (`ModelVariant`). |
+| `FallbackEngine` | Rule-based survival responses; no model required. Used when no model is loaded. |
 
-**Single-model policy:** only MiniCPM5-1B. No other LLM, no vision/"-V" variant.
+**Models:** downloadable GGUF text models in `LlamaCppEngine.ModelVariant` — MiniCPM5-1B (default/recommended, ~656 MB), Qwen3.5-0.8B (~508 MB), and Gemma-4-E2B (~2.9 GB, a multimodal model run text-only). Add a variant via the enum + `ContentPackManager` pack-id mapping + onboarding description.
+
+### Tool-driven retrieval (chat)
+
+Chat answers are no longer grounded by always-on RAG injection. Instead `ChatAgent`
+runs an agent loop over `LlamaBridge`'s tool primitives (`submitTurn` → `streamTokens`
+→ `finishTurnAndParse` → `appendToolResult`) and the model decides when to call
+read-only tools (`ChatToolRegistry`): `search_knowledge_base` (→ `KnowledgeBase.search`)
+and `search_notes` (→ `NoteRepository.searchNotes`). Tool calls auto-run (local,
+offline, read-only — no approval prompt). `ThinkingParser` separates `<think>` reasoning
+from the answer for the collapsible "thinking" UI; `ToolCallSalvage` is a fallback parser
+for models that improvise `<function>` tool-call XML. The agent resets native state per
+turn (prior history is inlined into the prompt). `ChatTurnReducer` maps the agent's
+`AgentEvent` stream onto chat UI state. `KnowledgeBase` (keyword search, stopword-filtered)
+remains as the tool's backing store.
 
 ## Native llama.cpp path
 

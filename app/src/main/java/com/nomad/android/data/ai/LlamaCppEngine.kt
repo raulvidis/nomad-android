@@ -41,6 +41,22 @@ class LlamaCppEngine(
             ramRequiredMB = 2048,
             sizeMB = 656,
             downloadUrl = "https://huggingface.co/openbmb/MiniCPM5-1B-GGUF/resolve/main/MiniCPM5-1B-Q4_K_M.gguf",
+        ),
+        QWEN3_5_0_8B(
+            displayName = "Qwen3.5 0.8B",
+            fileName = "Qwen3.5-0.8B-Q4_K_M.gguf",
+            ramRequiredMB = 2048,
+            sizeMB = 508,
+            downloadUrl = "https://huggingface.co/unsloth/Qwen3.5-0.8B-GGUF/resolve/main/Qwen3.5-0.8B-Q4_K_M.gguf",
+        ),
+        // Gemma-4 E2B is a multimodal (vision) model; we run its language tower
+        // text-only (no mmproj). Larger RAM footprint than the 1B models.
+        GEMMA4_E2B(
+            displayName = "Gemma-4 E2B",
+            fileName = "gemma-4-E2B-it-Q4_K_M.gguf",
+            ramRequiredMB = 4608,
+            sizeMB = 2963,
+            downloadUrl = "https://huggingface.co/unsloth/gemma-4-E2B-it-GGUF/resolve/main/gemma-4-E2B-it-Q4_K_M.gguf",
         )
     }
 
