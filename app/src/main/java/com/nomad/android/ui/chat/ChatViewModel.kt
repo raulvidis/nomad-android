@@ -77,7 +77,7 @@ data class ChatData(
     val messages: List<ChatMessage> = emptyList(),
     val sessions: List<ChatSession> = emptyList(),
     val isStreaming: Boolean = false,
-    val contextFilters: List<String> = listOf("All", "Survival", "First Aid", "Wikipedia"),
+    val contextFilters: List<String> = listOf("All"),
     val selectedFilter: String = "All",
     val thinkingPower: ThinkingPower = ThinkingPower.LOW,
     val contextTokenCount: Int = 0,
@@ -103,7 +103,7 @@ class ChatViewModel @Inject constructor(
         ChatUiState(
             isLoading = true,
             data = ChatData(
-                contextFilters = (knowledgeBase.categories + listOf("Wikipedia")).distinct(),
+                contextFilters = knowledgeBase.categories,
             ),
         ),
     )
