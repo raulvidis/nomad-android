@@ -191,7 +191,7 @@ class ContentPackManager(
         val tmpFile = File(destFile.parentFile, "${destFile.name}.tmp")
 
         try {
-            Log.i(TAG, "Downloading $url to ${destFile.absolutePath}")
+            Log.i(TAG, "Downloading $url to ${destFile.name}")
             val request = Request.Builder()
                 .url(url)
                 .header("User-Agent", "NOMAD-Android/1.0")
@@ -237,7 +237,7 @@ class ContentPackManager(
             if (!tmpFile.renameTo(destFile)) {
                 throw RuntimeException("Failed to rename temp file to ${destFile.name}")
             }
-            Log.i(TAG, "Download complete: ${destFile.absolutePath} (${destFile.length()} bytes)")
+            Log.i(TAG, "Download complete: ${destFile.name} (${destFile.length()} bytes)")
 
         } catch (e: Exception) {
             tmpFile.delete()
