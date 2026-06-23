@@ -39,7 +39,7 @@ class MBTilesDatabase(private val path: String) {
     }
 
     fun insertTile(z: Int, x: Int, y: Int, data: ByteArray) {
-        val tmsY = (1 shl z) - 1 - y
+        val tmsY = (1L shl z) - 1 - y
         db?.compileStatement(
             "INSERT OR REPLACE INTO tiles (zoom_level, tile_column, tile_row, tile_data) VALUES (?, ?, ?, ?)"
         )?.use { stmt ->
@@ -52,7 +52,7 @@ class MBTilesDatabase(private val path: String) {
     }
 
     fun getTile(z: Int, x: Int, y: Int): ByteArray? {
-        val tmsY = (1 shl z) - 1 - y
+        val tmsY = (1L shl z) - 1 - y
         val cursor = db?.rawQuery(
             "SELECT tile_data FROM tiles WHERE zoom_level = ? AND tile_column = ? AND tile_row = ?",
             arrayOf(z.toString(), x.toString(), tmsY.toString())
