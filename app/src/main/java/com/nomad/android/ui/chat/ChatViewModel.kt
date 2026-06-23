@@ -536,6 +536,24 @@ class ChatViewModel @Inject constructor(
         if (messages.size <= 4) return
         val sessionId = _uiState.value.data.currentSessionId
 
+        viewModelScope.launch {
+            compactMessages(messages, sessionId, "compactContext")
+        }
+    }
+
+    /**
+     * Shared compaction logic used by both [compactContext] (manual) and
+     * [autoCompactIfNeeded] (automatic). Keeps the first message, replaces the
+     * middle with a synthetic placeholder, and retains the last 3 messages.
+     * Persists to DB first — if the write fails, the UI is left consistent
+     * with the DB rather than showing compacted messages that weren't saved.
+     * Returns true if the UI was updated, false if the DB write failed.
+     */
+    private suspend fun compactMessages(
+        messages: List<ChatMessage>,
+        sessionId: String?,
+        tag: String
+    ): Boolean {
         val compacted = messages.take(1) + ChatMessage(
             sessionId = messages.first().sessionId,
             role = "assistant",
@@ -543,37 +561,36 @@ class ChatViewModel @Inject constructor(
             timestamp = messages[messages.size / 2].timestamp
         ) + messages.takeLast(3)
 
-        viewModelScope.launch {
-            // Persist to DB first — mirrors autoCompactIfNeeded() pattern
-            if (sessionId != null) {
-                val result = chatRepository.replaceMessagesForSession(
-                    sessionId,
-                    compacted.map { msg ->
-                        ChatMessageEntity(
-                            sessionId = msg.sessionId,
-                            role = msg.role,
-                            content = msg.content,
-                            timestamp = msg.timestamp,
-                            imageUri = msg.imageUri
-                        )
-                    }
-                )
-                if (result is Result.Error) {
-                    Log.e("ChatViewModel", "compactContext: DB write failed, skipping UI update — ${result.message}")
-                    return@launch
-                }
-            }
-
-            // Update UI only after DB write succeeds
-            _uiState.update {
-                it.copy(
-                    data = it.data.copy(
-                        messages = compacted,
-                        contextTokenCount = estimateTokenCount(compacted)
+        // Write to DB first — if this fails, leave UI consistent with DB
+        if (sessionId != null) {
+            val result = chatRepository.replaceMessagesForSession(
+                sessionId,
+                compacted.map { msg ->
+                    ChatMessageEntity(
+                        sessionId = msg.sessionId,
+                        role = msg.role,
+                        content = msg.content,
+                        timestamp = msg.timestamp,
+                        imageUri = msg.imageUri
                     )
-                )
+                }
+            )
+            if (result is Result.Error) {
+                Log.e("ChatViewModel", "$tag: DB write failed, skipping UI update — ${result.message}")
+                return false
             }
         }
+
+        // Update UI only after DB write succeeds
+        _uiState.update {
+            it.copy(
+                data = it.data.copy(
+                    messages = compacted,
+                    contextTokenCount = estimateTokenCount(compacted)
+                )
+            )
+        }
+        return true
     }
 
     /**
@@ -619,43 +636,7 @@ class ChatViewModel @Inject constructor(
             val messages = _uiState.value.data.messages
             if (messages.size <= 4) return
             val sessionId = _uiState.value.data.currentSessionId
-
-            val compacted = messages.take(1) + ChatMessage(
-                sessionId = messages.first().sessionId,
-                role = "assistant",
-                content = "[${messages.size - 4} earlier messages compacted]",
-                timestamp = messages[messages.size / 2].timestamp
-            ) + messages.takeLast(3)
-
-            // Write to DB first — if this fails, leave UI consistent with DB
-            if (sessionId != null) {
-                val result = chatRepository.replaceMessagesForSession(
-                    sessionId,
-                    compacted.map { msg ->
-                        ChatMessageEntity(
-                            sessionId = msg.sessionId,
-                            role = msg.role,
-                            content = msg.content,
-                            timestamp = msg.timestamp,
-                            imageUri = msg.imageUri
-                        )
-                    }
-                )
-                if (result is Result.Error) {
-                    Log.e("ChatViewModel", "autoCompact: DB write failed, skipping UI update — ${result.message}")
-                    return
-                }
-            }
-
-            // Update UI only after DB write succeeds
-            _uiState.update {
-                it.copy(
-                    data = it.data.copy(
-                        messages = compacted,
-                        contextTokenCount = estimateTokenCount(compacted)
-                    )
-                )
-            }
+            compactMessages(messages, sessionId, "autoCompact")
         }
     }
 
