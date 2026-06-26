@@ -3,6 +3,7 @@ package com.nomad.android.data.ai
 import com.nomad.android.data.ai.tools.ChatToolRegistry
 import com.nomad.android.data.ai.tools.ToolResult
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.flow.flowOn
@@ -111,6 +112,7 @@ class ChatAgent @Inject constructor(
             }
 
             for (call in toolCalls) {
+                if (!isActive) return@channelFlow
                 send(AgentEvent.ToolCallStarted(call.id, call.name, call.arguments))
                 val start = System.currentTimeMillis()
                 val result: ToolResult = registry.execute(call.name, call.arguments)
