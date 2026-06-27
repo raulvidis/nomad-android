@@ -129,7 +129,7 @@ class ContentPackManager(
                     ?: throw IllegalArgumentException("Unknown model variant for pack: $packId")
                 val destFile = File(modelsDir, variant.fileName)
 
-                if (destFile.exists() && destFile.length() > 0) {
+                if (destFile.exists() && destFile.length() > 1_000_000) {
                     emit(1f)
                 } else {
                     downloadFile(pack.downloadUrl, destFile) { progress ->
