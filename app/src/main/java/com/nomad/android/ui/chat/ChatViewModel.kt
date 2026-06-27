@@ -594,12 +594,12 @@ class ChatViewModel @Inject constructor(
     }
 
     /**
-     * Selects messages that fit within the effective token budget
-     * (after reserving KB space). Returns lines in chronological order.
+     * Selects messages that fit within the token budget.
+     * Returns lines in chronological order.
      */
     private fun selectMessagesInBudget(messages: List<ChatMessage>): List<String> {
         val selected = mutableListOf<String>()
-        var tokenBudget = (MAX_CONTEXT_TOKENS * (1 - KNOWLEDGE_BUDGET_FRACTION)).toInt()
+        var tokenBudget = MAX_CONTEXT_TOKENS
         val history = messages.dropLast(2) // exclude current user msg + empty assistant placeholder
         for (msg in history.reversed()) {
             val line = "${msg.role}: ${msg.content}"
@@ -664,7 +664,6 @@ class ChatViewModel @Inject constructor(
         private const val AUTO_COMPACT_THRESHOLD = 3_000
         // Approximate tokens for the system prompt + turn formatting overhead
         private const val SYSTEM_PROMPT_TOKENS = 80
-        private const val KNOWLEDGE_BUDGET_FRACTION = 0.15
     }
 
     fun selectFilter(filter: String) {
