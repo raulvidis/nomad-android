@@ -600,7 +600,7 @@ class ChatViewModel @Inject constructor(
     private fun selectMessagesInBudget(messages: List<ChatMessage>): List<String> {
         val selected = mutableListOf<String>()
         var tokenBudget = MAX_CONTEXT_TOKENS
-        val history = messages.dropLast(2) // exclude current user msg + empty assistant placeholder
+        val history = messages.dropLast(1) // exclude current user msg (passed separately to the prompt)
         for (msg in history.reversed()) {
             val line = "${msg.role}: ${msg.content}"
             val tokens = estimateTokenCount(line)
