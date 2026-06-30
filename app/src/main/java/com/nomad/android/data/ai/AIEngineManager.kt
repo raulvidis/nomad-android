@@ -72,6 +72,7 @@ class AIEngineManager(
     }
 
     override fun generateStream(prompt: String, context: List<String>, imagePath: String?): Flow<String> = flow {
+        refreshEngineIfNeeded()
         val engine = engineLock.withLock { currentEngine }
         if (engine.isAvailable()) {
             emitAll(engine.generateStream(prompt, context, imagePath))
