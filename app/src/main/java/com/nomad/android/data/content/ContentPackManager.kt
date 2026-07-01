@@ -305,10 +305,21 @@ class ContentPackManager(
     private fun cleanupOldModelFiles() {
         // Remove model files from previous versions with wrong filenames
         val validFileNames = LlamaCppEngine.ModelVariant.entries.map { it.fileName }.toSet()
+        // Map fileName → packId so we can check if a .tmp belongs to an active download
+        val fileNameToPackId = LlamaCppEngine.ModelVariant.entries.associate { it.fileName to modelVariantToPackId(it) }
+        val activeDownloads = _activeDownloads.value
         modelsDir.listFiles()?.forEach { file ->
             if (file.name !in validFileNames && !file.name.endsWith(".tmp")) {
                 Log.i(TAG, "Cleaning up old model file: ${file.name}")
                 file.delete()
+            } else if (file.name.endsWith(".tmp")) {
+                // Delete orphaned .tmp files from crashed/interrupted downloads
+                val baseName = file.name.removeSuffix(".tmp")
+                val packId = fileNameToPackId[baseName]
+                if (packId == null || packId !in activeDownloads) {
+                    Log.i(TAG, "Cleaning up orphaned .tmp file: ${file.name}")
+                    file.delete()
+                }
             }
         }
     }
