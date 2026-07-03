@@ -21,8 +21,18 @@ data class DeviceInfo(
 
 enum class AIEngineType(val displayName: String) {
     LLAMACPP_MINICPM5("llama.cpp (MiniCPM5 1B)"),
+    LLAMACPP_QWEN3_5("llama.cpp (Qwen3.5 0.8B)"),
+    LLAMACPP_GEMMA4("llama.cpp (Gemma-4 E2B)"),
     FALLBACK("Fallback (Rule-Based)"),
-    NONE("No AI Engine Available")
+    NONE("No AI Engine Available");
+
+    companion object {
+        fun fromVariant(variant: LlamaCppEngine.ModelVariant): AIEngineType = when (variant) {
+            LlamaCppEngine.ModelVariant.MINICPM5_1B -> LLAMACPP_MINICPM5
+            LlamaCppEngine.ModelVariant.QWEN3_5_0_8B -> LLAMACPP_QWEN3_5
+            LlamaCppEngine.ModelVariant.GEMMA4_E2B -> LLAMACPP_GEMMA4
+        }
+    }
 }
 
 data class AIEngineStatus(

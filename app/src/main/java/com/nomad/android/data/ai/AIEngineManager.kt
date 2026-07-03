@@ -106,7 +106,7 @@ class AIEngineManager(
         val modelFile = File(modelsDir, _activeVariant.value.fileName)
         val isReady = modelFile.exists() && modelFile.length() > 1_000_000
         return AIEngineStatus(
-            engineType = AIEngineType.LLAMACPP_MINICPM5,
+            engineType = AIEngineType.fromVariant(_activeVariant.value),
             isReady = isReady,
             modelName = currentEngine.getModelName(),
             ramRequired = "${deviceInfo.totalRamMB}MB total",
