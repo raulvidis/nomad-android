@@ -1,6 +1,7 @@
 package com.nomad.android.data.repository
 
 import android.content.Context
+import android.util.Log
 import com.nomad.android.data.Result
 import com.nomad.android.data.local.dao.ContentPackDao
 import com.nomad.android.data.local.entity.ContentPackEntity
@@ -14,6 +15,7 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import java.io.File
 import java.io.FileOutputStream
+import java.io.IOException
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -25,6 +27,32 @@ class ContentPackRepository @Inject constructor(
 ) {
     private val contentPacksDir by lazy {
         File(context.filesDir, "contentPacks").also { it.mkdirs() }
+    }
+
+    private companion object {
+        private const val TAG = "ContentPackRepository"
+    }
+
+    /**
+     * Validates that the resolved path stays within [contentPacksDir].
+     * Returns null if the name contains a path traversal attempt (e.g. "../").
+     */
+    private fun sanitizePath(name: String): File? {
+        return try {
+            val baseDir = contentPacksDir.canonicalFile
+            val resolved = File(baseDir, name).canonicalFile
+            if (resolved.path.startsWith(baseDir.canonicalPath + File.separator) ||
+                resolved == baseDir
+            ) {
+                resolved
+            } else {
+                Log.w(TAG, "Path traversal attempt blocked: $name")
+                null
+            }
+        } catch (e: IOException) {
+            Log.w(TAG, "Invalid path: $name", e)
+            null
+        }
     }
 
     fun getAllPacks(): Flow<Result<List<ContentPackEntity>>> =
@@ -51,19 +79,21 @@ class ContentPackRepository @Inject constructor(
     suspend fun deletePack(pack: ContentPackEntity): Result<Unit> =
         Result.runCatching {
             contentPackDao.delete(pack)
-            val file = File(contentPacksDir, pack.id)
-            if (file.exists()) file.delete()
+            val file = sanitizePath(pack.id)
+            if (file != null && file.exists()) file.delete()
         }
 
     suspend fun deletePackById(id: String): Result<Unit> =
         Result.runCatching {
             contentPackDao.deleteById(id)
-            val file = File(contentPacksDir, id)
-            if (file.exists()) file.delete()
+            val file = sanitizePath(id)
+            if (file != null && file.exists()) file.delete()
         }
 
     fun downloadPack(pack: ContentPackEntity, url: String): Flow<Float> = flow {
         emit(0f)
+        val finalFile = sanitizePath(pack.id)
+            ?: throw RuntimeException("Invalid pack id: ${pack.id}")
         val request = Request.Builder().url(url).build()
         val response = okHttpClient.newCall(request).execute()
         response.use { resp ->
@@ -74,7 +104,6 @@ class ContentPackRepository @Inject constructor(
             val body = resp.body ?: throw RuntimeException("Empty response body")
             val totalBytes = body.contentLength()
             val tmpFile = File(contentPacksDir, "${pack.id}.tmp")
-            val finalFile = File(contentPacksDir, pack.id)
             var downloadedBytes = 0L
 
             try {
@@ -91,7 +120,9 @@ class ContentPackRepository @Inject constructor(
                         }
                     }
                 }
-                tmpFile.renameTo(finalFile)
+                if (!tmpFile.renameTo(finalFile)) {
+                    throw RuntimeException("Failed to move temp file to ${finalFile.name}")
+                }
             } catch (e: Exception) {
                 tmpFile.delete()
                 throw e
@@ -101,7 +132,7 @@ class ContentPackRepository @Inject constructor(
     }.flowOn(Dispatchers.IO)
 
     fun getPackFile(packId: String): File? {
-        val file = File(contentPacksDir, packId)
+        val file = sanitizePath(packId) ?: return null
         return if (file.exists()) file else null
     }
 }
