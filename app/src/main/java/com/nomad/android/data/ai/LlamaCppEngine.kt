@@ -15,7 +15,8 @@ import java.io.File
 
 /**
  * [AIEngine] backed by the vendored llama.cpp (`libnomad_llm.so`) via [LlamaBridge].
- * GGUF-only; ships a single installable model (MiniCPM5-1B Q4_K_M).
+ * GGUF-only; offers several downloadable Q4_K_M models (see [ModelVariant]).
+ * Default/recommended = OpenBMB MiniCPM5-1B.
  *
  * Spec 1 renders each turn as: system role via [LlamaBridge.setSystemPrompt] +
  * a single user message with the conversation history inlined (matching NOMAD's
@@ -57,6 +58,15 @@ class LlamaCppEngine(
             ramRequiredMB = 4608,
             sizeMB = 2963,
             downloadUrl = "https://huggingface.co/unsloth/gemma-4-E2B-it-GGUF/resolve/main/gemma-4-E2B-it-Q4_K_M.gguf",
+        ),
+        // Liquid Foundation Model — hybrid (LIV conv + GQA), instruction-tuned,
+        // text-only. Smallest model in the catalogue; lightest RAM footprint.
+        LFM2_5_230M(
+            displayName = "LFM2.5 230M",
+            fileName = "LFM2.5-230M-Q4_K_M.gguf",
+            ramRequiredMB = 1024,
+            sizeMB = 146,
+            downloadUrl = "https://huggingface.co/LiquidAI/LFM2.5-230M-GGUF/resolve/main/LFM2.5-230M-Q4_K_M.gguf",
         )
     }
 

@@ -101,12 +101,14 @@ class ContentPackManager(
         LlamaCppEngine.ModelVariant.MINICPM5_1B -> "ai_minicpm5"
         LlamaCppEngine.ModelVariant.QWEN3_5_0_8B -> "ai_qwen3_5"
         LlamaCppEngine.ModelVariant.GEMMA4_E2B -> "ai_gemma4_e2b"
+        LlamaCppEngine.ModelVariant.LFM2_5_230M -> "ai_lfm2_5"
     }
 
     private fun getModelVariantForPack(packId: String): LlamaCppEngine.ModelVariant? = when (packId) {
         "ai_minicpm5" -> LlamaCppEngine.ModelVariant.MINICPM5_1B
         "ai_qwen3_5" -> LlamaCppEngine.ModelVariant.QWEN3_5_0_8B
         "ai_gemma4_e2b" -> LlamaCppEngine.ModelVariant.GEMMA4_E2B
+        "ai_lfm2_5" -> LlamaCppEngine.ModelVariant.LFM2_5_230M
         else -> null
     }
 

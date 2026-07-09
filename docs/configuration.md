@@ -22,7 +22,7 @@ Native build wired via `externalNativeBuild { cmake { ... } }` → `app/src/main
 
 ## Model
 
-- Only OpenBMB MiniCPM5-1B (Q4_K_M GGUF, `MiniCPM5-1B-Q4_K_M.gguf`, ~656 MB).
+- Selectable Q4_K_M GGUF text models (defined in `LlamaCppEngine.ModelVariant`): MiniCPM5-1B (default/recommended, ~656 MB), Qwen3.5-0.8B (~508 MB), Gemma-4-E2B (~2.9 GB, run text-only), and Liquid LFM2.5-230M (~146 MB).
 - Downloaded in-app from the official GGUF repo via OkHttp; not bundled in the APK.
 - No model present → app falls back to the rule-based `FallbackEngine`.
 - Context window: 4K (token budget sized to this).

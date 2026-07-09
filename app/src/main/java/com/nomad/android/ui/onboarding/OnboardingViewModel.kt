@@ -111,6 +111,7 @@ class OnboardingViewModel @Inject constructor(
             LlamaCppEngine.ModelVariant.MINICPM5_1B -> "ai_minicpm5"
             LlamaCppEngine.ModelVariant.QWEN3_5_0_8B -> "ai_qwen3_5"
             LlamaCppEngine.ModelVariant.GEMMA4_E2B -> "ai_gemma4_e2b"
+            LlamaCppEngine.ModelVariant.LFM2_5_230M -> "ai_lfm2_5"
         }
         viewModelScope.launch {
             try {
