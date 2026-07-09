@@ -4,6 +4,8 @@ All notable changes to this project are documented here. Format is loosely based
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-07-09
+
 ### Added
 - Models: two additional downloadable AI models at onboarding/settings — **Qwen3.5-0.8B** (Q4_K_M, ~508 MB) and **Gemma-4-E2B** (Q4_K_M, ~2.9 GB; a multimodal model run text-only). MiniCPM5-1B remains the default/recommended. Supersedes the prior single-model policy.
 - Models: **Liquid LFM2.5-230M** (Q4_K_M, ~146 MB) — an ultra-compact hybrid (LIV conv + GQA) instruction-tuned text model from the official `LiquidAI/LFM2.5-230M-GGUF` repo; the lightest model in the catalogue.
