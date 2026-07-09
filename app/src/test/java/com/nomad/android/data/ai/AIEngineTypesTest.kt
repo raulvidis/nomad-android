@@ -8,10 +8,11 @@ class AIEngineTypesTest {
     @Test
     fun `AIEngineType enum has all values`() {
         val values = AIEngineType.values()
-        assertEquals(5, values.size)
+        assertEquals(6, values.size)
         assertTrue(values.contains(AIEngineType.LLAMACPP_MINICPM5))
         assertTrue(values.contains(AIEngineType.LLAMACPP_QWEN3_5))
         assertTrue(values.contains(AIEngineType.LLAMACPP_GEMMA4))
+        assertTrue(values.contains(AIEngineType.LLAMACPP_LFM2_5))
         assertTrue(values.contains(AIEngineType.FALLBACK))
         assertTrue(values.contains(AIEngineType.NONE))
     }
@@ -29,6 +30,10 @@ class AIEngineTypesTest {
         assertEquals(
             AIEngineType.LLAMACPP_GEMMA4,
             AIEngineType.fromVariant(LlamaCppEngine.ModelVariant.GEMMA4_E2B)
+        )
+        assertEquals(
+            AIEngineType.LLAMACPP_LFM2_5,
+            AIEngineType.fromVariant(LlamaCppEngine.ModelVariant.LFM2_5_230M)
         )
     }
 

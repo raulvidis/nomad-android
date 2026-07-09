@@ -23,6 +23,7 @@ enum class AIEngineType(val displayName: String) {
     LLAMACPP_MINICPM5("llama.cpp (MiniCPM5 1B)"),
     LLAMACPP_QWEN3_5("llama.cpp (Qwen3.5 0.8B)"),
     LLAMACPP_GEMMA4("llama.cpp (Gemma-4 E2B)"),
+    LLAMACPP_LFM2_5("llama.cpp (LFM2.5 230M)"),
     FALLBACK("Fallback (Rule-Based)"),
     NONE("No AI Engine Available");
 
@@ -31,6 +32,7 @@ enum class AIEngineType(val displayName: String) {
             LlamaCppEngine.ModelVariant.MINICPM5_1B -> LLAMACPP_MINICPM5
             LlamaCppEngine.ModelVariant.QWEN3_5_0_8B -> LLAMACPP_QWEN3_5
             LlamaCppEngine.ModelVariant.GEMMA4_E2B -> LLAMACPP_GEMMA4
+            LlamaCppEngine.ModelVariant.LFM2_5_230M -> LLAMACPP_LFM2_5
         }
     }
 }
