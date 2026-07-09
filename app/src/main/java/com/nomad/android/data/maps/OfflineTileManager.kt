@@ -126,6 +126,7 @@ class OfflineTileManager(
         // mid-download, after which insertTile() is a silent no-op and the
         // region reports 'complete' with missing tiles.
         lock.withLock { pinnedDatabases.add(regionId) }
+        var txActive = false
         try {
             val tiles = tileCalculator.getTilesForBounds(north, south, east, west, minZoom, maxZoom)
             val total = tiles.size
@@ -134,6 +135,14 @@ class OfflineTileManager(
             var failed = 0
 
             emit(DownloadProgress(0, total, 0, tileCalculator.estimateSizeBytes(total), false))
+
+            // Batch tile inserts in explicit transactions to avoid one fsync
+            // per INSERT (10k tiles = 10k fsyncs otherwise). Commit every
+            // BATCH_SIZE tiles to balance throughput and crash recovery.
+            val batchSize = 500
+            var batchCount = 0
+            db.beginTransaction()
+            txActive = true
 
             for (tile in tiles) {
                 val existing = db.getTile(tile.z, tile.x, tile.y)
@@ -164,8 +173,23 @@ class OfflineTileManager(
                     failed++
                     Log.w(TAG, "Failed to download tile ${tile.z}/${tile.x}/${tile.y}", e)
                 }
+
+                // Periodic commit: flush the current batch and start a new one.
+                batchCount++
+                if (batchCount >= batchSize) {
+                    db.setTransactionSuccessful()
+                    db.endTransaction()
+                    db.beginTransaction()
+                    batchCount = 0
+                }
+
                 emit(DownloadProgress(downloaded, total, bytesDownloaded, tileCalculator.estimateSizeBytes(total), false))
             }
+
+            // Commit the final partial batch.
+            db.setTransactionSuccessful()
+            db.endTransaction()
+            txActive = false
 
             // Guard the trailing metadata writes: if deleteRegion() closes the db
             // mid-download, setMetadata would throw and abort the flow before the
@@ -179,6 +203,11 @@ class OfflineTileManager(
             val errorMsg = if (failed > 0) "$failed of $total tiles failed to download" else null
             emit(DownloadProgress(downloaded, total, bytesDownloaded, bytesDownloaded, true, errorMsg))
         } finally {
+            // If the flow was cancelled (or threw) mid-transaction, end it
+            // without marking successful — this rolls back uncommitted inserts.
+            if (txActive) {
+                try { db.endTransaction() } catch (_: Exception) { }
+            }
             lock.withLock { pinnedDatabases.remove(regionId) }
         }
     }.flowOn(Dispatchers.IO)

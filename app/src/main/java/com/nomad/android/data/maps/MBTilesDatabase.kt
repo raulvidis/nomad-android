@@ -85,4 +85,15 @@ class MBTilesDatabase(private val path: String) {
             if (it.moveToFirst()) it.getInt(0) else 0
         } ?: 0
     }
+
+    /**
+     * Batch transaction support: wrapping many insertTile() calls in a single
+     * explicit transaction avoids one fsync per INSERT (SQLite wraps every
+     * implicit statement in its own transaction). Callers should commit
+     * periodically (e.g. every 500 tiles) to balance throughput and crash
+     * recovery.
+     */
+    fun beginTransaction() { db?.beginTransaction() }
+    fun setTransactionSuccessful() { db?.setTransactionSuccessful() }
+    fun endTransaction() { db?.endTransaction() }
 }
