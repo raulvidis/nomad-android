@@ -23,7 +23,7 @@ object DatabaseModule {
         .readTimeout(10, java.util.concurrent.TimeUnit.MINUTES)
         .writeTimeout(60, java.util.concurrent.TimeUnit.SECONDS)
         .followRedirects(true)
-        .followSslRedirects(true)
+        .followSslRedirects(false)  // refuse HTTPS→HTTP downgrade redirects
         .build()
 
     @Provides
