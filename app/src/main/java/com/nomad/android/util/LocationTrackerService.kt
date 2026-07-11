@@ -192,7 +192,24 @@ class LocationTrackerService(
                 else -> return
             }
             try {
-                lm.getLastKnownLocation(provider)?.let { _currentLocation.value = it }
+                // Request a genuine fresh fix via a one-shot listener rather than
+                // returning getLastKnownLocation(), which may be minutes or hours
+                // stale. The listener publishes the first received location to
+                // _currentLocation and unregisters itself immediately, mirroring
+                // the Play Services single-update path.
+                val oneShot = object : LocationListener {
+                    override fun onLocationChanged(location: Location) {
+                        _currentLocation.value = location
+                        lm.removeUpdates(this)
+                    }
+                }
+                lm.requestLocationUpdates(
+                    provider,
+                    0L,
+                    0f,
+                    oneShot,
+                    Looper.getMainLooper()
+                )
             } catch (e: Exception) {
                 Log.w(TAG, "Fallback single location request failed", e)
             }
