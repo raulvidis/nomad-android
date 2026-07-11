@@ -14,7 +14,7 @@ read_when:
 | `compileSdk` / `targetSdk` | 35 |
 | `minSdk` | 26 |
 | `versionCode` | 1 |
-| `versionName` | `1.0.0` |
+| `versionName` | see `app/build.gradle.kts` (bumped every release) |
 | `abiFilters` | `arm64-v8a` (only) |
 | APK output name | `nomad-android-<versionName>.apk` |
 

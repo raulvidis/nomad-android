@@ -4,6 +4,10 @@ All notable changes to this project are documented here. Format is loosely based
 
 ## [Unreleased]
 
+### Changed
+- de-hardcode the version number from docs (README, AGENTS.md, quickstart, configuration) — `app/build.gradle.kts` + git tags are the only version homes, ending the 1.0.0-in-docs drift after 1.1.0 shipped
+- troubleshooting: blocked vendor logcat now points at the shared `adb-connect` skill (vivo dialer unlock) instead of an out-of-repo personal note
+
 ## [1.1.0] - 2026-07-09
 
 ### Added

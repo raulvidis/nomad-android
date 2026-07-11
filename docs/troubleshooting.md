@@ -35,4 +35,4 @@ read_when:
 ## Logs
 
 - Native JNI logcat tag: `nomad-llm`.
-- If `adb logcat` is blocked on a vendor device, see personal memory note on unlocking logcat.
+- If `adb logcat` is blocked on a vendor device, use the shared `adb-connect` skill (`.agents/skills/adb-connect/`) — vivo gates logcat behind a dialer code (`*#*#112#*#*`); it resets on reboot/Wi-Fi change.

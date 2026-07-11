@@ -31,7 +31,7 @@ git submodule update --init --recursive   # pulls llama.cpp
 ./gradlew lint                   # lint
 ```
 
-Output APK: `app/build/outputs/apk/debug/nomad-android-1.0.0.apk`
+Output APK: `app/build/outputs/apk/debug/nomad-android-<versionName>.apk`
 
 ```bash
 adb install app/build/outputs/apk/debug/nomad-android-*.apk
