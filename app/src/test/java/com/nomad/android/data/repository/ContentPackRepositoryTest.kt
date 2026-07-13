@@ -13,6 +13,8 @@ import kotlinx.coroutines.test.runTest
 import okhttp3.OkHttpClient
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
+import okhttp3.tls.HandshakeCertificates
+import okhttp3.tls.HeldCertificate
 import org.junit.After
 import org.junit.Assert.*
 import org.junit.Before
@@ -21,12 +23,6 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import java.io.File
-import java.security.cert.X509Certificate
-import javax.net.ssl.HostnameVerifier
-import javax.net.ssl.SSLContext
-import javax.net.ssl.SSLSocketFactory
-import javax.net.ssl.TrustManager
-import javax.net.ssl.X509TrustManager
 
 @ExperimentalCoroutinesApi
 @RunWith(RobolectricTestRunner::class)
@@ -58,24 +54,24 @@ class ContentPackRepositoryTest {
         context = ApplicationProvider.getApplicationContext()
         contentPacksDir = File(context.filesDir, "contentPacks").also { it.mkdirs() }
         mockWebServer = MockWebServer()
+
+        // The repo enforces HTTPS on download URLs, so we need MockWebServer to serve HTTPS.
+        // Generate a self-signed cert trusted by both server and client.
+        val heldCert = HeldCertificate.Builder()
+            .commonName("localhost")
+            .addSubjectAlternativeName("localhost")
+            .build()
+        val serverHandshake = HandshakeCertificates.Builder()
+            .heldCertificate(heldCert)
+            .build()
+        mockWebServer.useHttps(serverHandshake.sslSocketFactory(), false)
         mockWebServer.start()
 
-        // The repo enforces HTTPS scheme on download URLs, so we need the mock server
-        // to serve over HTTPS. Use a trust-all client to accept the self-signed cert.
-        val trustAllManager = object : X509TrustManager {
-            override fun checkClientTrusted(chain: Array<out X509Certificate>?, authType: String?) {}
-            override fun checkServerTrusted(chain: Array<out X509Certificate>?, authType: String?) {}
-            override fun getAcceptedIssuers(): Array<X509Certificate> = arrayOf()
-        }
-        val sslContext = SSLContext.getInstance("TLS").apply {
-            init(null, arrayOf<TrustManager>(trustAllManager), java.security.SecureRandom())
-        }
-        // Tell MockWebServer to use HTTPS
-        mockWebServer.useHttps(sslContext.socketFactory, false)
-
+        val clientHandshake = HandshakeCertificates.Builder()
+            .addTrustedCertificate(heldCert.certificate)
+            .build()
         okHttpClient = OkHttpClient.Builder()
-            .sslSocketFactory(sslContext.socketFactory, trustAllManager)
-            .hostnameVerifier(HostnameVerifier { _, _ -> true })
+            .sslSocketFactory(clientHandshake.sslSocketFactory(), clientHandshake.trustManager)
             .build()
         repository = ContentPackRepository(fakeDao, context, okHttpClient)
     }
