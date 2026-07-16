@@ -13,6 +13,8 @@ import kotlinx.coroutines.test.runTest
 import okhttp3.OkHttpClient
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
+import okhttp3.tls.HandshakeCertificates
+import okhttp3.tls.HeldCertificate
 import org.junit.After
 import org.junit.Assert.*
 import org.junit.Before
@@ -52,8 +54,25 @@ class ContentPackRepositoryTest {
         context = ApplicationProvider.getApplicationContext()
         contentPacksDir = File(context.filesDir, "contentPacks").also { it.mkdirs() }
         mockWebServer = MockWebServer()
+
+        // The repo enforces HTTPS on download URLs, so we need MockWebServer to serve HTTPS.
+        // Generate a self-signed cert trusted by both server and client.
+        val heldCert = HeldCertificate.Builder()
+            .commonName("localhost")
+            .addSubjectAlternativeName("localhost")
+            .build()
+        val serverHandshake = HandshakeCertificates.Builder()
+            .heldCertificate(heldCert)
+            .build()
+        mockWebServer.useHttps(serverHandshake.sslSocketFactory(), false)
         mockWebServer.start()
-        okHttpClient = OkHttpClient.Builder().build()
+
+        val clientHandshake = HandshakeCertificates.Builder()
+            .addTrustedCertificate(heldCert.certificate)
+            .build()
+        okHttpClient = OkHttpClient.Builder()
+            .sslSocketFactory(clientHandshake.sslSocketFactory(), clientHandshake.trustManager)
+            .build()
         repository = ContentPackRepository(fakeDao, context, okHttpClient)
     }
 

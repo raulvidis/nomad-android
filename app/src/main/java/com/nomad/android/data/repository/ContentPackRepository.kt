@@ -94,6 +94,9 @@ class ContentPackRepository @Inject constructor(
         emit(0f)
         val finalFile = sanitizePath(pack.id)
             ?: throw RuntimeException("Invalid pack id: ${pack.id}")
+        if (!url.startsWith("https://")) {
+            throw RuntimeException("Download URL must use HTTPS: $url")
+        }
         val request = Request.Builder().url(url).build()
         val response = okHttpClient.newCall(request).execute()
         response.use { resp ->
