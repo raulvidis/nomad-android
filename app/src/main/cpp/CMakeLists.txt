@@ -15,10 +15,21 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 #                             useLegacyPackaging=true to make opendir() see
 #                             extracted .so files.
 #   GGML_CPU_ALL_VARIANTS=OFF → one CPU variant compiled for arm64-v8a
-#                               armv8.2+dotprod+i8mm (KleidiAI baseline).
+#                               armv8.2+dotprod+fp16+i8mm (KleidiAI baseline).
 #                               We give up per-device kernel selection in
 #                               exchange for ~10× less native code size and
 #                               a much simpler runtime.
+#   GGML_CPU_ARM_ARCH       → the flag that actually SETS that baseline.
+#                             Without it ggml falls through to the NDK
+#                             default -march=armv8-a and no dotprod/i8mm
+#                             kernels are compiled at all. Device floor:
+#                             this drops armv8.0 SoCs (Cortex-A73-era,
+#                             ~2017) — acceptable for an on-device-LLM app;
+#                             those devices can't run the models anyway.
+#   GGML_CPU_KLEIDIAI=ON    → Arm's KleidiAI microkernels (big matmul
+#                             speedup for Q4 quants on dotprod/i8mm
+#                             hardware, with runtime feature dispatch).
+#                             Build-time-only dep, fetched by CMake.
 #   GGML_NATIVE=OFF         → don't auto-detect host CPU features (host =
 #                             CI machine ≠ target Android device).
 #   LLAMA_BUILD_*=OFF       → no tests/examples/tools/server.
@@ -27,6 +38,9 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 set(BUILD_SHARED_LIBS          OFF CACHE BOOL "" FORCE)
 set(GGML_BACKEND_DL            OFF CACHE BOOL "" FORCE)
 set(GGML_CPU_ALL_VARIANTS      OFF CACHE BOOL "" FORCE)
+set(GGML_CPU_ARM_ARCH          "armv8.2-a+dotprod+fp16+i8mm" CACHE STRING "" FORCE)
+set(GGML_CPU_KLEIDIAI          ON  CACHE BOOL "" FORCE)
+set(GGML_OPENMP                OFF CACHE BOOL "" FORCE)
 set(GGML_NATIVE                OFF CACHE BOOL "" FORCE)
 set(GGML_LLAMAFILE             OFF CACHE BOOL "" FORCE)
 set(GGML_CPU                   ON  CACHE BOOL "" FORCE)
