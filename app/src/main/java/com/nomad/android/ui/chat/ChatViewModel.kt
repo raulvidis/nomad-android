@@ -6,7 +6,6 @@ import com.nomad.android.data.Result
 import com.nomad.android.data.ai.AIEngine
 import com.nomad.android.data.ai.AgentEvent
 import com.nomad.android.data.ai.ChatAgent
-import com.nomad.android.data.ai.KnowledgeBase
 import com.nomad.android.data.ai.LlamaCppEngine
 import com.nomad.android.data.local.entity.ChatMessageEntity
 import com.nomad.android.data.local.entity.ChatSessionEntity
@@ -67,20 +66,11 @@ data class ChatSession(
     val updatedAt: Long
 )
 
-enum class ThinkingPower(val label: String, val maxTokens: Int, val topK: Int) {
-    LOW("Fast", 256, 10),
-    MEDIUM("Balanced", 512, 20),
-    HIGH("Deep", 1024, 40)
-}
-
 data class ChatData(
     val currentSessionId: String? = null,
     val messages: List<ChatMessage> = emptyList(),
     val sessions: List<ChatSession> = emptyList(),
     val isStreaming: Boolean = false,
-    val contextFilters: List<String> = listOf("All"),
-    val selectedFilter: String = "All",
-    val thinkingPower: ThinkingPower = ThinkingPower.LOW,
     val contextTokenCount: Int = 0,
     val messageQueue: List<QueuedMessage> = emptyList(),
     val pendingImagePath: String? = null
@@ -96,18 +86,10 @@ data class ChatUiState(
 class ChatViewModel @Inject constructor(
     private val chatRepository: ChatRepository,
     private val aiEngine: AIEngine,
-    private val knowledgeBase: KnowledgeBase,
     private val chatAgent: ChatAgent,
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(
-        ChatUiState(
-            isLoading = true,
-            data = ChatData(
-                contextFilters = knowledgeBase.categories,
-            ),
-        ),
-    )
+    private val _uiState = MutableStateFlow(ChatUiState(isLoading = true))
     val uiState: StateFlow<ChatUiState> = _uiState.asStateFlow()
     private var streamingJob: Job? = null
     private var sessionsCollectionJob: Job? = null
@@ -530,10 +512,6 @@ class ChatViewModel @Inject constructor(
         sendUserMessage(sessionId, next.content, next.imagePath)
     }
 
-    fun setThinkingPower(power: ThinkingPower) {
-        _uiState.update { it.copy(data = it.data.copy(thinkingPower = power)) }
-    }
-
     fun compactContext() {
         val messages = _uiState.value.data.messages
         if (messages.size <= 4) return
@@ -665,12 +643,8 @@ class ChatViewModel @Inject constructor(
         // MiniCPM5-1B: 4096 context (LlamaCppEngine.DEFAULT_CTX), reserve ~512 for generation
         private const val MAX_CONTEXT_TOKENS = 3_500
         private const val AUTO_COMPACT_THRESHOLD = 3_000
-        // Approximate tokens for the system prompt + turn formatting overhead
-        private const val SYSTEM_PROMPT_TOKENS = 80
-    }
-
-    fun selectFilter(filter: String) {
-        _uiState.update { it.copy(data = it.data.copy(selectedFilter = filter)) }
+        // Approximate tokens for the system prompt (chars/4 heuristic) + turn formatting overhead
+        private val SYSTEM_PROMPT_TOKENS = ChatAgent.SYSTEM_PROMPT.length / 4 + 20
     }
 
     fun deleteSession(sessionId: String) {

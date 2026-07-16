@@ -59,7 +59,8 @@ fun ThinkingSection(
         ) {
             Text(
                 text = when {
-                    streaming -> "⏳ THINKING…"
+                    streaming && expanded -> "▼ THINKING…"
+                    streaming -> "▶ THINKING…"
                     expanded -> "▼ THOUGHT FOR A MOMENT"
                     else -> "▶ THOUGHT FOR A MOMENT"
                 },

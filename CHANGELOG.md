@@ -4,6 +4,12 @@ All notable changes to this project are documented here. Format is loosely based
 
 ## [Unreleased]
 
+### Changed
+- chat: removed the Fast/Balanced/Deep thinking-power selector and the All/First Aid/Navigation filter chips — both were UI-only and never affected inference; the Compact button remains (now a standard terminal button)
+- chat: reasoning ("thinking") blocks are now collapsible and collapsed by default, including while streaming; tap the ▶ THINKING… header to watch live reasoning
+- chat: auto-scroll now smoothly follows the last line while streaming (including an expanded thinking block) and only disengages on a real user drag
+- chat: rewritten system prompt — emergency-first ordering, numbered steps, ~150-word cap, no invented dosages/identifications, and an explicit instruction to keep internal reasoning short (mitigates minute-long thinking spirals on reasoning models like Qwen); the direct (non-agent) engine path now shares the same rules
+
 ## [1.1.1] - 2026-07-16
 
 ### Changed

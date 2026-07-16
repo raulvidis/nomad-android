@@ -42,11 +42,9 @@ object ChatTurnReducer {
             (stopped + bubble) to state.copy(currentAssistantId = id)
         }
 
+        // Collapsed by default — the user can expand a live thinking block by tapping it.
         is AgentEvent.ThinkingDelta -> updateCurrent(messages, state) {
-            it.copy(
-                thinkingText = event.thinking,
-                isThinkingExpanded = if (it.thinkingText.isEmpty() && event.thinking.isNotEmpty()) true else it.isThinkingExpanded,
-            )
+            it.copy(thinkingText = event.thinking)
         } to state
 
         is AgentEvent.AnswerDelta -> updateCurrent(messages, state) {

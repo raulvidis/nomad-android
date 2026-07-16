@@ -14,7 +14,9 @@ Run on a physical arm64-v8a device, fully offline (airplane mode) unless a step 
 
 ## AI chat
 - Without model present: chat answers via `FallbackEngine` (rule-based), no crash.
-- Download MiniCPM5-1B in Settings; chat streams a response grounded in knowledge base (RAG).
+- Download MiniCPM5-1B in Settings; chat streams a response, calling knowledge-base/notes tools when useful (tool cards appear inline).
+- Reasoning models (e.g. Qwen): thinking shows as a collapsed "▶ THINKING…" header; tapping expands the live reasoning and the view keeps following the last line; it collapses again when the answer finishes.
+- While streaming, dragging up stops auto-follow (▼ button appears); dragging back to the bottom re-engages it.
 - Message > 10K chars shows an error, not a silent drop.
 
 ## Maps

@@ -50,12 +50,12 @@ class ChatTurnReducerTest {
     }
 
     @Test
-    fun `ThinkingDelta records reasoning and auto-expands it`() {
+    fun `ThinkingDelta records reasoning and stays collapsed by default`() {
         val messages = reduceAll(
             listOf(AgentEvent.TurnStarted, AgentEvent.ThinkingDelta("considering options")),
         )
         assertEquals("considering options", messages.single().thinkingText)
-        assertTrue(messages.single().isThinkingExpanded)
+        assertFalse(messages.single().isThinkingExpanded)
     }
 
     @Test

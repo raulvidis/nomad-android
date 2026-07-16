@@ -7,7 +7,8 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.gestures.scrollBy
+import androidx.compose.foundation.interaction.DragInteraction
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -34,6 +35,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.withFrameNanos
 import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -101,8 +103,6 @@ fun ChatScreen(
             data = uiState.data,
             onSendMessage = { text, image -> viewModel.sendMessage(text, image) },
             onNewSession = { viewModel.newSession() },
-            onSelectFilter = { viewModel.selectFilter(it) },
-            onSetThinkingPower = { viewModel.setThinkingPower(it) },
             onCompact = { viewModel.compactContext() },
             onSetPendingImage = { viewModel.setPendingImage(it) },
             onRemoveFromQueue = { viewModel.removeFromQueue(it) },
@@ -218,8 +218,6 @@ private fun ChatContent(
     data: ChatData,
     onSendMessage: (String, String?) -> Unit,
     onNewSession: () -> Unit,
-    onSelectFilter: (String) -> Unit,
-    onSetThinkingPower: (ThinkingPower) -> Unit,
     onCompact: () -> Unit,
     onSetPendingImage: (String?) -> Unit,
     onRemoveFromQueue: (Int) -> Unit,
@@ -324,17 +322,35 @@ private fun ChatContent(
                         last.offset + last.size <= info.viewportEndOffset + 8)
                 }
             }
-            // Disengage following when the user drags away from the bottom; re-engage
-            // when they return there.
+            // Disengage following only on a user drag (programmatic scrolls don't emit
+            // drag interactions); re-engage when the user settles back at the bottom.
+            LaunchedEffect(listState) {
+                listState.interactionSource.interactions.collect { interaction ->
+                    if (interaction is DragInteraction.Start) autoFollowBottom = false
+                }
+            }
             LaunchedEffect(listState.isScrollInProgress) {
-                if (listState.isScrollInProgress) autoFollowBottom = atBottom
+                if (!listState.isScrollInProgress && atBottom) autoFollowBottom = true
             }
             // While following, keep the latest content pinned as tokens stream in.
-            val lastContentLen = data.messages.lastOrNull()?.content?.length ?: 0
-            LaunchedEffect(data.messages.size, lastContentLen, autoFollowBottom) {
-                if (autoFollowBottom && data.messages.isNotEmpty()) {
-                    listState.scrollToItem(data.messages.size - 1)
+            // Keyed on both answer and thinking length so an expanded, still-streaming
+            // thinking block is followed too. Waits a frame so the new text is measured,
+            // then scrolls by the exact overflow — small per-token deltas read as a
+            // smooth continuous follow without restarting an animation per token.
+            val last = data.messages.lastOrNull()
+            val lastContentLen = (last?.content?.length ?: 0) +
+                (if (last?.isThinkingExpanded == true) last.thinkingText.length else 0)
+            LaunchedEffect(data.messages.size, lastContentLen, last?.isThinkingExpanded, autoFollowBottom) {
+                if (!autoFollowBottom || data.messages.isEmpty()) return@LaunchedEffect
+                val lastIndex = data.messages.size - 1
+                if (listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index != lastIndex) {
+                    listState.scrollToItem(lastIndex)
                 }
+                withFrameNanos { }
+                val info = listState.layoutInfo
+                val visibleLast = info.visibleItemsInfo.lastOrNull() ?: return@LaunchedEffect
+                val delta = (visibleLast.offset + visibleLast.size) - info.viewportEndOffset
+                if (delta > 0) listState.scrollBy(delta.toFloat())
             }
 
             Box(modifier = Modifier.weight(1f)) {
@@ -435,110 +451,22 @@ private fun ChatContent(
             TerminalDivider(color = PhosphorGreen)
             Spacer(modifier = Modifier.height(6.dp))
 
-            // Thinking power + compact row
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 12.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                    ThinkingPower.entries.forEach { power ->
-                        val isSelected = data.thinkingPower == power
-                        Box(
-                            modifier = Modifier
-                                .border(
-                                    width = if (isSelected) 2.dp else 2.dp,
-                                    color = if (isSelected) TertiaryAmber else PhosphorGreenDim,
-                                    shape = RoundedCornerShape(0.dp),
-                                )
-                                .background(
-                                    if (isSelected) TertiaryAmber.copy(alpha = 0.1f) else SurfaceContainerLow,
-                                    RoundedCornerShape(0.dp),
-                                )
-                                .clickable(
-                                    interactionSource = remember { MutableInteractionSource() },
-                                    indication = null,
-                                    onClick = { onSetThinkingPower(power) },
-                                )
-                                .padding(horizontal = 8.dp, vertical = 4.dp),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            Text(
-                                text = power.label,
-                                color = if (isSelected) TertiaryAmber else PhosphorGreenDim,
-                                fontFamily = SpaceGroteskRegular,
-                                fontSize = 10.sp,
-                            )
-                        }
-                    }
+            if (data.messages.size > 6) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 12.dp),
+                    horizontalArrangement = Arrangement.End,
+                ) {
+                    TerminalButton(
+                        text = "Compact",
+                        onClick = onCompact,
+                        size = TerminalButtonSize.SMALL,
+                        tintColor = PhosphorGreenDim,
+                    )
                 }
-
-                if (data.messages.size > 6) {
-                    Box(
-                        modifier = Modifier
-                            .border(2.dp, PhosphorGreenDim, RoundedCornerShape(0.dp))
-                            .background(SurfaceContainerLow, RoundedCornerShape(0.dp))
-                            .clickable(
-                                interactionSource = remember { MutableInteractionSource() },
-                                indication = null,
-                                onClick = onCompact,
-                            )
-                            .padding(horizontal = 8.dp, vertical = 4.dp),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Text(
-                            text = "Compact",
-                            color = PhosphorGreenDim,
-                            fontFamily = SpaceGroteskRegular,
-                            fontSize = 10.sp,
-                        )
-                    }
-                }
+                Spacer(modifier = Modifier.height(4.dp))
             }
-
-            Spacer(modifier = Modifier.height(4.dp))
-
-            // Knowledge filter row
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 12.dp),
-                horizontalArrangement = Arrangement.spacedBy(4.dp),
-            ) {
-                data.contextFilters.forEach { filter ->
-                    val isSelected = data.selectedFilter == filter
-                    Box(
-                        modifier = Modifier
-                            .border(
-                                width = if (isSelected) 2.dp else 2.dp,
-                                color = if (isSelected) PhosphorGreen else PhosphorGreenDim,
-                                shape = RoundedCornerShape(0.dp),
-                            )
-                            .background(
-                                if (isSelected) PhosphorGreen.copy(alpha = 0.1f) else SurfaceContainerLow,
-                                RoundedCornerShape(0.dp),
-                            )
-                            .clickable(
-                                interactionSource = remember { MutableInteractionSource() },
-                                indication = null,
-                                onClick = { onSelectFilter(filter) },
-                            )
-                            .padding(horizontal = 8.dp, vertical = 4.dp),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Text(
-                            text = filter,
-                            color = if (isSelected) PhosphorGreen else PhosphorGreenDim,
-                            fontFamily = SpaceGroteskRegular,
-                            fontSize = 10.sp,
-                        )
-                    }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(4.dp))
 
             // Pending image preview
             if (data.pendingImagePath != null) {
