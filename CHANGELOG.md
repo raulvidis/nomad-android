@@ -4,9 +4,18 @@ All notable changes to this project are documented here. Format is loosely based
 
 ## [Unreleased]
 
+## [1.1.1] - 2026-07-16
+
 ### Changed
+- llama.cpp bumped b9371 → b10046 (~7 weeks of upstream kernel/quant improvements), and the ARM CPU baseline is now actually applied: `GGML_CPU_ARM_ARCH=armv8.2-a+dotprod+fp16+i8mm` + KleidiAI matmul kernels (`GGML_CPU_KLEIDIAI=ON`). Previous builds compiled plain `armv8-a` — the documented baseline existed only in a comment. Noticeably faster prompt processing/decode on modern SoCs; device floor rises to armv8.2 (#73)
+- perf: MBTiles tile inserts batched in explicit transactions (#70)
 - de-hardcode the version number from docs (README, AGENTS.md, quickstart, configuration) — `app/build.gradle.kts` + git tags are the only version homes, ending the 1.0.0-in-docs drift after 1.1.0 shipped
 - troubleshooting: blocked vendor logcat now points at the shared `adb-connect` skill (vivo dialer unlock) instead of an out-of-repo personal note
+
+### Fixed
+- security: HTTPS-only enforcement on content-pack downloads — scheme check in `ContentPackRepository.downloadPack` (#71) and `ContentPackManager.downloadFile()` (#72), plus SSL-to-plaintext redirects blocked on the OkHttp client (#69)
+- location: fallback single-update path now requests a fresh fix instead of a stale cached one (#68)
+- chat: `CancellationException` is rethrown instead of being swallowed by a catch-all (#67)
 
 ## [1.1.0] - 2026-07-09
 
