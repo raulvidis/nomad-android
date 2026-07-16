@@ -190,6 +190,9 @@ class ContentPackManager(
         destFile: File,
         onProgress: suspend (Float) -> Unit
     ) {
+        if (!url.startsWith("https://")) {
+            throw IllegalArgumentException("Download URL must use HTTPS: $url")
+        }
         val tmpFile = File(destFile.parentFile, "${destFile.name}.tmp")
 
         try {
