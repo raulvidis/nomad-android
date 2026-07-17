@@ -397,7 +397,10 @@ class ChatViewModel @Inject constructor(
                     when (event) {
                         is AgentEvent.ModelUnavailable -> modelUnavailable = true
                         is AgentEvent.Error -> errorMessage = event.message
-                        is AgentEvent.Finished -> { finalAnswer = event.answer; apply(event) }
+                        is AgentEvent.Finished -> {
+                            finalAnswer = event.cappedNote?.takeIf { event.answer.isBlank() } ?: event.answer
+                            apply(event)
+                        }
                         else -> apply(event)
                     }
                 }

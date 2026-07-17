@@ -109,4 +109,43 @@ class ChatTurnReducerTest {
         assertFalse(msg.isStreaming)
         assertFalse(msg.isThinkingExpanded)
     }
+
+    @Test
+    fun `Finished with blank answer but cappedNote surfaces the cap note`() {
+        val messages = reduceAll(
+            listOf(
+                AgentEvent.TurnStarted,
+                AgentEvent.AnswerDelta("partial stale text"),
+                AgentEvent.Finished(answer = "", thinking = "", cappedNote = "Stopped after 5 tool iterations."),
+            ),
+        )
+        val msg = messages.single()
+        assertEquals("Stopped after 5 tool iterations.", msg.content)
+        assertFalse(msg.isStreaming)
+    }
+
+    @Test
+    fun `Finished with answer present ignores cappedNote`() {
+        val messages = reduceAll(
+            listOf(
+                AgentEvent.TurnStarted,
+                AgentEvent.Finished(answer = "Final answer.", thinking = "", cappedNote = "Stopped after 5 tool iterations."),
+            ),
+        )
+        val msg = messages.single()
+        assertEquals("Final answer.", msg.content)
+    }
+
+    @Test
+    fun `Finished with blank answer and no cappedNote keeps existing content`() {
+        val messages = reduceAll(
+            listOf(
+                AgentEvent.TurnStarted,
+                AgentEvent.AnswerDelta("streamed partial"),
+                AgentEvent.Finished(answer = "", thinking = ""),
+            ),
+        )
+        val msg = messages.single()
+        assertEquals("streamed partial", msg.content)
+    }
 }
