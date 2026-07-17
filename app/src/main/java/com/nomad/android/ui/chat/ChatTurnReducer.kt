@@ -88,8 +88,16 @@ object ChatTurnReducer {
         }
 
         is AgentEvent.Finished -> updateCurrent(messages, state) {
+            // When the agent hits MAX_ITERATIONS the answer is blank and cappedNote
+            // explains why — surface it instead of leaving the bubble empty or
+            // showing stale partial text. Final answer takes precedence.
+            val resolvedContent = when {
+                event.answer.isNotBlank() -> event.answer
+                !event.cappedNote.isNullOrBlank() -> event.cappedNote
+                else -> it.content
+            }
             it.copy(
-                content = event.answer.ifBlank { it.content },
+                content = resolvedContent,
                 thinkingText = event.thinking.ifBlank { it.thinkingText },
                 isStreaming = false,
                 isThinkingExpanded = false,
