@@ -8,7 +8,6 @@ import androidx.lifecycle.viewModelScope
 import com.nomad.android.data.maps.DownloadProgress
 import com.nomad.android.data.maps.OfflineRegion
 import com.nomad.android.data.maps.OfflineTileManager
-import com.nomad.android.data.maps.TileCalculator
 import com.nomad.android.data.repository.LocationRepository
 import com.nomad.android.data.repository.MapsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -263,9 +262,6 @@ class MapsViewModel @Inject constructor(
     ) {
         val minZoom = _uiState.value.data.selectedMinZoom
         val maxZoom = _uiState.value.data.selectedMaxZoom
-
-        val tiles = TileCalculator.getTilesForBounds(north, south, east, west, minZoom, maxZoom)
-        val estimatedSize = TileCalculator.estimateSizeBytes(tiles.size)
 
         val id = offlineTileManager.createRegion(
             regionName.ifBlank { "Region" },
