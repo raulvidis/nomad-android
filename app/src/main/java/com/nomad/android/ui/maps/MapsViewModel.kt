@@ -263,17 +263,21 @@ class MapsViewModel @Inject constructor(
         val minZoom = _uiState.value.data.selectedMinZoom
         val maxZoom = _uiState.value.data.selectedMaxZoom
 
-        val id = offlineTileManager.createRegion(
-            regionName.ifBlank { "Region" },
-            north, south, east, west,
-            minZoom, maxZoom
-        )
-
         _uiState.update {
             it.copy(data = it.data.copy(isDownloading = true, isSelectingRegion = false))
         }
 
         viewModelScope.launch {
+            // createRegion() opens an MBTiles SQLite DB and writes metadata — keep it
+            // off the caller (main) thread to avoid jank/ANR on slow storage.
+            val id = withContext(Dispatchers.IO) {
+                offlineTileManager.createRegion(
+                    regionName.ifBlank { "Region" },
+                    north, south, east, west,
+                    minZoom, maxZoom
+                )
+            }
+
             var downloadError: String? = null
             offlineTileManager.downloadRegion(
                 id, north, south, east, west,
