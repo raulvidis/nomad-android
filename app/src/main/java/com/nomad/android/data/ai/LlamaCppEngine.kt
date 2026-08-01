@@ -188,7 +188,16 @@ class LlamaCppEngine(
             - Do not overthink. If you reason internally, keep it to 2-3 short sentences, then answer immediately.
         """.trimIndent()
 
-        fun recommendedVariant(totalRamMB: Long): ModelVariant = ModelVariant.MINICPM5_1B
+        fun recommendedVariant(totalRamMB: Long): ModelVariant {
+            // Pick the largest model that fits comfortably in ~80% of device RAM.
+            // 80% leaves headroom for the OS, llama.cpp runtime overhead, and the
+            // app's own memory. Fall back to the smallest variant if nothing fits.
+            val usableRamMB = (totalRamMB * 0.8).toLong()
+            return ModelVariant.entries
+                .sortedByDescending { it.ramRequiredMB }
+                .firstOrNull { it.ramRequiredMB <= usableRamMB }
+                ?: ModelVariant.entries.minByOrNull { it.ramRequiredMB }!!
+        }
 
         /** Remove `<think>...</think>` reasoning blocks and trim leading whitespace. */
         fun stripThinking(s: String): String {

@@ -62,6 +62,12 @@ class OfflineTileManager(
         }
     }
 
+    // In-memory index mapping tile keys ("z/x/y") to their region ID.
+    // Populated during downloadRegion() and cleared on deleteRegion()/closeAll().
+    // Eliminates the linear scan of up to MAX_OPEN_DATABASES databases on every
+    // getTile() call — the hot path becomes O(1) index lookup + one DB query.
+    private val tileRegionIndex = HashMap<String, String>()
+
     init {
         tilesDir.mkdirs()
     }
@@ -163,6 +169,7 @@ class OfflineTileManager(
                         val body = it.body?.bytes()
                         if (it.isSuccessful && body != null) {
                             db.insertTile(tile.z, tile.x, tile.y, body)
+                            lock.withLock { tileRegionIndex["${tile.z}/${tile.x}/${tile.y}"] = regionId }
                             bytesDownloaded += body.size
                             downloaded++
                         } else {
@@ -236,11 +243,33 @@ class OfflineTileManager(
     }
 
     fun getTile(z: Int, x: Int, y: Int): ByteArray? {
+        val tileKey = "$z/$x/$y"
+        // Fast path: index lookup → single DB query (no linear scan).
+        lock.withLock {
+            val regionId = tileRegionIndex[tileKey]
+            if (regionId != null) {
+                val db = databases[regionId]
+                if (db != null) {
+                    try {
+                        return db.getTile(z, x, y)
+                    } catch (_: Exception) {
+                        // DB may have been closed by concurrent deleteRegion;
+                        // fall through to linear scan.
+                    }
+                }
+            }
+        }
+        // Slow path: tile not in index (pre-index regions, or index evicted).
         val dbs = lock.withLock { databases.values.toList() }
         for (db in dbs) {
             try {
                 val tile = db.getTile(z, x, y)
-                if (tile != null) return tile
+                if (tile != null) {
+                    // Populate the index on first hit so subsequent lookups
+                    // of this tile take the fast path.
+                    lock.withLock { tileRegionIndex[tileKey] = db.getMetadata("id") ?: return@withLock }
+                    return tile
+                }
             } catch (_: Exception) {
                 // Database may have been closed by concurrent deleteRegion
             }
@@ -252,6 +281,8 @@ class OfflineTileManager(
         lock.withLock {
             databases[regionId]?.close()
             databases.remove(regionId)
+            // Remove all index entries pointing to this region.
+            tileRegionIndex.entries.removeAll { it.value == regionId }
         }
         File(tilesDir, "$regionId.mbtiles").delete()
     }
@@ -273,6 +304,7 @@ class OfflineTileManager(
         lock.withLock {
             databases.values.forEach { it.close() }
             databases.clear()
+            tileRegionIndex.clear()
         }
     }
 
