@@ -5,6 +5,7 @@ import android.app.Application
 import android.location.Location
 import android.location.LocationListener
 import android.location.LocationManager
+import android.os.Handler
 import android.os.Looper
 import android.util.Log
 import com.google.android.gms.location.FusedLocationProviderClient
@@ -49,6 +50,15 @@ class LocationTrackerService(
     private var useFallback = false
     private var fallbackLocationManager: LocationManager? = null
     private var fallbackListener: LocationListener? = null
+
+    // One-shot timeout plumbing: the one-shot listeners registered in
+    // requestSingleUpdate / requestFallbackSingleUpdate unregister themselves
+    // only when a location fix arrives. If no fix ever arrives (indoors,
+    // location off, missing provider), the callback lives forever. A 20-second
+    // timeout forces cleanup so the listener doesn't leak until process death.
+    private val mainHandler = Handler(Looper.getMainLooper())
+    private var oneShotPlayServicesCallback: LocationCallback? = null
+    private var oneShotFallbackListener: LocationListener? = null
 
     private val locationCallback = object : LocationCallback() {
         override fun onLocationResult(result: LocationResult) {
@@ -105,14 +115,27 @@ class LocationTrackerService(
                     TimeUnit.SECONDS.toMillis(10)
                 ).setMaxUpdates(1).build()
 
-                client.requestLocationUpdates(request, object : LocationCallback() {
+                val callback = object : LocationCallback() {
                     override fun onLocationResult(result: LocationResult) {
                         result.lastLocation?.let { location ->
                             _currentLocation.value = location
                         }
                         client.removeLocationUpdates(this)
+                        mainHandler.removeCallbacksAndMessages(null)
+                        oneShotPlayServicesCallback = null
                     }
-                }, Looper.getMainLooper())
+                }
+                oneShotPlayServicesCallback = callback
+                client.requestLocationUpdates(request, callback, Looper.getMainLooper())
+
+                // Force-unregister if no fix arrives within 20 seconds.
+                // Without this, the callback leaks until process death.
+                mainHandler.postDelayed({
+                    oneShotPlayServicesCallback?.let { cb ->
+                        client.removeLocationUpdates(cb)
+                        oneShotPlayServicesCallback = null
+                    }
+                }, TimeUnit.SECONDS.toMillis(20))
             }
         } else {
             requestFallbackSingleUpdate()
@@ -201,8 +224,11 @@ class LocationTrackerService(
                     override fun onLocationChanged(location: Location) {
                         _currentLocation.value = location
                         lm.removeUpdates(this)
+                        oneShotFallbackListener = null
+                        mainHandler.removeCallbacksAndMessages(null)
                     }
                 }
+                oneShotFallbackListener = oneShot
                 lm.requestLocationUpdates(
                     provider,
                     0L,
@@ -210,6 +236,14 @@ class LocationTrackerService(
                     oneShot,
                     Looper.getMainLooper()
                 )
+                // Force-unregister if no fix arrives within 20 seconds.
+                // Without this, the listener leaks until process death.
+                mainHandler.postDelayed({
+                    oneShotFallbackListener?.let { listener ->
+                        lm.removeUpdates(listener)
+                        oneShotFallbackListener = null
+                    }
+                }, TimeUnit.SECONDS.toMillis(20))
             } catch (e: Exception) {
                 Log.w(TAG, "Fallback single location request failed", e)
             }
@@ -223,6 +257,13 @@ class LocationTrackerService(
     fun destroy() {
         scope.cancel()
         stopTracking()
+        // Clean up any pending one-shot timeouts and force-unregister leaked
+        // callbacks so they don't outlive the tracker.
+        mainHandler.removeCallbacksAndMessages(null)
+        oneShotPlayServicesCallback?.let { fusedClient?.removeLocationUpdates(it) }
+        oneShotPlayServicesCallback = null
+        oneShotFallbackListener?.let { fallbackLocationManager?.removeUpdates(it) }
+        oneShotFallbackListener = null
     }
 
     companion object {

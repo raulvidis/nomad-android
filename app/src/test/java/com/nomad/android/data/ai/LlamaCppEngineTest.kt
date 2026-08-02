@@ -16,9 +16,15 @@ class LlamaCppEngineTest {
     }
 
     @Test
-    fun `recommendedVariant always returns the single model`() {
-        assertEquals(LlamaCppEngine.ModelVariant.MINICPM5_1B, LlamaCppEngine.recommendedVariant(8192))
-        assertEquals(LlamaCppEngine.ModelVariant.MINICPM5_1B, LlamaCppEngine.recommendedVariant(1024))
+    fun `recommendedVariant picks largest model that fits in 80 percent RAM`() {
+        // 8GB device → 80% = 6553MB → fits GEMMA4_E2B (4608MB)
+        assertEquals(LlamaCppEngine.ModelVariant.GEMMA4_E2B, LlamaCppEngine.recommendedVariant(8192))
+        // 3GB device → 80% = 2457MB → fits MINICPM5_1B (2048MB), not GEMMA4_E2B (4608MB)
+        assertEquals(LlamaCppEngine.ModelVariant.MINICPM5_1B, LlamaCppEngine.recommendedVariant(3072))
+        // 2GB device → 80% = 1638MB → fits LFM2_5_230M (1024MB), not the 2048MB models
+        assertEquals(LlamaCppEngine.ModelVariant.LFM2_5_230M, LlamaCppEngine.recommendedVariant(2048))
+        // 1GB device → 80% = 819MB → nothing fits, falls back to smallest (LFM2_5_230M, 1024MB)
+        assertEquals(LlamaCppEngine.ModelVariant.LFM2_5_230M, LlamaCppEngine.recommendedVariant(1024))
     }
 
     @Test
